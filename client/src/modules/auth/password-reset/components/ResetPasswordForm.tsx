@@ -62,25 +62,25 @@ export function ResetPasswordForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-7", className)} {...props}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-xl font-bold">Reset Password</h1>
-            <FieldDescription>
+            <h1 className="text-3xl font-bold">Reset Password</h1>
+            <FieldDescription className="text-base">
               Set a new password for <b className="text-primary">{email}</b>
             </FieldDescription>
           </div>
           <Separator />
 
           <Field>
-            <FieldLabel htmlFor="newPassword">New Password</FieldLabel>
+            <FieldLabel htmlFor="newPassword" className="text-base">New Password</FieldLabel>
             <div className="relative">
               <Input
                 id="newPassword"
                 type={showNewPassword ? "text" : "password"}
                 placeholder="Enter new password"
-                className={cn("pr-10", errors.newPassword && "border-red-500")}
+                className={cn("h-10 pr-10 text-base", errors.newPassword && "border-red-500")}
                 {...register("newPassword")}
               />
               <button
@@ -101,13 +101,13 @@ export function ResetPasswordForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
+            <FieldLabel htmlFor="confirmPassword" className="text-base">Confirm Password</FieldLabel>
             <div className="relative">
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm new password"
-                className={cn("pr-10", errors.confirmPassword && "border-red-500")}
+                className={cn("h-10 pr-10 text-base", errors.confirmPassword && "border-red-500")}
                 {...register("confirmPassword")}
               />
               <button
@@ -130,7 +130,7 @@ export function ResetPasswordForm({
           <Field>
             <Button
               type="submit"
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-600"
+              className="h-10 w-full bg-[#129141] text-white hover:bg-[#0f7c38] text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Updating" : "Update Password"}
@@ -138,8 +138,8 @@ export function ResetPasswordForm({
             </Button>
           </Field>
 
-          <FieldDescription className="text-center">
-            <Link to="/auth/login" className="text-emerald-500 hover:underline">
+          <FieldDescription className="text-center text-base">
+            <Link to="/auth/login" className="text-[#129141] hover:underline">
               Back to login
             </Link>
           </FieldDescription>

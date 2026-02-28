@@ -159,60 +159,60 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-xl font-bold">Welcome to CityLink</h1>
-            <FieldDescription>
-              Already have an account? <Link to="/auth/login" replace className="text-emerald-500 hover:underline" viewTransition>Log in</Link>
+            <h1 className="text-3xl font-bold">Create an Account</h1>
+            <FieldDescription className="text-base">
+              Already have an account? <Link to="/auth/login" replace className="text-[#129141] hover:underline" viewTransition>Log in</Link>
             </FieldDescription>
           </div>
           <Separator />
-          <FieldDescription className="text-center pb-4">
+          <FieldDescription className="text-center pb-4 text-base">
             The official civic engagement platform connecting citizens across all 38 districts with their local administration.
           </FieldDescription>
 
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel htmlFor="firstName">First Name</FieldLabel>
+              <FieldLabel htmlFor="firstName" className="text-base">First Name</FieldLabel>
               <Input
                 id="firstName"
-                placeholder="John"
+                placeholder="Enter your first name"
                 {...register("firstName")}
-                className={errors.firstName ? "border-red-500" : ""}
+                className={cn("h-10 text-base", errors.firstName ? "border-red-500" : "")}
               />
               {errors.firstName && <span className="text-xs text-red-500">{errors.firstName.message}</span>}
             </Field>
             <Field>
-              <FieldLabel htmlFor="lastName">Last Name</FieldLabel>
+              <FieldLabel htmlFor="lastName" className="text-base">Last Name</FieldLabel>
               <Input
                 id="lastName"
-                placeholder="Doe"
+                placeholder="Enter your last name"
                 {...register("lastName")}
-                className={errors.lastName ? "border-red-500" : ""}
+                className={cn("h-10 text-base", errors.lastName ? "border-red-500" : "")}
               />
               {errors.lastName && <span className="text-xs text-red-500">{errors.lastName.message}</span>}
             </Field>
           </div>
 
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email" className="text-base">Email</FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="m@example.com"
+              placeholder="Enter your email address"
               {...register("email")}
-              className={errors.email ? "border-red-500" : ""}
+              className={cn("h-10 text-base", errors.email ? "border-red-500" : "")}
             />
             {errors.email && <span className="text-xs text-red-500">{errors.email.message}</span>}
           </Field>
 
           {/* District Selection (Shadcn) */}
           <Field>
-            <FieldLabel>District</FieldLabel>
+            <FieldLabel className="text-base">District</FieldLabel>
             <Controller
               control={control}
               name="district"
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <SelectTrigger className={errors.district ? "border-red-500" : ""}>
+                  <SelectTrigger className={cn("h-10 text-base", errors.district ? "border-red-500" : "")}>
                     <SelectValue placeholder="Select your district" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
@@ -231,11 +231,11 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           {/* Address with Map Integration */}
           <Field>
             <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="address">Address</FieldLabel>
+              <FieldLabel htmlFor="address" className="text-base">Address</FieldLabel>
               <button
                 type="button"
                 onClick={() => setShowMap(!showMap)}
-                className="text-xs text-emerald-500 flex items-center gap-1 hover:underline"
+                className="text-sm text-[#129141] flex items-center gap-1 hover:underline"
               >
                 <MapPin className="w-3 h-3" />
                 {showMap ? "Hide Map" : "Pin Location"}
@@ -279,21 +279,21 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
               id="address"
               placeholder="Enter address or pin on map"
               {...register("address")}
-              className={errors.address ? "border-red-500" : ""}
+              className={cn("h-10 text-base", errors.address ? "border-red-500" : "")}
             />
             {errors.address && <span className="text-xs text-red-500">{errors.address.message}</span>}
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password" className="text-base">Password</FieldLabel>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   {...register("password")}
-                  className={errors.password ? "border-red-500 pr-10" : "pr-10"}
+                  className={cn("h-10 pr-10 text-base", errors.password ? "border-red-500" : "")}
                 />
                 <button
                   type="button"
@@ -307,28 +307,28 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
+              <FieldLabel htmlFor="confirmPassword" className="text-base">Confirm Password</FieldLabel>
               <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
                 {...register("confirmPassword")}
-                className={errors.confirmPassword ? "border-red-500" : ""}
+                className={cn("h-10 text-base", errors.confirmPassword ? "border-red-500" : "")}
               />
               {errors.confirmPassword && <span className="text-xs text-red-500">{errors.confirmPassword.message}</span>}
             </Field>
           </div>
 
           <Field className="pt-4">
-            <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" disabled={isSubmitting}>
+            <Button type="submit" className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base" disabled={isSubmitting}>
               {isSubmitting ? "Creating..." : "Create Account"}
             </Button>
           </Field>
         </FieldGroup>
       </form>
-      <FieldDescription className="px-6 text-center text-xs">
-        By clicking continue, you agree to our <a href="#" className="underline hover:text-emerald-500">Terms of Service</a>{" "}
-        and <a href="#" className="underline hover:text-emerald-500">Privacy Policy</a>.
+      <FieldDescription className="px-6 text-center text-base">
+        By clicking continue, you agree to our <a href="#" className="underline hover:text-[#129141]">Terms of Service</a>{" "}
+        and <a href="#" className="underline hover:text-[#129141]">Privacy Policy</a>.
       </FieldDescription>
     </div>
   )

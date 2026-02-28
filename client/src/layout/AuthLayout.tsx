@@ -8,12 +8,17 @@ export const AuthLayout = () => {
 
   return (
     <>
-      <header className="sticky top-0 p-2 flex justify-between backdrop-blur-2xl">
+      <header className="sticky top-0 p-3 flex justify-between backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <Button size="icon-sm" variant="secondary" onClick={() => navigate("/")}>
-            <ArrowLeft strokeWidth={3} />
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-11 w-11"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft strokeWidth={3} className="h-6 w-6" />
           </Button>
-          <h1 className="font-bold text-emerald-500 text-2xl">CityLink</h1>
+          <h1 className="font-bold text-[#129141] text-3xl">CityLink</h1>
         </div>
         <ThemeToggler />
       </header>

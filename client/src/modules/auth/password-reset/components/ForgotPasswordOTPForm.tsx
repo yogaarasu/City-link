@@ -104,12 +104,12 @@ export function ForgotPasswordOTPForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-7", className)} {...props}>
       <form onSubmit={handleVerify}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-xl font-bold">Verify OTP</h1>
-            <FieldDescription>
+            <h1 className="text-3xl font-bold">Verify OTP</h1>
+            <FieldDescription className="text-base">
               Enter the code sent to <b className="text-primary">{email}</b>
             </FieldDescription>
           </div>
@@ -128,20 +128,20 @@ export function ForgotPasswordOTPForm({
               containerClassName="gap-4"
               disabled={isVerifying}
             >
-              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-13 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
                 <InputOTPSlot index={2} />
               </InputOTPGroup>
               <InputOTPSeparator />
-              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-13 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
                 <InputOTPSlot index={3} />
                 <InputOTPSlot index={4} />
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
 
-            <FieldDescription className="text-center">
+            <FieldDescription className="text-center text-base">
               {seconds > 0 ? (
                 <>Resend OTP in {seconds}s</>
               ) : (
@@ -150,7 +150,7 @@ export function ForgotPasswordOTPForm({
                   type="button"
                   onClick={handleResend}
                   disabled={isResending}
-                  className="font-semibold text-sky-600"
+                  className="font-semibold text-[#129141]"
                 >
                   Resend OTP
                 </Button>
@@ -161,7 +161,7 @@ export function ForgotPasswordOTPForm({
           <Field>
             <Button
               type="submit"
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-600"
+              className="h-10 w-full bg-[#129141] text-white hover:bg-[#0f7c38] text-base"
               disabled={isVerifying}
             >
               {isVerifying ? "Verifying" : "Verify OTP"}
@@ -169,9 +169,9 @@ export function ForgotPasswordOTPForm({
             </Button>
           </Field>
 
-          <FieldDescription className="text-center">
+          <FieldDescription className="text-center text-base">
             Wrong email?{" "}
-            <Link to="/auth/forgot-password" className="text-emerald-500 hover:underline">
+            <Link to="/auth/forgot-password" className="text-[#129141] hover:underline">
               Try another email
             </Link>
           </FieldDescription>

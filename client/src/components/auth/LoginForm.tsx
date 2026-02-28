@@ -79,40 +79,40 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-7", className)} {...props}>
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-xl font-bold">Welcome Back.</h1>
-            <FieldDescription>
-              Don&apos;t have an account? <Link to="/auth/signup" replace viewTransition>Sign up</Link>
+            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <FieldDescription className="text-base">
+              Don&apos;t have an account? <Link to="/auth/signup" replace className="text-[#129141] hover:underline" viewTransition>Sign up</Link>
             </FieldDescription>
           </div>
           <Separator />
-          <FieldDescription className="text-center">
+          <FieldDescription className="text-center text-base">
             The official civic engagement platform connecting citizens across all 38 districts with their local administration.
           </FieldDescription>
           
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email" className="text-base">Email</FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter your email address"
               required
               value={email}
               onChange={handleEmailChange}
-              className={emailError ? "border-red-500" : ""}
+              className={cn("h-10 text-base", emailError ? "border-red-500" : "")}
             />
             {emailError && <span className="text-xs text-red-500">{emailError}</span>}
           </Field>
           
           <Field>
             <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password" className="text-base">Password</FieldLabel>
               <Link
                 to="/auth/forgot-password"
-                className="text-xs text-emerald-500 hover:underline"
+                className="text-sm text-[#129141] hover:underline"
                 viewTransition
               >
                 Forgot password?
@@ -122,9 +122,9 @@ export function LoginForm({
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter Password"
+                placeholder="Enter your password"
                 required
-                className="pr-10"
+                className="h-10 pr-10 text-base"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
@@ -141,7 +141,7 @@ export function LoginForm({
           <Field>
             <Button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Logging in" : "Login"}
@@ -150,9 +150,9 @@ export function LoginForm({
           </Field>
         </FieldGroup>
       </form>
-      <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+      <FieldDescription className="px-6 text-center text-base">
+        By clicking continue, you agree to our <a href="#" className="underline hover:text-[#129141]">Terms of Service</a>{" "}
+        and <a href="#" className="underline hover:text-[#129141]">Privacy Policy</a>.
       </FieldDescription>
     </div>
   )

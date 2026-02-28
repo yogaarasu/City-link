@@ -51,23 +51,23 @@ export function ForgotPasswordEmailForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-7", className)} {...props}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-xl font-bold">Forgot Password?</h1>
-            <FieldDescription>
+            <h1 className="text-3xl font-bold">Forgot Password?</h1>
+            <FieldDescription className="text-base">
               Enter your email and we will send a 6-digit OTP.
             </FieldDescription>
           </div>
           <Separator />
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email" className="text-base">Email</FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
-              className={errors.email ? "border-red-500" : ""}
+              placeholder="Enter your email address"
+              className={cn("h-10 text-base", errors.email ? "border-red-500" : "")}
               {...register("email")}
             />
             {errors.email && (
@@ -78,7 +78,7 @@ export function ForgotPasswordEmailForm({
           <Field>
             <Button
               type="submit"
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-600"
+              className="h-10 w-full bg-[#129141] text-white hover:bg-[#0f7c38] text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Sending OTP" : "Send OTP"}
@@ -86,9 +86,9 @@ export function ForgotPasswordEmailForm({
             </Button>
           </Field>
 
-          <FieldDescription className="text-center">
+          <FieldDescription className="text-center text-base">
             Remember your password?{" "}
-            <Link to="/auth/login" className="text-emerald-500 hover:underline">
+            <Link to="/auth/login" className="text-[#129141] hover:underline">
               Back to login
             </Link>
           </FieldDescription>

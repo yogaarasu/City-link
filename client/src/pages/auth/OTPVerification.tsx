@@ -108,14 +108,14 @@ export function OtpVerification({
 	};
 
 	return (
-		<div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-			<div className="w-full max-w-sm">
-				<div className={cn("flex flex-col gap-6", className)} {...props}>
+		<div className="bg-background flex min-h-svh flex-col items-center justify-center gap-8 p-6 md:p-10">
+			<div className="w-full max-w-md">
+				<div className={cn("flex flex-col gap-7", className)} {...props}>
 					<form onSubmit={handleVerify}>
 						<FieldGroup>
 							<div className="flex flex-col items-center gap-2 text-center">
-								<h1 className="text-xl font-bold">Enter verification code</h1>
-								<FieldDescription>
+								<h1 className="text-3xl font-bold">Enter verification code</h1>
+								<FieldDescription className="text-base">
 									We sent a 6-digit code to <b className="text-primary">{email}</b>
 								</FieldDescription>
 							</div>
@@ -134,20 +134,20 @@ export function OtpVerification({
 									containerClassName="gap-4"
 									disabled={isVerifying}
 								>
-									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-13 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
 										<InputOTPSlot index={0} />
 										<InputOTPSlot index={1} />
 										<InputOTPSlot index={2} />
 									</InputOTPGroup>
 									<InputOTPSeparator />
-									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-13 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
 										<InputOTPSlot index={3} />
 										<InputOTPSlot index={4} />
 										<InputOTPSlot index={5} />
 									</InputOTPGroup>
 								</InputOTP>
 
-								<FieldDescription className="text-center">
+								<FieldDescription className="text-center text-base">
 									{seconds > 0 ? (
 										<>Resend OTP in {seconds}s</>
 									) : (
@@ -156,7 +156,7 @@ export function OtpVerification({
 											type="button"
 											onClick={handleResend}
 											disabled={isResending}
-											className="text-sky-600 font-semibold"
+											className="text-[#129141] font-semibold"
 										>
 											Resend OTP
 										</Button>
@@ -167,7 +167,7 @@ export function OtpVerification({
 							<Field>
 								<Button
 									type="submit"
-									className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+									className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base"
 									disabled={isVerifying}
 								>
 									{isVerifying ? "Verifying" : "Verify"}
@@ -177,10 +177,10 @@ export function OtpVerification({
 						</FieldGroup>
 					</form>
 
-					<FieldDescription className="px-6 text-center">
+					<FieldDescription className="px-6 text-center text-base">
 						By clicking continue, you agree to our{" "}
-						<Link to="#">Terms of Service</Link> and{" "}
-						<Link to="#">Privacy Policy</Link>.
+						<Link to="#" className="underline hover:text-[#129141]">Terms of Service</Link> and{" "}
+						<Link to="#" className="underline hover:text-[#129141]">Privacy Policy</Link>.
 					</FieldDescription>
 				</div>
 			</div>
