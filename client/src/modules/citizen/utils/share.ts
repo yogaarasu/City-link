@@ -34,3 +34,4 @@ export const shareIssue = async (issue: IIssue) => {
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(whatsappUrl, "_blank", "noopener,noreferrer");
 };
+

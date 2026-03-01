@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ISSUE_CATEGORIES,
+  ISSUE_REJECTION_REASONS,
   ISSUE_STATUS,
   TAMIL_NADU_DISTRICTS,
 } from "./issue.constants.js";
@@ -26,6 +27,36 @@ export const listIssueQuerySchema = z.object({
 
 export const voteIssueSchema = z.object({
   type: z.enum(["up", "down"]),
+});
+
+export const updateIssueStatusSchema = z
+  .object({
+    status: z.enum(ISSUE_STATUS),
+    description: z.string().trim().min(3).max(300).optional(),
+    resolvedEvidencePhotos: z.array(z.string()).max(5).optional().default([]),
+    rejectionReason: z.enum(ISSUE_REJECTION_REASONS).optional(),
+  })
+  .superRefine((payload, ctx) => {
+    if (payload.status === "resolved" && payload.resolvedEvidencePhotos.length === 0) {
+      ctx.addIssue({
+        path: ["resolvedEvidencePhotos"],
+        code: z.ZodIssueCode.custom,
+        message: "Resolved issues require at least one evidence image.",
+      });
+    }
+
+    if (payload.status === "rejected" && !payload.rejectionReason) {
+      ctx.addIssue({
+        path: ["rejectionReason"],
+        code: z.ZodIssueCode.custom,
+        message: "Rejected issues require a rejection reason.",
+      });
+    }
+  });
+
+export const reviewIssueSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().min(2).max(400).optional().default(""),
 });
 
 export const isValidIssueStatus = (status) => ISSUE_STATUS.includes(status);

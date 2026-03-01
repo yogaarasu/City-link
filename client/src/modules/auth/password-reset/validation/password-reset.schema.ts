@@ -21,3 +21,4 @@ export const updatePasswordSchema = z
 export type RequestPasswordResetValues = z.infer<typeof requestPasswordResetSchema>;
 export type VerifyPasswordResetValues = z.infer<typeof verifyPasswordResetSchema>;
 export type UpdatePasswordValues = z.infer<typeof updatePasswordSchema>;
+

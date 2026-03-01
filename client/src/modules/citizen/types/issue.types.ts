@@ -8,6 +8,12 @@ export interface IssueStatusLog {
   createdAt: string;
 }
 
+export interface IssueReview {
+  rating: number;
+  comment?: string;
+  updatedAt?: string | null;
+}
+
 export interface IIssue {
   _id: string;
   title: string;
@@ -20,11 +26,14 @@ export interface IIssue {
   address: string;
   district: string;
   photos: string[];
+  resolvedEvidencePhotos?: string[];
+  rejectionReason?: string | null;
   status: IssueStatus;
   reportedBy: Pick<IUser, "_id" | "name" | "email" | "district" | "role" | "avatar">;
   upVotes: number;
   downVotes: number;
   statusLogs?: IssueStatusLog[];
+  review?: IssueReview | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,3 +45,4 @@ export interface IssueStats {
   resolved: number;
   rejected: number;
 }
+

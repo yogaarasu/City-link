@@ -276,7 +276,7 @@ const ReportIssue = () => {
                   <MapContainer center={currentPosition} zoom={13} className="h-full w-full">
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreet</a> contributors'
                     />
                     <LocationPicker position={currentPosition} onPick={handleMapPick} />
                   </MapContainer>
@@ -290,7 +290,7 @@ const ReportIssue = () => {
                     <MapPin className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
                     <Input
                       id="address"
-                      className={cn("pl-9", errors.address ? "border-red-500" : "")}
+                      className={cn("pl-11", errors.address ? "border-red-500" : "")}
                       {...register("address")}
                     />
                   </div>
@@ -382,7 +382,7 @@ const ReportIssue = () => {
 
               <Button
                 type="submit"
-                className="mt-2 w-full bg-emerald-600 text-white hover:bg-emerald-700"
+                className="mt-2 w-full bg-emerald-500 hover:bg-emerald-600 text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Submitting..." : "Submit Report"}

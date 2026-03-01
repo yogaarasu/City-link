@@ -11,6 +11,7 @@ import { UserAvatar } from "@/modules/user/components/UserAvatar";
 import { AppearanceSection } from "@/modules/citizen/settings/components/AppearanceSection";
 import { SettingsTabs } from "@/modules/citizen/settings/components/SettingsTabs";
 import type { SettingsTab } from "@/modules/citizen/settings/types";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const toBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -32,6 +33,7 @@ const SuperAdminSettingsPage = () => {
   const user = useUserState((state) => state.user);
   const updateUser = useUserState((state) => state.updateUser);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+  const { t } = useI18n();
   const [name, setName] = useState(user?.name ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -87,7 +89,7 @@ const SuperAdminSettingsPage = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      toast.success("Profile picture removed.");
+      toast.success(t("removeAvatar"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error ?? "Failed to remove profile picture");
@@ -104,9 +106,11 @@ const SuperAdminSettingsPage = () => {
       <div className="space-y-1">
         <h1 className="group flex items-center gap-2 text-4xl font-bold">
           <SettingsIcon className="h-8 w-8 transition-transform group-hover:animate-spin" />
-          Settings
+          {t("settings")}
         </h1>
-        <p className="text-muted-foreground">Manage your super admin preferences.</p>
+        <p className="text-muted-foreground">
+          {t("emailCannotBeChanged")}
+        </p>
       </div>
 
       <SettingsTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -114,9 +118,9 @@ const SuperAdminSettingsPage = () => {
       {activeTab === "general" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">General</CardTitle>
+            <CardTitle className="text-2xl">{t("general")}</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Update only profile image and display name for super admin account.
+              {t("superAdminGeneralSubtitle")}
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -131,7 +135,7 @@ const SuperAdminSettingsPage = () => {
                 <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
                   <UserAvatar name={name || user?.name} avatar={avatar} className="h-24 w-24 text-4xl" />
                   <div className="w-full">
-                    <p className="mb-2 text-sm text-muted-foreground">JPG, PNG, GIF or WEBP. Max size 3MB.</p>
+                    <p className="mb-2 text-sm text-muted-foreground">{t("profileImageHint")}</p>
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -142,7 +146,7 @@ const SuperAdminSettingsPage = () => {
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload Profile Picture
+                        {t("uploadProfilePicture")}
                       </Button>
                       <Button
                         variant="destructive"
@@ -150,7 +154,7 @@ const SuperAdminSettingsPage = () => {
                         disabled={!avatar || isRemovingAvatar}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        {isRemovingAvatar ? "Removing..." : "Remove Avatar"}
+                        {isRemovingAvatar ? t("removing") : t("removeAvatar")}
                       </Button>
                     </div>
                   </div>
@@ -158,18 +162,21 @@ const SuperAdminSettingsPage = () => {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Name</label>
+                    <label className="text-sm font-medium">{t("name")}</label>
                     <Input value={name} onChange={(event) => setName(event.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Email Address</label>
+                    <label className="text-sm font-medium">{t("emailAddress")}</label>
                     <Input value={user?.email ?? ""} disabled />
+                    <p className="text-xs text-muted-foreground">
+                      {t("emailLockedMessage")}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex justify-end">
                   <Button onClick={handleSave} disabled={isSaving}>
-                    Save Changes
+                    {t("saveChanges")}
                   </Button>
                 </div>
               </>
@@ -181,7 +188,7 @@ const SuperAdminSettingsPage = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
+            <CardTitle>{t("appearance")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="h-24 animate-pulse rounded-xl bg-muted" />
@@ -195,3 +202,4 @@ const SuperAdminSettingsPage = () => {
 };
 
 export default SuperAdminSettingsPage;
+

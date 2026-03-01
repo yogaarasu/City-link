@@ -11,3 +11,4 @@ const ForgotPasswordVerify = () => {
 };
 
 export default ForgotPasswordVerify;
+

@@ -1,8 +1,9 @@
-import { useMemo } from "react";
-import { CalendarDays, MapPin, Share2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, MapPin, Share2, Star, X } from "lucide-react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import type { IIssue, IssueStatusLog } from "../types/issue.types";
 import { statusToBadgeVariant, statusToColor, statusToLabel } from "../utils/issue-ui";
 import { formatIssueTime } from "../utils/time";
@@ -15,6 +16,8 @@ interface IssueDetailsModalProps {
   issue: IIssue | null;
   onClose: () => void;
   onVote: (issueId: string, type: "up" | "down") => void;
+  onReview?: (issueId: string, rating: number, comment: string) => Promise<void>;
+  currentUserId?: string;
   canVote?: boolean;
   onBlockedVote?: () => void;
 }
@@ -35,16 +38,39 @@ export const IssueDetailsModal = ({
   issue,
   onClose,
   onVote,
+  onReview,
+  currentUserId,
   canVote = true,
   onBlockedVote,
 }: IssueDetailsModalProps) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const logs = useMemo(() => (issue ? getStatusLogs(issue) : []), [issue]);
   const mapKey = useMemo(
     () => (issue ? `${issue._id}-${issue.location.lat}-${issue.location.lng}` : "issue-map"),
     [issue]
   );
 
+  useEffect(() => {
+    if (!issue) return;
+    setRating(issue.review?.rating || 0);
+    setComment(issue.review?.comment || "");
+  }, [issue]);
+
   if (!open || !issue) return null;
+  const canReview = issue.status === "resolved" && issue.reportedBy?._id === currentUserId;
+
+  const submitReview = async () => {
+    if (!onReview || !issue) return;
+    if (rating < 1 || rating > 5) return;
+    try {
+      setIsSubmittingReview(true);
+      await onReview(issue._id, rating, comment.trim());
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 md:p-4">
@@ -163,8 +189,47 @@ export const IssueDetailsModal = ({
               onVote={(type) => onVote(issue._id, type)}
             />
           </div>
+
+          {(canReview || issue.review?.rating) && (
+            <div className="rounded-lg border p-3">
+              <h3 className="mb-2 font-semibold">Resolved Issue Review</h3>
+              <div className="mb-2 inline-flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, index) => {
+                  const active = index < rating;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => canReview && setRating(index + 1)}
+                      className={canReview ? "cursor-pointer" : "cursor-default"}
+                    >
+                      <Star
+                        className={`h-5 w-5 ${active ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {canReview ? (
+                <>
+                  <Textarea
+                    placeholder="Write your feedback about resolution quality..."
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                    className="mb-2 min-h-20"
+                  />
+                  <Button onClick={submitReview} disabled={isSubmittingReview || rating === 0}>
+                    {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{issue.review?.comment || "No comment provided."}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+

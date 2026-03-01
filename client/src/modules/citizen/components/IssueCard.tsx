@@ -1,11 +1,12 @@
-import { CalendarDays, ImageIcon } from "lucide-react";
+import { CalendarDays, ImageIcon, Share2, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { IIssue } from "../types/issue.types";
 import { statusToBadgeVariant, statusToLabel } from "../utils/issue-ui";
 import { formatIssueTime } from "../utils/time";
-import { IssueVoteButtons } from "./IssueVoteButtons";
+import { shareIssue } from "../utils/share";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 interface IssueCardProps {
   issue: IIssue;
@@ -22,9 +23,19 @@ export const IssueCard = ({
   canVote = true,
   onBlockedVote,
 }: IssueCardProps) => {
+  const { t } = useI18n();
+
+  const onClickVote = (type: "up" | "down") => {
+    if (!canVote) {
+      onBlockedVote?.();
+      return;
+    }
+    onVote(issue._id, type);
+  };
+
   return (
     <Card
-      className="gap-0 cursor-pointer rounded-[8px] py-0"
+      className="cursor-pointer rounded-xl border bg-card shadow-sm transition hover:shadow-md"
       role="button"
       tabIndex={0}
       aria-label={`Open full details for ${issue.title}`}
@@ -36,80 +47,105 @@ export const IssueCard = ({
         }
       }}
     >
-      <CardContent className="relative p-[7px]">
-        <div className="absolute top-2 right-2">
-          <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-[5px]">
-            {statusToLabel(issue.status)}
-          </Badge>
-        </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start gap-2 md:gap-3">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[10px] md:h-22 md:w-22">
-              {issue.photos[0] ? (
-                <img
-                  src={issue.photos[0]}
-                  alt={issue.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="bg-muted text-muted-foreground flex h-full w-full items-center justify-center">
-                  <ImageIcon className="h-5 w-5" />
-                </div>
-              )}
-              {issue.photos.length > 1 && (
-                <span
-                  className="absolute bottom-1 right-1 inline-flex h-5 max-w-[calc(100%-6px)] min-w-5 items-center justify-center truncate rounded-[5px] bg-black/80 px-1.5 text-[10px] font-semibold leading-none text-white"
-                  title={`+${issue.photos.length - 1}`}
-                >
-                  +{issue.photos.length - 1}
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-1 text-left">
-              <h3 className="line-clamp-2 text-base leading-snug font-semibold md:text-lg">
-                {issue.title}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="rounded-[5px] leading-[1.25]">
-                  {issue.category}
-                </Badge>
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start">
+          <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted/60 md:h-auto md:w-auto md:max-w-[256px] md:min-w-[136px] md:shrink-0">
+            {issue.photos[0] ? (
+              <img
+                src={issue.photos[0]}
+                alt={issue.title}
+                className="h-full w-full rounded-xl object-cover md:max-h-35 md:object-contain"
+              />
+            ) : (
+              <div className="bg-muted text-muted-foreground flex h-full w-full items-center justify-center">
+                <ImageIcon className="h-6 w-6" />
               </div>
-              <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs leading-[1.35]">
-                <span className="inline-flex items-center">
-                  <CalendarDays className="mr-1 h-3.5 w-3.5" />
-                  {formatIssueTime(issue.createdAt)}
-                </span>
-              </div>
-            </div>
+            )}
+            {issue.photos.length > 1 && (
+              <span
+                className="absolute right-2 bottom-2 max-w-[calc(100%-16px)] truncate rounded bg-black/80 px-1.5 py-0.5 text-xs font-semibold text-white"
+                title={`+${issue.photos.length - 1}`}
+              >
+                +{issue.photos.length - 1}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-end justify-between gap-2">
-            <div
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-            <IssueVoteButtons
-              upVotes={issue.upVotes}
-              downVotes={issue.downVotes}
-              canVote={canVote}
-              onBlockedVote={onBlockedVote}
-              onVote={(type) => onVote(issue._id, type)}
-            />
+          <div className="min-w-0 flex-1 space-y-2">
+            <h3 className="line-clamp-1 text-xl font-semibold">{issue.title}</h3>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-md px-2.5 py-1 text-xs">
+                  {issue.category}
+                </Badge>
+                <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md px-2.5 py-1 text-xs">
+                  {statusToLabel(issue.status)}
+                </Badge>
+              </div>
             </div>
-            <Button
-              variant="link"
-              className="h-auto p-0 text-emerald-600"
-              onClick={(event) => {
-                event.stopPropagation();
-                onViewDetails(issue);
-              }}
-            >
-              View Full Details
-            </Button>
+
+            <p className="text-muted-foreground inline-flex items-center text-sm">
+              <CalendarDays className="mr-1.5 h-4 w-4" />
+              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
+            </p>
+
+            <div className="flex items-end justify-between gap-3 border-t pt-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClickVote("up");
+                  }}
+                >
+                  <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+                  {issue.upVotes}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClickVote("down");
+                  }}
+                >
+                  <ThumbsDown className="h-3.5 w-3.5 text-red-600" />
+                  {issue.downVotes}
+                </button>
+                <span className="inline-flex items-center gap-1 rounded-md border px-2 py-1">
+                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                  {issue.review?.rating ? `${issue.review.rating}/5` : t("noRating")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-md"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void shareIssue(issue);
+                  }}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  className="rounded-md bg-[#129141] text-white hover:bg-[#0f7c38]"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onViewDetails(issue);
+                  }}
+                >
+                  View Full Details
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 };
+

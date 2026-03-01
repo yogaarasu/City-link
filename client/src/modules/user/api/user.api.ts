@@ -20,3 +20,4 @@ export const deleteAccount = async (payload: { confirmation: string }) => {
   const response = await api.delete<{ message: string }>("/user/account", { data: payload });
   return response.data;
 };
+

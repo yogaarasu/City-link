@@ -6,3 +6,4 @@ const CitySnapshot = () => {
 };
 
 export default CitySnapshot;
+

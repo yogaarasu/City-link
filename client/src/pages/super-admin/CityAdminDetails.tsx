@@ -247,3 +247,4 @@ const CityAdminDetailsPage = () => {
 };
 
 export default CityAdminDetailsPage;
+

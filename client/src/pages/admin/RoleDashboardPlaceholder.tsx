@@ -20,3 +20,4 @@ const RoleDashboardPlaceholder = ({ title }: RoleDashboardPlaceholderProps) => {
 };
 
 export default RoleDashboardPlaceholder;
+

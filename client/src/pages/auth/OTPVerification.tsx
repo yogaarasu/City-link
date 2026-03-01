@@ -131,16 +131,16 @@ export function OtpVerification({
 									onChange={setOtp}
 									id="otp"
 									required
-									containerClassName="gap-4"
+									containerClassName="justify-center gap-4"
 									disabled={isVerifying}
 								>
-									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
+									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
 										<InputOTPSlot index={0} />
 										<InputOTPSlot index={1} />
 										<InputOTPSlot index={2} />
 									</InputOTPGroup>
 									<InputOTPSeparator />
-									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
+									<InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
 										<InputOTPSlot index={3} />
 										<InputOTPSlot index={4} />
 										<InputOTPSlot index={5} />
@@ -156,7 +156,7 @@ export function OtpVerification({
 											type="button"
 											onClick={handleResend}
 											disabled={isResending}
-											className="text-[#129141] font-semibold"
+											className="text-emerald-500 font-semibold"
 										>
 											Resend OTP
 										</Button>
@@ -167,7 +167,7 @@ export function OtpVerification({
 							<Field>
 								<Button
 									type="submit"
-									className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base"
+									className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-base"
 									disabled={isVerifying}
 								>
 									{isVerifying ? "Verifying" : "Verify"}
@@ -187,3 +187,4 @@ export function OtpVerification({
 		</div>
 	);
 }
+

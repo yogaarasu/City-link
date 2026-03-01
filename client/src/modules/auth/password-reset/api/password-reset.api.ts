@@ -32,3 +32,4 @@ export const updatePassword = (email: string, newPassword: string) => {
       throw error;
     });
 };
+

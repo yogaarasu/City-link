@@ -138,11 +138,12 @@ const CommunityIssues = () => {
             </SelectContent>
           </Select>
 
-          <div className="inline-flex rounded-lg border p-1">
+          <div className="inline-flex rounded-lg border p-1 gap-3 ">
             <Button
               size="icon-sm"
               variant={viewMode === "list" ? "secondary" : "ghost"}
               onClick={() => setViewMode("list")}
+              
             >
               <List className="h-4 w-4" />
             </Button>
@@ -150,6 +151,7 @@ const CommunityIssues = () => {
               size="icon-sm"
               variant={viewMode === "map" ? "secondary" : "ghost"}
               onClick={() => setViewMode("map")}
+             
             >
               <MapIcon className="h-4 w-4" />
             </Button>

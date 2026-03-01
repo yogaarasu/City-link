@@ -78,6 +78,15 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  activityStatus: {
+    type: String,
+    enum: ["online", "offline"],
+    default: "offline"
+  },
+  activityStatusUpdatedAt: {
+    type: Date,
+    default: null
+  },
   activityLogs: {
     type: [UserActivityLogSchema],
     default: []

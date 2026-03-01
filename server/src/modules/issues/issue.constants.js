@@ -14,6 +14,15 @@ export const ISSUE_STATUS = [
   "rejected",
 ];
 
+export const ISSUE_REJECTION_REASONS = [
+  "Duplicate Issue",
+  "Wrong Location",
+  "Not a Civic Issue",
+  "Spam / Fake Report",
+  "Insufficient Information",
+  "Other",
+];
+
 export const TAMIL_NADU_DISTRICTS = [
   "Ariyalur",
   "Chengalpattu",

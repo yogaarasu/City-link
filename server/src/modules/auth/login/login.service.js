@@ -78,6 +78,8 @@ export const loginUser = async (email, password) => {
     superAdmin.isVerified = true;
     superAdmin.adminAccess = "active";
     superAdmin.lastLoginAt = new Date();
+    superAdmin.activityStatus = "online";
+    superAdmin.activityStatusUpdatedAt = new Date();
     appendUserActivityLog(superAdmin, "login", "Super admin logged in.");
     await superAdmin.save();
 
@@ -125,9 +127,14 @@ export const loginUser = async (email, password) => {
   }
 
   user.lastLoginAt = new Date();
-  if (user.role === "city_admin") {
-    appendUserActivityLog(user, "login", "City administrator logged in.");
-  }
+  user.activityStatus = "online";
+  user.activityStatusUpdatedAt = new Date();
+  const roleLoginMessage = {
+    city_admin: "City administrator logged in.",
+    super_admin: "Super admin logged in.",
+    citizen: "Citizen logged in.",
+  };
+  appendUserActivityLog(user, "login", roleLoginMessage[user.role] || "User logged in.");
   await user.save();
 
   return {

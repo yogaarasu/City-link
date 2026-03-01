@@ -89,3 +89,4 @@ export const deleteCityAdmin = async (adminId: string) => {
   const response = await api.delete<{ message: string }>(`/super-admin/city-admins/${adminId}`);
   return response.data;
 };
+

@@ -78,7 +78,7 @@ export function ForgotPasswordEmailForm({
           <Field>
             <Button
               type="submit"
-              className="h-10 w-full bg-[#129141] text-white hover:bg-[#0f7c38] text-base"
+              className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Sending OTP" : "Send OTP"}
@@ -88,7 +88,7 @@ export function ForgotPasswordEmailForm({
 
           <FieldDescription className="text-center text-base">
             Remember your password?{" "}
-            <Link to="/auth/login" className="text-[#129141] hover:underline">
+            <Link to="/auth/login" className="text-emerald-500 hover:underline">
               Back to login
             </Link>
           </FieldDescription>
@@ -97,3 +97,4 @@ export function ForgotPasswordEmailForm({
     </div>
   );
 }
+

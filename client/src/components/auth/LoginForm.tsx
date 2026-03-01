@@ -85,7 +85,7 @@ export function LoginForm({
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-3xl font-bold">Welcome Back</h1>
             <FieldDescription className="text-base">
-              Don&apos;t have an account? <Link to="/auth/signup" replace className="text-[#129141] hover:underline" viewTransition>Sign up</Link>
+              Don&apos;t have an account? <Link to="/auth/signup" replace className="text-emerald-500 hover:underline" viewTransition>Sign up</Link>
             </FieldDescription>
           </div>
           <Separator />
@@ -112,7 +112,7 @@ export function LoginForm({
               <FieldLabel htmlFor="password" className="text-base">Password</FieldLabel>
               <Link
                 to="/auth/forgot-password"
-                className="text-sm text-[#129141] hover:underline"
+                className="text-sm text-emerald-500 hover:underline"
                 viewTransition
               >
                 Forgot password?
@@ -141,7 +141,7 @@ export function LoginForm({
           <Field>
             <Button
               type="submit"
-              className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base"
+              className="h-10 w-full  bg-emerald-500 hover:bg-emerald-600 text-white text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Logging in" : "Login"}
@@ -157,3 +157,4 @@ export function LoginForm({
     </div>
   )
 }
+

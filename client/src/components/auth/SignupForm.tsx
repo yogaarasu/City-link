@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -49,6 +49,78 @@ const TAMIL_NADU_DISTRICTS = [
 ].sort();
 
 const SIGNUP_OTP_SESSION_KEY = "citylink:signup-otp-email";
+type ReverseGeocodeAddress = {
+  city?: string;
+  city_district?: string;
+  county?: string;
+  municipality?: string;
+  state_district?: string;
+  suburb?: string;
+  town?: string;
+  village?: string;
+};
+
+type ReverseGeocodeResponse = {
+  display_name?: string;
+  address?: ReverseGeocodeAddress;
+};
+
+const normalizeDistrictValue = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/\bdistrict\b/g, "")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const matchTamilNaduDistrict = (candidates: string[]) => {
+  const normalizedCandidates = candidates
+    .map((item) => normalizeDistrictValue(item))
+    .filter(Boolean);
+
+  return TAMIL_NADU_DISTRICTS.find((district) => {
+    const normalizedDistrict = normalizeDistrictValue(district);
+    return normalizedCandidates.some(
+      (candidate) =>
+        candidate === normalizedDistrict ||
+        candidate.includes(normalizedDistrict) ||
+        normalizedDistrict.includes(candidate)
+    );
+  });
+};
+
+const resolveDistrictFromReverseGeocode = (data: ReverseGeocodeResponse) => {
+  const address = data.address ?? {};
+  const displayParts = (data.display_name ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return (
+    matchTamilNaduDistrict([
+      address.state_district ?? "",
+      address.county ?? "",
+      address.city_district ?? "",
+      address.city ?? "",
+      address.town ?? "",
+      address.village ?? "",
+      address.municipality ?? "",
+      address.suburb ?? "",
+      ...displayParts,
+    ]) ?? ""
+  );
+};
+
+const reverseGeocode = async (lat: number, lng: number) => {
+  try {
+    const response = await api.get<ReverseGeocodeResponse>("/geocode/reverse", {
+      params: { lat, lng },
+    });
+    return response.data;
+  } catch {
+    return null;
+  }
+};
 
 // 1. Define the Validation Schema
 const signupSchema = z.object({
@@ -74,6 +146,7 @@ function AddressMapHelper({
 }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
   const map = useMap();
+  const latestRequestId = useRef(0);
 
   useMapEvents({
     async click(e: L.LeafletMouseEvent) { 
@@ -83,27 +156,33 @@ function AddressMapHelper({
   });
 
   const fetchAddress = async (lat: number, lng: number) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-      const data = await res.json();
-      if (data && data.display_name) {
-        const exactDistrict = data.address.state_district
-          || data.address.county
-          || data.address.city
-          || "";
-        onAddressSelect(data.display_name, exactDistrict);
-      }
-    } catch (error) {
-      console.error("Failed to fetch address", error);
+    const requestId = latestRequestId.current + 1;
+    latestRequestId.current = requestId;
+
+    const data = await reverseGeocode(lat, lng);
+    if (!data) {
+      toast.error("Unable to fetch location details. Please try again.");
+      return;
     }
+
+    if (requestId !== latestRequestId.current) {
+      return;
+    }
+
+    const district = resolveDistrictFromReverseGeocode(data);
+    onAddressSelect(data.display_name ?? "", district);
   };
 
   const locateUser = () => {
-    map.locate().on("locationfound", async function (e: L.LocationEvent) {
+    map.once("locationfound", async function (e: L.LocationEvent) {
       setPosition(e.latlng);
       map.flyTo(e.latlng, map.getZoom());
       await fetchAddress(e.latlng.lat, e.latlng.lng);
     });
+    map.once("locationerror", () => {
+      toast.error("Unable to access your location. Please pin manually on map.");
+    });
+    map.locate();
   };
 
   return (
@@ -161,7 +240,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-3xl font-bold">Create an Account</h1>
             <FieldDescription className="text-base">
-              Already have an account? <Link to="/auth/login" replace className="text-[#129141] hover:underline" viewTransition>Log in</Link>
+              Already have an account? <Link to="/auth/login" replace className="text-emerald-500  hover:underline" viewTransition>Log in</Link>
             </FieldDescription>
           </div>
           <Separator />
@@ -235,7 +314,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
               <button
                 type="button"
                 onClick={() => setShowMap(!showMap)}
-                className="text-sm text-[#129141] flex items-center gap-1 hover:underline"
+                className="text-sm text-emerald-500 flex items-center gap-1 hover:underline"
               >
                 <MapPin className="w-3 h-3" />
                 {showMap ? "Hide Map" : "Pin Location"}
@@ -243,9 +322,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             </div>
 
             {showMap && (
-              <div className="h-50 w-full rounded-md overflow-hidden border border-border relative mb-2 z-0">
+              <div className="h-60 w-full rounded-md overflow-hidden border border-border relative mb-2 z-0">
                 <MapContainer
-                  center={[11.0168, 76.9558]}
+                  center={[11.136137,79.077626]}
                   zoom={12}
                   scrollWheelZoom={true}
                   style={{ height: '100%', width: '100%' }}
@@ -259,15 +338,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                       setValue("address", fetchedAddress, { shouldValidate: true });
 
                       if (fetchedDistrict) {
-                        const cleanDistrict = fetchedDistrict.replace(" District", "");
-                        // Soft-match map data with our official dropdown list to prevent select value crashing
-                        const matchedDistrict = TAMIL_NADU_DISTRICTS.find(
-                          (d) => cleanDistrict.toLowerCase().includes(d.toLowerCase()) || d.toLowerCase().includes(cleanDistrict.toLowerCase())
-                        );
-                        
-                        if (matchedDistrict) {
-                          setValue("district", matchedDistrict, { shouldValidate: true });
-                        }
+                        setValue("district", fetchedDistrict, { shouldValidate: true });
                       }
                     }}
                   />
@@ -320,7 +391,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           </div>
 
           <Field className="pt-4">
-            <Button type="submit" className="h-10 w-full bg-[#129141] hover:bg-[#0f7c38] text-white text-base" disabled={isSubmitting}>
+            <Button type="submit" className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-base" disabled={isSubmitting}>
               {isSubmitting ? "Creating..." : "Create Account"}
             </Button>
           </Field>
@@ -333,3 +404,4 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
     </div>
   )
 }
+

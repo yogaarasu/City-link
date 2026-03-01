@@ -84,7 +84,7 @@ const CitizenDashboard = () => {
   return (
     <div className="space-y-6">
       <Card className="border-0 bg-linear-to-r from-emerald-600 to-teal-600 text-white">
-        <CardContent className="space-y-1.5 px-5 py-4 md:px-6 md:py-5">
+        <CardContent className="space-y-1.5 px-6 py-4 md:px-6 md:py-5">
           <h1 className="text-2xl font-bold md:text-3xl">Welcome, {user?.name ?? "Citizen"}!</h1>
           <p className="text-base text-white/90 md:text-lg">
             Connected to <span className="font-semibold underline">{user?.district}</span>. Report

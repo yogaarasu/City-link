@@ -8,10 +8,12 @@ import { ProfileInfoSection } from "@/modules/citizen/settings/components/Profil
 import { SecuritySection } from "@/modules/citizen/settings/components/SecuritySection";
 import { SettingsTabs } from "@/modules/citizen/settings/components/SettingsTabs";
 import type { SettingsTab } from "@/modules/citizen/settings/types";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const Settings = () => {
   const navigate = useNavigate();
   const clearUser = useUserState((state) => state.clearUser);
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   const onLogout = () => {
@@ -29,9 +31,9 @@ const Settings = () => {
       <div className="space-y-1">
         <h1 className="group flex items-center gap-2 text-4xl font-bold">
           <SettingsIcon className="h-8 w-8 transition-transform group-hover:animate-spin" />
-          Settings
+          {t("settings")}
         </h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+        <p className="text-muted-foreground">{t("settingsSubtitle")}</p>
       </div>
 
       <SettingsTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -50,3 +52,4 @@ const Settings = () => {
 };
 
 export default Settings;
+

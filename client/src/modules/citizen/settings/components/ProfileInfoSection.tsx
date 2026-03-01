@@ -158,3 +158,4 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
     </Card>
   );
 };
+

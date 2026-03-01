@@ -20,3 +20,4 @@ export const statusToColor = (status: IIssue["status"]) => {
   if (status === "resolved") return "#16a34a";
   return "#ef4444";
 };
+

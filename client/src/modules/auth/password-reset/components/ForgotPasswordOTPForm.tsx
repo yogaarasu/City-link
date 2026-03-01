@@ -125,16 +125,17 @@ export function ForgotPasswordOTPForm({
               onChange={setOtp}
               id="otp"
               required
-              containerClassName="gap-4"
+              containerClassName="gap-4 justify-center"
               disabled={isVerifying}
+              
             >
-              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
+              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
                 <InputOTPSlot index={2} />
               </InputOTPGroup>
               <InputOTPSeparator />
-              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-base">
+              <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-10 *:data-[slot=input-otp-slot]:w-10 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
                 <InputOTPSlot index={3} />
                 <InputOTPSlot index={4} />
                 <InputOTPSlot index={5} />
@@ -150,7 +151,7 @@ export function ForgotPasswordOTPForm({
                   type="button"
                   onClick={handleResend}
                   disabled={isResending}
-                  className="font-semibold text-[#129141]"
+                  className="font-semibold text-emerald-500 hover:text-emerald-600"
                 >
                   Resend OTP
                 </Button>
@@ -161,7 +162,7 @@ export function ForgotPasswordOTPForm({
           <Field>
             <Button
               type="submit"
-              className="h-10 w-full bg-[#129141] text-white hover:bg-[#0f7c38] text-base"
+              className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-base"
               disabled={isVerifying}
             >
               {isVerifying ? "Verifying" : "Verify OTP"}
@@ -171,7 +172,7 @@ export function ForgotPasswordOTPForm({
 
           <FieldDescription className="text-center text-base">
             Wrong email?{" "}
-            <Link to="/auth/forgot-password" className="text-[#129141] hover:underline">
+            <Link to="/auth/forgot-password" className="text-emerald-500 hover:underline">
               Try another email
             </Link>
           </FieldDescription>
@@ -180,3 +181,4 @@ export function ForgotPasswordOTPForm({
     </div>
   );
 }
+

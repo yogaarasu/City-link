@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
-import { ISSUE_CATEGORIES, ISSUE_STATUS } from "../modules/issues/issue.constants.js";
+import {
+  ISSUE_CATEGORIES,
+  ISSUE_REJECTION_REASONS,
+  ISSUE_STATUS,
+} from "../modules/issues/issue.constants.js";
 
 const IssueStatusLogSchema = new mongoose.Schema(
   {
@@ -84,6 +88,19 @@ const IssueSchema = new mongoose.Schema(
         message: "Photos can be up to 5 files only.",
       },
     },
+    resolvedEvidencePhotos: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (val) => Array.isArray(val) && val.length <= 5,
+        message: "Resolved evidence photos can be up to 5 files only.",
+      },
+    },
+    rejectionReason: {
+      type: String,
+      enum: ISSUE_REJECTION_REASONS,
+      default: null,
+    },
     status: {
       type: String,
       enum: ISSUE_STATUS,
@@ -109,6 +126,29 @@ const IssueSchema = new mongoose.Schema(
     votes: {
       type: [IssueVoteSchema],
       default: [],
+    },
+    review: {
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: null,
+      },
+      comment: {
+        type: String,
+        trim: true,
+        maxlength: 400,
+        default: "",
+      },
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+      updatedAt: {
+        type: Date,
+        default: null,
+      },
     },
   },
   { timestamps: true }

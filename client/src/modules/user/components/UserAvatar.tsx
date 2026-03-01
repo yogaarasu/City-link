@@ -33,3 +33,4 @@ export const UserAvatar = ({ name, avatar, className }: UserAvatarProps) => {
     </div>
   );
 };
+

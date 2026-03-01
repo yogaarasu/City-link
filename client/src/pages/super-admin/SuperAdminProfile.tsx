@@ -6,8 +6,6 @@ import { useUserState } from "@/store/user.store";
 
 const SuperAdminProfilePage = () => {
   const user = useUserState((state) => state.user);
-  const normalizedState =
-    user?.adminAccess === "inactive" || user?.adminAccess === "stop" ? "Inactive" : "Active";
 
   if (!user) {
     return (
@@ -43,7 +41,6 @@ const SuperAdminProfilePage = () => {
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <div className="rounded-lg border px-3 py-2 text-sm font-semibold">{user.role}</div>
-                <div className="rounded-lg border px-3 py-2 text-sm font-semibold">{normalizedState}</div>
                 <div className="rounded-lg border px-3 py-2 text-sm font-semibold">
                   {user.district || "State Admin"}
                 </div>
@@ -61,3 +58,4 @@ const SuperAdminProfilePage = () => {
 };
 
 export default SuperAdminProfilePage;
+

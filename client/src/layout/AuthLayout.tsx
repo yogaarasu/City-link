@@ -1,7 +1,7 @@
-import { ThemeToggler } from "@/components/ThemeToggler"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { Outlet, useNavigate } from "react-router-dom"
+import { ThemeToggler } from "@/components/ThemeToggler";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { Outlet, useNavigate } from "react-router-dom";
 
 export const AuthLayout = () => {
   const navigate = useNavigate();
@@ -18,11 +18,13 @@ export const AuthLayout = () => {
           >
             <ArrowLeft strokeWidth={3} className="h-6 w-6" />
           </Button>
-          <h1 className="font-bold text-[#129141] text-3xl">CityLink</h1>
+          <h1 className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
+            CityLink
+          </h1>
         </div>
         <ThemeToggler />
       </header>
       <Outlet />
     </>
-  )
-}
+  );
+};

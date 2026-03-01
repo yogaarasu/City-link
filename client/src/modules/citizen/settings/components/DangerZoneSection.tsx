@@ -86,3 +86,4 @@ export const DangerZoneSection = ({ onAccountDeleted }: DangerZoneSectionProps) 
     </Card>
   );
 };
+

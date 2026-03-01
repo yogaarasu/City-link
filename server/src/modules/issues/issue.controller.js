@@ -1,13 +1,23 @@
 import { z } from "zod";
 import {
   createIssue,
+  getCityAdminIssueStats,
   getIssueById,
   getMyIssueStats,
+  listCityAdminIssues,
   listCommunityIssues,
   listMyIssues,
+  updateIssueStatusByCityAdmin,
+  reviewResolvedIssue,
   voteIssue,
 } from "./issue.service.js";
-import { createIssueSchema, listIssueQuerySchema, voteIssueSchema } from "./issue.validation.js";
+import {
+  createIssueSchema,
+  listIssueQuerySchema,
+  updateIssueStatusSchema,
+  voteIssueSchema,
+  reviewIssueSchema,
+} from "./issue.validation.js";
 
 const handleError = (error, res, next) => {
   if (error instanceof z.ZodError) {
@@ -62,6 +72,25 @@ export const getMyIssueStatsController = async (req, res, next) => {
   }
 };
 
+export const listCityAdminIssuesController = async (req, res, next) => {
+  try {
+    const query = listIssueQuerySchema.parse(req.query);
+    const issues = await listCityAdminIssues(query, req.authUser);
+    return res.status(200).json({ issues });
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+export const getCityAdminIssueStatsController = async (req, res, next) => {
+  try {
+    const stats = await getCityAdminIssueStats(req.authUser);
+    return res.status(200).json({ stats });
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
 export const getIssueByIdController = async (req, res, next) => {
   try {
     const issue = await getIssueById(req.params.issueId);
@@ -77,6 +106,32 @@ export const voteIssueController = async (req, res, next) => {
     const issue = await voteIssue(req.params.issueId, type, req.authUser);
     return res.status(200).json({
       message: "Vote updated.",
+      issue,
+    });
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+export const updateIssueStatusByCityAdminController = async (req, res, next) => {
+  try {
+    const payload = updateIssueStatusSchema.parse(req.body);
+    const issue = await updateIssueStatusByCityAdmin(req.params.issueId, payload, req.authUser);
+    return res.status(200).json({
+      message: "Issue status updated successfully.",
+      issue,
+    });
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+export const reviewIssueController = async (req, res, next) => {
+  try {
+    const payload = reviewIssueSchema.parse(req.body);
+    const issue = await reviewResolvedIssue(req.params.issueId, payload, req.authUser);
+    return res.status(200).json({
+      message: "Review submitted successfully.",
       issue,
     });
   } catch (error) {

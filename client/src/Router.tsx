@@ -15,7 +15,6 @@ import ReportIssue from "./pages/citizen/ReportIssue";
 import CommunityIssues from "./pages/citizen/CommunityIssues";
 import Profile from "./pages/citizen/Profile";
 import Settings from "./pages/citizen/Settings";
-import RoleDashboardPlaceholder from "./pages/admin/RoleDashboardPlaceholder";
 import SuperAdminLayout from "./modules/super-admin/layout/SuperAdminLayout";
 import SystemOverviewPage from "./pages/super-admin/SystemOverview";
 import ManageCityAdminsPage from "./pages/super-admin/ManageCityAdmins";
@@ -25,9 +24,12 @@ import CityAdminEditPage from "./pages/super-admin/CityAdminEdit";
 import CityDistrictAdminsPage from "./pages/super-admin/CityDistrictAdmins";
 import SuperAdminSettingsPage from "./pages/super-admin/SuperAdminSettings";
 import SuperAdminProfilePage from "./pages/super-admin/SuperAdminProfile";
+import CityAdminLayout from "./modules/city-admin/layout/CityAdminLayout";
+import CityAdminDashboard from "./pages/city-admin/CityAdminDashboard";
+import CityAdminManageIssues from "./pages/city-admin/CityAdminManageIssues";
 
 const Router = () => {
-  const routes = createBrowserRouter([
+  const router = createBrowserRouter([
     { path: "/", element: <Home /> },
     {
       path: "/auth", element: <AuthLayout />, children: [
@@ -55,12 +57,18 @@ const Router = () => {
       ],
     },
     {
-      path: "/city-admin/dashboard",
+      path: "/city-admin",
       element: (
         <ProtectedRoute allowedRoles={["city_admin"]}>
-          <RoleDashboardPlaceholder title="City Admin Dashboard" />
+          <CityAdminLayout />
         </ProtectedRoute>
       ),
+      children: [
+        { path: "dashboard", element: <CityAdminDashboard /> },
+        { path: "manage-issues", element: <CityAdminManageIssues /> },
+        { path: "settings", element: <SuperAdminSettingsPage /> },
+        { path: "profile", element: <SuperAdminProfilePage /> },
+      ],
     },
     {
       path: "/super-admin",
@@ -83,7 +91,8 @@ const Router = () => {
     { path: "*", element: <PageNotFound /> },
   ]);
 
-  return <RouterProvider router={routes} />
+  return <RouterProvider router={router} />
 }
 
 export default Router
+

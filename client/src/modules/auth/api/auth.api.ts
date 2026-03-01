@@ -6,3 +6,4 @@ export interface LoginPayload {
 }
 
 export const login = (payload: LoginPayload) => api.post("/auth/login", payload);
+

@@ -8,8 +8,9 @@ export interface IUser {
   address: string;
   district: string;
   role: UserRole;
-  adminAccess?: "active" | "inactive" | "start" | "stop";
+   adminAccess?: "active" | "inactive" | "start" | "stop";
   lastLoginAt?: string | null;
   isVerified: boolean;
   avatar?: string;
 }
+

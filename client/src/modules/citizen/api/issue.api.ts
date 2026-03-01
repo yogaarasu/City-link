@@ -53,3 +53,9 @@ export const voteIssue = async (issueId: string, type: "up" | "down") => {
   });
   return response.data.issue;
 };
+
+export const reviewIssue = async (issueId: string, payload: { rating: number; comment?: string }) => {
+  const response = await api.patch<{ message: string; issue: IIssue }>(`/issues/${issueId}/review`, payload);
+  return response.data;
+};
+

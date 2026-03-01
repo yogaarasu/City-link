@@ -96,6 +96,47 @@ export const getMyIssueStats = async (authUser) => {
   return map;
 };
 
+export const listCityAdminIssues = async (query, authUser) => {
+  const filters = {
+    ...buildFilters(query),
+    district: authUser.district,
+  };
+
+  return Issue.find(filters)
+    .populate({ path: "reportedBy", select: "name email district role avatar" })
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
+export const getCityAdminIssueStats = async (authUser) => {
+  const stats = await Issue.aggregate([
+    { $match: { district: authUser.district } },
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const map = {
+    total: 0,
+    pending: 0,
+    in_progress: 0,
+    resolved: 0,
+    rejected: 0,
+  };
+
+  for (const item of stats) {
+    if (item?._id && typeof map[item._id] === "number") {
+      map[item._id] = item.count;
+      map.total += item.count;
+    }
+  }
+
+  return map;
+};
+
 export const getIssueById = async (issueId) => {
   if (!mongoose.Types.ObjectId.isValid(issueId)) {
     throw createHttpError(400, "Invalid issue id.");
@@ -158,5 +199,88 @@ export const voteIssue = async (issueId, type, authUser) => {
   issue.votes = votes;
   await issue.save();
 
+  return issue;
+};
+
+export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) => {
+  if (!mongoose.Types.ObjectId.isValid(issueId)) {
+    throw createHttpError(400, "Invalid issue id.");
+  }
+
+  const issue = await Issue.findById(issueId).populate({
+    path: "reportedBy",
+    select: "name email district role avatar",
+  });
+
+  if (!issue) {
+    throw createHttpError(404, "Issue not found.");
+  }
+
+  if (String(issue.district).toLowerCase() !== String(authUser.district).toLowerCase()) {
+    throw createHttpError(403, "You can only manage issues from your assigned district.");
+  }
+
+  const statusDescriptions = {
+    pending: "Issue marked as pending for review.",
+    in_progress: "Issue moved to in progress.",
+    resolved: "Issue marked as resolved.",
+    rejected: payload.rejectionReason
+      ? `Issue rejected: ${payload.rejectionReason}.`
+      : "Issue rejected.",
+  };
+
+  issue.status = payload.status;
+
+  if (payload.status === "resolved") {
+    issue.resolvedEvidencePhotos = payload.resolvedEvidencePhotos;
+    issue.rejectionReason = null;
+  } else if (payload.status === "rejected") {
+    issue.rejectionReason = payload.rejectionReason;
+    issue.resolvedEvidencePhotos = [];
+  } else {
+    issue.rejectionReason = null;
+    issue.resolvedEvidencePhotos = [];
+  }
+
+  issue.statusLogs.push({
+    status: payload.status,
+    description: payload.description || statusDescriptions[payload.status],
+  });
+
+  await issue.save();
+  return issue;
+};
+
+export const reviewResolvedIssue = async (issueId, payload, authUser) => {
+  if (!mongoose.Types.ObjectId.isValid(issueId)) {
+    throw createHttpError(400, "Invalid issue id.");
+  }
+
+  const issue = await Issue.findById(issueId).populate({
+    path: "reportedBy",
+    select: "name email district role avatar",
+  });
+
+  if (!issue) {
+    throw createHttpError(404, "Issue not found.");
+  }
+
+  const issueOwnerId = String(issue.reportedBy?._id || issue.reportedBy);
+  if (issueOwnerId !== String(authUser._id)) {
+    throw createHttpError(403, "Only the reporting citizen can review this issue.");
+  }
+
+  if (issue.status !== "resolved") {
+    throw createHttpError(409, "You can review an issue only after it is resolved.");
+  }
+
+  issue.review = {
+    rating: payload.rating,
+    comment: payload.comment || "",
+    reviewedBy: authUser._id,
+    updatedAt: new Date(),
+  };
+
+  await issue.save();
   return issue;
 };
