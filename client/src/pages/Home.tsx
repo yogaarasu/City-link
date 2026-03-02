@@ -67,7 +67,7 @@ const Home = () => {
               alt="CityLink logo"
               className="h-9 w-9 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
             />
-            <span className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold tracking-tight text-transparent">
+            <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold tracking-tight text-transparent">
               CityLink
             </span>
           </Link>
@@ -120,7 +120,7 @@ const Home = () => {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </span>
               Welcome to{" "}
-              <span className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
                 CityLink
               </span>
             </motion.div>
@@ -130,7 +130,7 @@ const Home = () => {
               className="max-w-5xl text-6xl font-extrabold tracking-tighter sm:text-7xl md:text-8xl lg:text-9xl"
             >
               Fix your city. <br />
-              <span className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
                 Instantly.
               </span>
             </motion.h1>
@@ -239,7 +239,7 @@ const Home = () => {
                           repeat: Infinity,
                           ease: "linear",
                         }}
-                        className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-teal-500"
+                        className="absolute inset-0 bg-linear-to-r from-red-500 via-red-400 to-teal-500"
                       ></motion.div>
                     </div>
 
@@ -325,7 +325,7 @@ const Home = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3, ease: customEase }}
-              className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 to-teal-600 p-8 text-white md:col-span-2 shadow-lg"
+              className="group relative overflow-hidden rounded-[2rem] bg-linear-to-br from-emerald-500 to-teal-600 p-8 text-white md:col-span-2 shadow-lg"
             >
               <div className="relative z-10 grid w-full gap-8 md:grid-cols-[1.2fr_0.8fr]">
                 <div>
@@ -347,7 +347,7 @@ const Home = () => {
               </div>
               {/* Decorative Circle */}
               <div className="absolute -right-10 top-1/2 hidden -translate-y-1/2 md:block">
-                <div className="h-[250px] w-[250px] rounded-full border-[30px] border-white/10 transition-transform duration-700 group-hover:scale-110"></div>
+                <div className="h-62.5 w-62.5 rounded-full border-30 border-white/10 transition-transform duration-700 group-hover:scale-110"></div>
               </div>
             </motion.div>
           </div>
@@ -469,7 +469,7 @@ const Home = () => {
                   alt="CityLink logo"
                   className="h-7 w-7 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
                 />
-                <span className="bg-gradient-to-r bg-white bg-clip-text text-lg font-bold tracking-tight text-transparent">
+                <span className="bg-linear-to-r bg-white bg-clip-text text-lg font-bold tracking-tight text-transparent">
                   CityLink
                 </span>
               </Link>

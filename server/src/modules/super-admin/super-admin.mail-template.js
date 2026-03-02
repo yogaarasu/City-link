@@ -41,7 +41,7 @@ export const cityAdminWelcomeTemplate = ({
                     <strong>Assigned District:</strong> ${district}<br />
                     <strong>Login Email:</strong> ${email}<br />
                     <strong>Temporary Password:</strong> ${password}<br />
-                    <strong>Portal:</strong> City-Link Admin Login
+                    <strong>Portal:</strong> <a href="https://city-link-portal.vercel.app" style="text-decoration: none;">City-Link Admin Login</a>
                   </td>
                 </tr>
               </table>

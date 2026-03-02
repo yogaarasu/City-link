@@ -78,7 +78,7 @@ export const CitizenLayout = () => {
   const sidebar = (
     <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="flex items-center justify-between px-4 py-4">
-        <Link to="/citizen/dashboard" className="flex items-center gap-2 text-2xl font-bold text-emerald-600">
+        <Link to="/citizen/dashboard" className="flex items-center gap-2 text-3xl font-bold text-emerald-500">
           <img src="/citylink-logo.png" alt="CityLink logo" className="h-7 w-7 rounded-md" />
           CityLink
         </Link>

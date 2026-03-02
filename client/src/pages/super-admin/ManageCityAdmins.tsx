@@ -136,7 +136,7 @@ const ManageCityAdminsPage = () => {
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="sm:max-w-140">
           <DialogHeader>
             <DialogTitle>Add Administrator</DialogTitle>
             <DialogDescription>
@@ -216,7 +216,7 @@ const ManageCityAdminsPage = () => {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-sm">
+              <table className="w-full min-w-205 border-collapse text-sm">
                 <thead className="bg-muted/40">
                   <tr className="text-left">
                     <th className="px-4 py-3 font-semibold">Admin ID</th>

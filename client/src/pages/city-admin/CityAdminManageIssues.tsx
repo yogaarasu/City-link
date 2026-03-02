@@ -93,8 +93,8 @@ const CityAdminManageIssues = () => {
         <CardContent className="flex flex-col gap-2 pt-4 lg:flex-row lg:items-center">
           {loading ? (
             <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center">
-              <Skeleton className="h-11 w-full rounded-lg lg:w-[560px]" />
-              <Skeleton className="h-11 w-full rounded-lg lg:w-[260px]" />
+              <Skeleton className="h-11 w-full rounded-lg lg:w-140" />
+              <Skeleton className="h-11 w-full rounded-lg lg:w-65" />
             </div>
           ) : (
             <>
@@ -105,7 +105,7 @@ const CityAdminManageIssues = () => {
                       key={item.value}
                       size="sm"
                       variant={statusFilter === item.value ? "default" : "outline"}
-                      className={statusFilter === item.value ? "bg-[#129141] text-white hover:bg-[#0f7c38]" : "border-transparent bg-transparent"}
+                      className={statusFilter === item.value ? " bg-emerald-500 hover:bg-emerald-600 text-white" : "border-transparent bg-transparent"}
                       onClick={() => setStatusFilter(item.value)}
                     >
                       {item.value === "all" ? t("all") : item.label}
@@ -114,9 +114,9 @@ const CityAdminManageIssues = () => {
                 </div>
               </div>
 
-              <div className="w-fit max-w-full shrink-0 rounded-lg border bg-background/80 lg:h-12">
+              <div className="flex items-center px-1 w-fit max-w-full shrink-0 rounded-lg border bg-background/80 lg:h-12">
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="h-10 w-auto min-w-[210px] border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0 lg:h-full">
+                  <SelectTrigger className="h-10 w-auto min-w-52.5 border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0 lg:h-full">
                     <div className="pointer-events-none inline-flex items-center gap-2">
                       <Filter className="h-4 w-4 text-muted-foreground" />
                       <SelectValue placeholder={t("filterByCategory")} />

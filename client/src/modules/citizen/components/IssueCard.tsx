@@ -49,7 +49,7 @@ export const IssueCard = ({
     >
       <CardContent className="p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start">
-          <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted/60 md:h-auto md:w-auto md:max-w-[256px] md:min-w-[136px] md:shrink-0">
+          <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted/60 md:h-auto md:w-auto md:max-w-[256px] md:min-w-34 md:shrink-0">
             {issue.photos[0] ? (
               <img
                 src={issue.photos[0]}
@@ -132,7 +132,7 @@ export const IssueCard = ({
                   <Share2 className="h-4 w-4" />
                 </Button>
                 <Button
-                  className="rounded-md bg-[#129141] text-white hover:bg-[#0f7c38]"
+                  className="rounded-md  bg-emerald-500 hover:bg-emerald-600 text-white"
                   onClick={(event) => {
                     event.stopPropagation();
                     onViewDetails(issue);

@@ -18,7 +18,7 @@ export const AuthLayout = () => {
           >
             <ArrowLeft strokeWidth={3} className="h-6 w-6" />
           </Button>
-          <h1 className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
+          <h1 className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
             CityLink
           </h1>
         </div>
