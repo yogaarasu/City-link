@@ -195,7 +195,7 @@ export const CitizenLayout = () => {
             )}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-[4px]" />
+            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-lg" />
             CityLink
           </h1>
         </div>
@@ -289,7 +289,7 @@ export const CitizenLayout = () => {
           {sidebar}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 scrollbar-hide overflow-y-auto p-4 md:p-8">
           <Outlet />
         </main>
       </div>

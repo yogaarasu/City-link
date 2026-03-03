@@ -136,7 +136,7 @@ const ManageCityAdminsPage = () => {
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-140">
+        <DialogContent className="sm:max-w-140" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add Administrator</DialogTitle>
             <DialogDescription>

@@ -8,7 +8,7 @@ export const AuthLayout = () => {
 
   return (
     <>
-      <header className="sticky top-0 p-3 flex justify-between backdrop-blur-2xl">
+      <header className="sticky z-20 top-0 p-3 flex justify-between backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <Button
             size="icon"

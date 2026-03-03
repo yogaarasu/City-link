@@ -74,7 +74,7 @@ export const IssueDetailsModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 md:p-4">
-      <div className="bg-background max-h-[95svh] w-full max-w-5xl overflow-y-auto rounded-xl border shadow-2xl px-[5px] py-[5px]">
+      <div className="bg-background max-h-[95svh] w-full max-w-5xl overflow-y-auto scrollbar-hide rounded-xl border shadow-2xl px-1.25 py-1.25">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b bg-background px-3 py-2">
           <div>
             <h2 className="text-xl font-semibold">{issue.title}</h2>
