@@ -64,7 +64,7 @@ const CityAdminLayout = () => {
   const sidebar = (
     <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="flex items-center justify-between px-4 py-4">
-        <Link to="/city-admin/dashboard" className="flex items-center gap-2 text-4xl font-bold text-[#129141]">
+        <Link to="/city-admin/dashboard" className="flex items-center gap-2 text-3xl font-bold text-emerald-500">
           <img src="/citylink-logo.png" alt="CityLink logo" className="h-8 w-8 rounded-md" />
           CityLink
         </Link>

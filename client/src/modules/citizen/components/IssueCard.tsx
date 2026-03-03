@@ -132,7 +132,7 @@ export const IssueCard = ({
                   <Share2 className="h-4 w-4" />
                 </Button>
                 <Button
-                  className="rounded-md  bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="rounded-md  bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={(event) => {
                     event.stopPropagation();
                     onViewDetails(issue);

@@ -98,7 +98,7 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
                   <Share2 className="h-4 w-4" />
                 </Button>
                 <Button
-                  className="rounded-md bg-[#129141] text-white hover:bg-[#0f7c38]"
+                  className="rounded-md text-white bg-emerald-600 hover:bg-emerald-700"
                   onClick={(event) => {
                     event.stopPropagation();
                     onOpen(issue);
