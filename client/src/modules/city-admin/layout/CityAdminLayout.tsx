@@ -187,7 +187,7 @@ const CityAdminLayout = () => {
             )}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-[4px]" />
+            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-lg" />
             CityLink
           </h1>
         </div>
