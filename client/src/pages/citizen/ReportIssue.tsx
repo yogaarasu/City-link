@@ -302,9 +302,7 @@ const ReportIssue = () => {
                     center={currentPosition}
                     zoom={13}
                     className="h-full w-full"
-                    whenCreated={(mapInstance) => {
-                      mapRef.current = mapInstance;
-                    }}
+                    ref={mapRef}
                   >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
