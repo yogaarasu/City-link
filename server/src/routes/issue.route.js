@@ -13,6 +13,7 @@ import {
   updateIssueStatusByCityAdminController,
   voteIssueController,
 } from "../modules/issues/issue.controller.js";
+import { reportIssueRateLimit } from "../modules/issues/middleware/report-issue-rate-limit.middleware.js";
 
 export const issueRoutes = express.Router();
 
@@ -28,4 +29,4 @@ issueRoutes.patch("/:issueId/status", requireRoles("city_admin"), updateIssueSta
 issueRoutes.patch("/:issueId/review", requireRoles("citizen"), reviewIssueController);
 issueRoutes.get("/:issueId", getIssueByIdController);
 issueRoutes.post("/:issueId/vote", requireRoles("citizen"), voteIssueController);
-issueRoutes.post("/", requireRoles("citizen"), createIssueController);
+issueRoutes.post("/", requireRoles("citizen"), reportIssueRateLimit, createIssueController);

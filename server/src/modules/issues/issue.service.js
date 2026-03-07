@@ -9,7 +9,6 @@ import {
   uploadReportedIssuePhotos,
   uploadResolvedIssueEvidencePhotos,
 } from "./issue-photo-upload.service.js";
-import { redis } from "../../lib/redis.js";
 import { transporter } from "../../lib/mailer.js";
 import { SMTP_USER } from "../../../utils/constants.js";
 
@@ -19,32 +18,11 @@ const createHttpError = (statusCode, message) => {
   return error;
 };
 
-const REPORT_RATE_LIMIT = 5;
-const REPORT_RATE_WINDOW_SECONDS = 15 * 60;
 const ISSUE_VERIFY_SLA_HOURS = 24;
 const ISSUE_COMPLETE_SLA_DAYS = 7;
 
 const PENDING_ESCALATION_REASON = "Not verified within 24 hours.";
 const COMPLETION_ESCALATION_REASON = "Not completed within 7 days.";
-
-const getReportRateKey = (userId) =>
-  `issue:report-rate:${String(userId)}:${Math.floor(Date.now() / (REPORT_RATE_WINDOW_SECONDS * 1000))}`;
-
-const enforceIssueReportRateLimit = async (userId) => {
-  const key = getReportRateKey(userId);
-  const count = await redis.incr(key);
-
-  if (count === 1) {
-    await redis.expire(key, REPORT_RATE_WINDOW_SECONDS);
-  }
-
-  if (count > REPORT_RATE_LIMIT) {
-    throw createHttpError(
-      429,
-      "Rate limit exceeded. You can report up to 5 issues every 15 minutes."
-    );
-  }
-};
 
 const sendIssueStatusChangeEmail = async (issue) => {
   const recipient = String(issue?.reportedBy?.email || "").trim();
@@ -240,8 +218,6 @@ const buildFilters = (query) => {
 };
 
 export const createIssue = async (payload, authUser) => {
-  await enforceIssueReportRateLimit(authUser._id);
-
   const uploadedPhotos = await uploadReportedIssuePhotos(payload.photos || []);
 
   const issue = await Issue.create({

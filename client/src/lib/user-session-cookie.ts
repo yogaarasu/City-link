@@ -3,7 +3,6 @@ import { getJwtRemainingSeconds, isJwtExpired } from "./jwt-token";
 
 const USER_COOKIE_KEY = "citylink_user";
 const TOKEN_COOKIE_KEY = "citylink_token";
-const LEGACY_STORAGE_KEY = "citylink:user";
 const SESSION_CACHE_KEYS = [
   "citylink:citizen-dashboard-cache",
   "citylink:community-issues-cache:v1",
@@ -36,7 +35,8 @@ const normalizeUser = (value: Partial<IUser> | null | undefined): IUser | null =
 const getCookieValue = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const cookie = document.cookie
-    .split("; ")
+    .split(";")
+    .map((entry) => entry.trim())
     .find((entry) => entry.startsWith(`${name}=`));
   if (!cookie) return null;
   return cookie.substring(name.length + 1);
@@ -72,26 +72,6 @@ const buildCookiePayload = (user: IUser): IUser => {
   };
 };
 
-const readLegacyLocalUser = (): IUser | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (!raw) return null;
-    return normalizeUser(JSON.parse(raw) as Partial<IUser>);
-  } catch {
-    return null;
-  }
-};
-
-const clearLegacyLocalUser = () => {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-  } catch {
-    // ignore storage errors
-  }
-};
-
 const expireCookie = (name: string) => {
   if (typeof document === "undefined") return;
   document.cookie = `${name}=; path=/; max-age=0; samesite=lax`;
@@ -117,7 +97,6 @@ export const setUserCookie = (user: IUser, maxAgeSeconds?: number) => {
   const payload = buildCookiePayload(user);
   const encoded = encodeURIComponent(JSON.stringify(payload));
   document.cookie = `${USER_COOKIE_KEY}=${encoded}; path=/; max-age=${normalizeCookieMaxAge(maxAgeSeconds)}; samesite=lax`;
-  clearLegacyLocalUser();
 };
 
 export const setAuthTokenCookie = (token: string, maxAgeSeconds?: number) => {
@@ -145,28 +124,16 @@ export const getUserFromCookie = (): IUser | null => {
     try {
       const decoded = decodeURIComponent(raw);
       const parsed = JSON.parse(decoded) as Partial<IUser>;
-      const user = normalizeUser(parsed);
-      clearLegacyLocalUser();
-      return user;
+      return normalizeUser(parsed);
     } catch {
-      // fall through to legacy migration
+      return null;
     }
   }
-
-  const legacy = readLegacyLocalUser();
-  if (legacy) {
-    setUserCookie(legacy, getTokenCookieMaxAge(token));
-    clearLegacyLocalUser();
-    return legacy;
-  }
-
-  clearLegacyLocalUser();
   return null;
 };
 
 export const clearUserCookie = () => {
   expireCookie(USER_COOKIE_KEY);
-  clearLegacyLocalUser();
 };
 
 export const getAuthTokenFromCookie = (): string => {
