@@ -1,14 +1,16 @@
 import type { IUser } from "@/types/user";
 import { create } from "zustand";
 import {
-  clearUserCookie,
+  clearAuthSessionCookie,
   getUserFromCookie,
+  setAuthSessionCookie,
   setUserCookie,
 } from "@/lib/user-session-cookie";
 
 interface UserState {
   user: IUser | null;
   setUser: (user: IUser) => void;
+  setAuthSession: (user: IUser, token: string) => void;
   updateUser: (payload: Partial<IUser>) => void;
   clearUser: () => void;
 }
@@ -19,6 +21,10 @@ export const useUserState = create<UserState>((set) => ({
     setUserCookie(user);
     set({ user });
   },
+  setAuthSession: (user, token) => {
+    setAuthSessionCookie(user, token);
+    set({ user });
+  },
   updateUser: (payload) =>
     set((state) => {
       if (!state.user) return state;
@@ -27,7 +33,7 @@ export const useUserState = create<UserState>((set) => ({
       return { user: updated };
     }),
   clearUser: () => {
-    clearUserCookie();
+    clearAuthSessionCookie();
     set({ user: null });
   },
 }));

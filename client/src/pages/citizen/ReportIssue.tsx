@@ -213,7 +213,7 @@ const ReportIssue = () => {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4 max-h-screen">
       <h1 className="text-2xl font-bold md:text-3xl">Report New Issue</h1>
 
       <Card>
@@ -272,7 +272,7 @@ const ReportIssue = () => {
 
               <Field>
                 <FieldLabel>Pin Location on Map</FieldLabel>
-                <div className="relative z-0 h-64 overflow-hidden rounded-xl border md:h-72">
+                <div className="relative z-0 max-h-64 overflow-hidden rounded-xl border md:h-72">
                   <MapContainer center={currentPosition} zoom={13} className="h-full w-full">
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

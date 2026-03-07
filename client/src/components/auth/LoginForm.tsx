@@ -22,7 +22,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
-  const setUser = useUserState((state) => state.setUser);
+  const setAuthSession = useUserState((state) => state.setAuthSession);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +64,11 @@ export function LoginForm({
       setIsSubmitting(true);
       const res = await login({ email, password });
       const user = res.data.user as IUser;
-      setUser(user);
+      if (!res.data.token) {
+        toast.error("Authentication failed. Please try again.");
+        return;
+      }
+      setAuthSession(user, res.data.token);
       toast.success(res.data.message ?? "Login successful");
       navigateByRole(user.role);
     } catch (error: unknown) {

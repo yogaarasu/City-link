@@ -88,7 +88,7 @@ export const CitizenLayout = () => {
           className="md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          <X className="h-5 w-5" />
+          <X className="size-6" />
         </Button>
       </div>
       <Separator className="mx-4 mb-3" />
@@ -188,15 +188,11 @@ export const CitizenLayout = () => {
             className="h-10 w-10 rounded-full p-0 hover:bg-transparent focus-visible:ring-0"
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <HamburgerIcon />
-            )}
+            {!isMobileMenuOpen && <HamburgerIcon />}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-lg" />
-            CityLink
+            <img src="/citylink-logo.png" alt="CityLink logo" className="h-7 w-7 rounded-lg" />
+            <span className="text-xl">Citylink</span>
           </h1>
         </div>
         <Popover open={isMobileProfileMenuOpen} onOpenChange={setIsMobileProfileMenuOpen}>

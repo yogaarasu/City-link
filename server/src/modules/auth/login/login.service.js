@@ -8,6 +8,7 @@ import {
 } from "../../../../utils/constants.js";
 import { appendUserActivityLog } from "../../super-admin/shared/activity-log.js";
 import { getNormalizedAdminAccess } from "../../super-admin/super-admin.constants.js";
+import { signAuthToken } from "../../../lib/jwt.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -86,6 +87,7 @@ export const loginUser = async (email, password) => {
     return {
       message: "Login successful.",
       user: sanitizeUser(superAdmin),
+      token: signAuthToken(superAdmin),
     };
   }
 
@@ -140,5 +142,6 @@ export const loginUser = async (email, password) => {
   return {
     message: "Login successful.",
     user: sanitizeUser(user),
+    token: signAuthToken(user),
   };
 };

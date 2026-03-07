@@ -40,7 +40,7 @@ export function OtpVerification({
 	const [searchParams] = useSearchParams();
 	const isAuthorized = location.state?.isAuthorized;
 	const email = String(searchParams.get("email") || "").trim().toLowerCase();
-	const setUser = useUserState((state) => state.setUser);
+	const setAuthSession = useUserState((state) => state.setAuthSession);
 
 	useEffect(() => {
 		const storedEmail = String(sessionStorage.getItem(SIGNUP_OTP_SESSION_KEY) || "")
@@ -75,7 +75,13 @@ export function OtpVerification({
 			toast.success(res.data.message);
 			sessionStorage.removeItem(SIGNUP_OTP_SESSION_KEY);
 			const user = res.data.user as IUser;
-			setUser(user);
+			const token = String(res.data.token || "");
+			if (!token) {
+				toast.error("Authentication failed. Please login again.");
+				navigate("/auth/login", { replace: true });
+				return;
+			}
+			setAuthSession(user, token);
 			if (user.role === "citizen") {
 				navigate("/citizen/dashboard", { replace: true });
 				return;

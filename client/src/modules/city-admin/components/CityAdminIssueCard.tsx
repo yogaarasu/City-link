@@ -31,7 +31,7 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
       }}
     >
       <CardContent className="p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
           <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted/60 md:h-auto md:w-auto md:max-w-[256px] md:min-w-[136px] md:shrink-0">
             {issue.photos[0] ? (
               <img

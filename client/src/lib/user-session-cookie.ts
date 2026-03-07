@@ -1,6 +1,7 @@
 import type { IUser, UserRole } from "@/types/user";
 
 const USER_COOKIE_KEY = "citylink_user";
+const TOKEN_COOKIE_KEY = "citylink_token";
 const LEGACY_STORAGE_KEY = "citylink:user";
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const COOKIE_SAFE_PAYLOAD_LIMIT = 3500;
@@ -92,6 +93,12 @@ export const setUserCookie = (user: IUser) => {
   clearLegacyLocalUser();
 };
 
+export const setAuthTokenCookie = (token: string) => {
+  if (typeof document === "undefined") return;
+  const encoded = encodeURIComponent(token);
+  document.cookie = `${TOKEN_COOKIE_KEY}=${encoded}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; samesite=lax`;
+};
+
 export const getUserFromCookie = (): IUser | null => {
   if (typeof document === "undefined") return null;
 
@@ -124,5 +131,31 @@ export const clearUserCookie = () => {
     document.cookie = `${USER_COOKIE_KEY}=; path=/; max-age=0; samesite=lax`;
   }
   clearLegacyLocalUser();
+};
+
+export const getAuthTokenFromCookie = (): string => {
+  const value = getCookieValue(TOKEN_COOKIE_KEY);
+  if (!value) return "";
+
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return "";
+  }
+};
+
+export const clearAuthTokenCookie = () => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${TOKEN_COOKIE_KEY}=; path=/; max-age=0; samesite=lax`;
+};
+
+export const setAuthSessionCookie = (user: IUser, token: string) => {
+  setUserCookie(user);
+  setAuthTokenCookie(token);
+};
+
+export const clearAuthSessionCookie = () => {
+  clearUserCookie();
+  clearAuthTokenCookie();
 };
 

@@ -1,15 +1,41 @@
 import { User } from "../models/user.model.js";
 import mongoose from "mongoose";
 import { getNormalizedAdminAccess } from "../modules/super-admin/super-admin.constants.js";
+import { verifyAuthToken } from "../lib/jwt.js";
+
+const normalizeRole = (role) => {
+  const value = String(role || "").trim().toLowerCase();
+  if (!value) return "";
+
+  if (value === "citizen") return "citizen";
+  if (["cityadmin", "city_admin", "city-admin"].includes(value)) return "city_admin";
+  if (["superadmin", "super_admin", "super-admin"].includes(value)) return "super_admin";
+
+  return "";
+};
+
+const getBearerToken = (authorizationHeader = "") => {
+  const [scheme, token] = String(authorizationHeader || "").split(" ");
+  if (!scheme || !token) return "";
+  if (scheme.toLowerCase() !== "bearer") return "";
+  return token.trim();
+};
 
 export const requireAuth = async (req, res, next) => {
   try {
-    const userId = req.header("x-user-id");
-    const role = req.header("x-user-role");
-
-    if (!userId || !role) {
+    const token = getBearerToken(req.header("authorization"));
+    if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+
+    let payload;
+    try {
+      payload = verifyAuthToken(token);
+    } catch {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    const userId = String(payload?.sub || "");
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -27,8 +53,9 @@ export const requireAuth = async (req, res, next) => {
         .json({ error: "Your administrator account is currently inactive by super admin." });
     }
 
-    const userRole = user.role || "citizen";
-    if (userRole !== role) {
+    const userRole = normalizeRole(user.role || "citizen");
+    const tokenRole = normalizeRole(payload?.role);
+    if (!userRole || !tokenRole || userRole !== tokenRole) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -45,7 +72,10 @@ export const requireRoles = (...roles) => (req, res, next) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  if (!roles.includes(req.authUser.role)) {
+  const allowedRoles = roles.map(normalizeRole).filter(Boolean);
+  const userRole = normalizeRole(req.authUser.role);
+
+  if (!allowedRoles.includes(userRole)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

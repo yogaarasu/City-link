@@ -5,6 +5,7 @@ import {
   isValidDistrict,
   isValidIssueStatus,
 } from "./issue.validation.js";
+import { uploadManyImagesToCloudinary } from "../../lib/cloudinary.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -31,9 +32,13 @@ const buildFilters = (query) => {
 };
 
 export const createIssue = async (payload, authUser) => {
+  const uploadedPhotos = await uploadManyImagesToCloudinary(payload.photos || [], {
+    folder: "city-link/issues/reported",
+  });
+
   const issue = await Issue.create({
     ...payload,
-    photos: payload.photos || [],
+    photos: uploadedPhotos,
     reportedBy: authUser._id,
     statusLogs: [
       {
@@ -232,7 +237,12 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
   issue.status = payload.status;
 
   if (payload.status === "resolved") {
-    issue.resolvedEvidencePhotos = payload.resolvedEvidencePhotos;
+    issue.resolvedEvidencePhotos = await uploadManyImagesToCloudinary(
+      payload.resolvedEvidencePhotos,
+      {
+        folder: "city-link/issues/resolved",
+      }
+    );
     issue.rejectionReason = null;
   } else if (payload.status === "rejected") {
     issue.rejectionReason = payload.rejectionReason;

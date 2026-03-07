@@ -6,6 +6,17 @@ import {
   TAMIL_NADU_DISTRICTS,
 } from "./issue.constants.js";
 
+const imageInputSchema = z
+  .string()
+  .max(4_300_000, "Image payload is too large.")
+  .refine(
+    (value) =>
+      value.startsWith("data:image/") || value.startsWith("https://res.cloudinary.com/"),
+    {
+      message: "Image must be a base64 data URL or a Cloudinary URL.",
+    }
+  );
+
 export const createIssueSchema = z.object({
   title: z.string().min(3).max(150),
   category: z.enum(ISSUE_CATEGORIES),
@@ -16,7 +27,7 @@ export const createIssueSchema = z.object({
   }),
   address: z.string().min(5).max(250),
   district: z.enum(TAMIL_NADU_DISTRICTS),
-  photos: z.array(z.string()).max(5).optional().default([]),
+  photos: z.array(imageInputSchema).max(5).optional().default([]),
 });
 
 export const listIssueQuerySchema = z.object({
@@ -33,7 +44,7 @@ export const updateIssueStatusSchema = z
   .object({
     status: z.enum(ISSUE_STATUS),
     description: z.string().trim().min(3).max(300).optional(),
-    resolvedEvidencePhotos: z.array(z.string()).max(5).optional().default([]),
+    resolvedEvidencePhotos: z.array(imageInputSchema).max(5).optional().default([]),
     rejectionReason: z.enum(ISSUE_REJECTION_REASONS).optional(),
   })
   .superRefine((payload, ctx) => {

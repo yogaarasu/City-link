@@ -17,9 +17,10 @@ interface AlertDialogProps {
   description: string;
   onContinue: () => void;
   loading?: boolean;
+  variant?: "default" | "destructive"
 }
 
-export function Alert({ trigger, title, description, onContinue, loading }: AlertDialogProps) {
+export function Alert({ trigger, title, description, onContinue, loading, variant }: AlertDialogProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -34,7 +35,7 @@ export function Alert({ trigger, title, description, onContinue, loading }: Aler
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={() => {
             onContinue();
-          }} disabled={loading}>Continue</AlertDialogAction>
+          }} disabled={loading} className={`${variant === "destructive" ? "bg-red-500 hover:bg-red-600" : ""}`}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

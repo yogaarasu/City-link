@@ -469,7 +469,7 @@ const Home = () => {
                   alt="CityLink logo"
                   className="h-7 w-7 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
                 />
-                <span className="bg-linear-to-r bg-white bg-clip-text text-lg font-bold tracking-tight text-transparent">
+                <span className="text-lg font-bold tracking-tight">
                   CityLink
                 </span>
               </Link>

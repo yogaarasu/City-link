@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useUserState } from "@/store/user.store";
 import { updateProfile } from "@/modules/user/api/user.api";
 import { UserAvatar } from "@/modules/user/components/UserAvatar";
+import { Alert } from "@/components/Alert";
 
 const toBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -101,10 +102,18 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
             Update your profile details and public avatar.
           </p>
         </div>
-        <Button variant="destructive" size="sm" onClick={onLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
+        <Alert
+          trigger={
+            <Button variant="destructive" size="sm">
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </Button>
+          }
+          title="Confirm Logout"
+          description="Are you sure you want to logout from your account?"
+          onContinue={onLogout}
+          variant="destructive"
+        />
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">

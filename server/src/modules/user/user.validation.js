@@ -4,10 +4,15 @@ export const updateProfileSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
   avatar: z
     .string()
+    .trim()
     .max(4_300_000, "Profile image must be under 3MB.")
-    .refine((val) => val === "" || val.startsWith("data:image/"), {
-      message: "Avatar must be a valid image.",
-    })
+    .refine(
+      (val) =>
+        val === "" || val.startsWith("data:image/") || val.startsWith("https://res.cloudinary.com/"),
+      {
+        message: "Avatar must be a valid image.",
+      }
+    )
     .optional()
     .default(""),
 });

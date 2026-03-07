@@ -153,7 +153,7 @@ const CitizenDashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="max-h-105 space-y-3 scrollbar-hide overflow-y-auto pr-1">
+          <div className="space-y-3 scrollbar-hide pr-1">
             {issues.slice(0, 5).map((issue) => (
               <IssueCard
                 key={issue._id}

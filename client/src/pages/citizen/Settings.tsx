@@ -29,8 +29,8 @@ const Settings = () => {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="space-y-1">
-        <h1 className="group flex items-center gap-2 text-4xl font-bold">
-          <SettingsIcon className="h-8 w-8 transition-transform group-hover:animate-spin" />
+        <h1 className="flex items-center gap-2 text-4xl font-bold">
+          <SettingsIcon className="h-8 w-8 transition-transform hover:animate-spin" />
           {t("settings")}
         </h1>
         <p className="text-muted-foreground">{t("settingsSubtitle")}</p>
