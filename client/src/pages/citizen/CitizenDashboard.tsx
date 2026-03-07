@@ -18,21 +18,73 @@ const defaultStats: IssueStats = {
   rejected: 0,
 };
 
+const DASHBOARD_CACHE_KEY = "citylink:citizen-dashboard-cache";
+
+type DashboardCachePayload = {
+  stats: IssueStats;
+  issues: IIssue[];
+  updatedAt: number;
+};
+
+const readDashboardCache = (): DashboardCachePayload | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DashboardCachePayload;
+    if (!Array.isArray(parsed.issues)) return null;
+    if (!parsed.stats) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeDashboardCache = (issues: IIssue[], stats: IssueStats) => {
+  if (typeof window === "undefined") return;
+  const payload: DashboardCachePayload = {
+    stats,
+    issues,
+    updatedAt: Date.now(),
+  };
+  window.sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(payload));
+};
+
+const mergeIssuesPreservingExistingCards = (previous: IIssue[], incoming: IIssue[]) => {
+  const previousMap = new Map(previous.map((item) => [item._id, item]));
+  return incoming.map((item) => previousMap.get(item._id) || item);
+};
+
 const CitizenDashboard = () => {
+  const cachedPayload = readDashboardCache();
   const user = useUserState((state) => state.user);
-  const [stats, setStats] = useState<IssueStats>(defaultStats);
-  const [issues, setIssues] = useState<IIssue[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<IssueStats>(cachedPayload?.stats || defaultStats);
+  const [issues, setIssues] = useState<IIssue[]>(cachedPayload?.issues || []);
+  const [isLoading, setIsLoading] = useState(!cachedPayload);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   useEffect(() => {
+    const hasCache = Boolean(cachedPayload);
+
     const load = async () => {
+      const startedAt = performance.now();
       try {
-        setIsLoading(true);
+        if (hasCache) setIsRefreshing(true);
+        else setIsLoading(true);
+
         const [statsRes, issuesRes] = await Promise.all([getMyIssueStats(), getMyIssues()]);
+        const mergedIssues = hasCache
+          ? mergeIssuesPreservingExistingCards(cachedPayload?.issues || [], issuesRes)
+          : issuesRes;
+
         setStats(statsRes);
-        setIssues(issuesRes);
+        setIssues(mergedIssues);
+        writeDashboardCache(mergedIssues, statsRes);
+        setLastFetchMs(Math.round(performance.now() - startedAt));
       } catch (error: unknown) {
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error ?? "Failed to load dashboard");
@@ -41,10 +93,11 @@ const CitizenDashboard = () => {
         toast.error("Failed to load dashboard");
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     };
 
-    load();
+    void load();
   }, []);
 
   const handleVote = async (issueId: string, type: "up" | "down") => {
@@ -56,7 +109,11 @@ const CitizenDashboard = () => {
 
     try {
       const updated = await voteIssue(issueId, type);
-      setIssues((prev) => prev.map((item) => (item._id === issueId ? updated : item)));
+      setIssues((prev) => {
+        const next = prev.map((item) => (item._id === issueId ? updated : item));
+        writeDashboardCache(next, stats);
+        return next;
+      });
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -68,16 +125,26 @@ const CitizenDashboard = () => {
   };
 
   const handleOpenDetails = async (issue: IIssue) => {
+    setSelectedIssue(issue);
+    setIsModalOpen(true);
+    setIsFetchingDetails(true);
+
     try {
       const details = await getIssueById(issue._id);
+      setIssues((prev) => {
+        const next = prev.map((item) => (item._id === details._id ? { ...item, ...details } : item));
+        writeDashboardCache(next, stats);
+        return next;
+      });
       setSelectedIssue(details);
-      setIsModalOpen(true);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error ?? "Failed to load issue details");
         return;
       }
       toast.error("Failed to load issue details");
+    } finally {
+      setIsFetchingDetails(false);
     }
   };
 
@@ -134,7 +201,13 @@ const CitizenDashboard = () => {
       </Card>
 
       <div className="space-y-3">
-        <h2 className="text-2xl font-bold">My Recent Reports</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-2xl font-bold">My Recent Reports</h2>
+          <div className="text-xs text-muted-foreground">
+            {isRefreshing ? "Refreshing..." : null}
+            {lastFetchMs !== null ? ` Fetched in ${lastFetchMs} ms` : null}
+          </div>
+        </div>
         {isLoading ? (
           <Card>
             <CardContent className="flex items-center justify-center py-10 text-muted-foreground">
@@ -171,10 +244,14 @@ const CitizenDashboard = () => {
       <IssueDetailsModal
         open={isModalOpen}
         issue={selectedIssue}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsFetchingDetails(false);
+        }}
         onVote={handleVote}
         canVote={false}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
+        isFetchingDetails={isFetchingDetails}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, MapPin, Share2, Star, X } from "lucide-react";
+import { CalendarDays, Loader2, MapPin, Share2, Star, X } from "lucide-react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ interface IssueDetailsModalProps {
   currentUserId?: string;
   canVote?: boolean;
   onBlockedVote?: () => void;
+  isFetchingDetails?: boolean;
 }
 
 const getStatusLogs = (issue: IIssue): IssueStatusLog[] => {
@@ -42,6 +43,7 @@ export const IssueDetailsModal = ({
   currentUserId,
   canVote = true,
   onBlockedVote,
+  isFetchingDetails = false,
 }: IssueDetailsModalProps) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -91,6 +93,13 @@ export const IssueDetailsModal = ({
         </div>
 
         <div className="space-y-4 px-3 py-3">
+          {isFetchingDetails ? (
+            <div className="text-muted-foreground inline-flex items-center text-sm">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading latest details...
+            </div>
+          ) : null}
+
           <p className="text-sm leading-relaxed">{issue.description}</p>
 
           <div className="grid gap-4 md:grid-cols-2">

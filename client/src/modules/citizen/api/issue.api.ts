@@ -18,6 +18,16 @@ export interface CommunityIssueFilters {
   district?: string;
   category?: string;
   status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CommunityIssueListResponse {
+  issues: IIssue[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 export const createIssue = async (payload: CreateIssuePayload) => {
@@ -26,10 +36,10 @@ export const createIssue = async (payload: CreateIssuePayload) => {
 };
 
 export const getCommunityIssues = async (filters: CommunityIssueFilters) => {
-  const response = await api.get<{ issues: IIssue[] }>("/issues/community", {
+  const response = await api.get<CommunityIssueListResponse>("/issues/community", {
     params: filters,
   });
-  return response.data.issues;
+  return response.data;
 };
 
 export const getMyIssues = async () => {

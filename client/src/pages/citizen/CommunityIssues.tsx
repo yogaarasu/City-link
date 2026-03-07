@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { Loader, List, Map as MapIcon } from "lucide-react";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
@@ -33,35 +33,101 @@ import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
 
 const CommunityIssues = () => {
+  const PAGE_SIZE = 10;
   const user = useUserState((state) => state.user);
   const [issues, setIssues] = useState<IIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [district, setDistrict] = useState("all");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const load = async () => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      const startedAt = performance.now();
+
       try {
         setIsLoading(true);
-        const data = await getCommunityIssues({ district, category, status });
-        setIssues(data);
+        const response = await getCommunityIssues({
+          district,
+          category,
+          status,
+          page: 1,
+          limit: PAGE_SIZE,
+        });
+
+        if (requestId !== requestIdRef.current) return;
+
+        setIssues(response.issues);
+        setPage(response.page);
+        setHasMore(response.hasMore);
+        setLastFetchMs(Math.round(performance.now() - startedAt));
       } catch (error: unknown) {
+        if (requestId !== requestIdRef.current) return;
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error ?? "Failed to load community issues");
           return;
         }
         toast.error("Failed to load community issues");
       } finally {
-        setIsLoading(false);
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     load();
   }, [district, category, status]);
+
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const startedAt = performance.now();
+
+    try {
+      setIsLoadingMore(true);
+      const response = await getCommunityIssues({
+        district,
+        category,
+        status,
+        page: nextPage,
+        limit: PAGE_SIZE,
+      });
+
+      if (requestId !== requestIdRef.current) return;
+
+      setIssues((prev) => {
+        const seen = new Set(prev.map((item) => item._id));
+        const incoming = response.issues.filter((item) => !seen.has(item._id));
+        return [...prev, ...incoming];
+      });
+      setPage(response.page);
+      setHasMore(response.hasMore);
+      setLastFetchMs(Math.round(performance.now() - startedAt));
+    } catch (error: unknown) {
+      if (requestId !== requestIdRef.current) return;
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to load more issues");
+        return;
+      }
+      toast.error("Failed to load more issues");
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setIsLoadingMore(false);
+      }
+    }
+  };
 
   const mapCenter = useMemo<[number, number]>(() => {
     if (issues.length > 0) {
@@ -91,16 +157,24 @@ const CommunityIssues = () => {
   };
 
   const handleOpenDetails = async (issue: IIssue) => {
+    setSelectedIssue(issue);
+    setIsModalOpen(true);
+    setIsFetchingDetails(true);
+
     try {
       const details = await getIssueById(issue._id);
+      setIssues((prev) =>
+        prev.map((item) => (item._id === details._id ? { ...item, ...details } : item))
+      );
       setSelectedIssue(details);
-      setIsModalOpen(true);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error ?? "Failed to load issue details");
         return;
       }
       toast.error("Failed to load issue details");
+    } finally {
+      setIsFetchingDetails(false);
     }
   };
 
@@ -172,6 +246,10 @@ const CommunityIssues = () => {
         ))}
       </div>
 
+      {lastFetchMs !== null ? (
+        <p className="text-xs text-muted-foreground">Fetched in {lastFetchMs} ms</p>
+      ) : null}
+
       {isLoading ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
@@ -231,16 +309,35 @@ const CommunityIssues = () => {
               onBlockedVote={() => toast.error("You cannot vote your own report.")}
             />
           ))}
+          {hasMore ? (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
+                {isLoadingMore ? "Loading..." : "Show More"}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
+
+      {!isLoading && viewMode === "map" && hasMore ? (
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
+            {isLoadingMore ? "Loading..." : "Show More"}
+          </Button>
+        </div>
+      ) : null}
 
       <IssueDetailsModal
         open={isModalOpen}
         issue={selectedIssue}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsFetchingDetails(false);
+        }}
         onVote={handleVote}
         canVote={selectedIssue?.reportedBy?._id !== user?._id}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
+        isFetchingDetails={isFetchingDetails}
       />
     </div>
   );

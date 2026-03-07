@@ -34,6 +34,8 @@ export const listIssueQuerySchema = z.object({
   district: z.string().optional(),
   category: z.string().optional(),
   status: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
 });
 
 export const voteIssueSchema = z.object({

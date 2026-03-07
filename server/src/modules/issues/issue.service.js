@@ -58,11 +58,27 @@ export const createIssue = async (payload, authUser) => {
 
 export const listCommunityIssues = async (query) => {
   const filters = buildFilters(query);
+  const page = Number.isInteger(query?.page) ? query.page : 1;
+  const limit = Number.isInteger(query?.limit) ? query.limit : 10;
+  const skip = (page - 1) * limit;
 
-  return Issue.find(filters)
-    .populate({ path: "reportedBy", select: "name email district role avatar" })
-    .sort({ createdAt: -1 })
-    .lean();
+  const [issues, total] = await Promise.all([
+    Issue.find(filters)
+      .populate({ path: "reportedBy", select: "name email district role avatar" })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Issue.countDocuments(filters),
+  ]);
+
+  return {
+    issues,
+    total,
+    page,
+    limit,
+    hasMore: skip + issues.length < total,
+  };
 };
 
 export const listMyIssues = async (authUser) => {

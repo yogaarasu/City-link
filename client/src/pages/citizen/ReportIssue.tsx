@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
-import { Camera, ImagePlus, Loader, MapPin, X } from "lucide-react";
+import { Camera, ImagePlus, Loader, LocateFixed, MapPin, X } from "lucide-react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { toast } from "sonner";
@@ -73,8 +73,10 @@ const ReportIssue = () => {
   const user = useUserState((state) => state.user);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const {
     control,
     register,
@@ -158,6 +160,29 @@ const ReportIssue = () => {
     await reverseGeocode(lat, lng);
   };
 
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported on this device.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const lat = coords.latitude;
+        const lng = coords.longitude;
+        mapRef.current?.setView([lat, lng], 16);
+        await handleMapPick(lat, lng);
+        setIsLocating(false);
+      },
+      () => {
+        toast.error("Unable to access your location. Please pin manually.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 }
+    );
+  };
+
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
     const fileArray = Array.from(files);
@@ -213,7 +238,7 @@ const ReportIssue = () => {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 max-h-screen">
+    <div className="mx-auto max-w-5xl space-y-4 pb-4">
       <h1 className="text-2xl font-bold md:text-3xl">Report New Issue</h1>
 
       <Card>
@@ -272,14 +297,30 @@ const ReportIssue = () => {
 
               <Field>
                 <FieldLabel>Pin Location on Map</FieldLabel>
-                <div className="relative z-0 max-h-64 overflow-hidden rounded-xl border md:h-72">
-                  <MapContainer center={currentPosition} zoom={13} className="h-full w-full">
+                <div className="relative z-0 h-64 overflow-hidden rounded-xl border md:h-72">
+                  <MapContainer
+                    center={currentPosition}
+                    zoom={13}
+                    className="h-full w-full"
+                    whenCreated={(mapInstance) => {
+                      mapRef.current = mapInstance;
+                    }}
+                  >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreet</a> contributors'
                     />
                     <LocationPicker position={currentPosition} onPick={handleMapPick} />
                   </MapContainer>
+                  <button
+                    type="button"
+                    onClick={handleLocateMe}
+                    className="absolute top-2 right-2 z-400 inline-flex items-center gap-1 rounded-md border bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-background"
+                    disabled={isLocating}
+                  >
+                    <LocateFixed className={`h-3.5 w-3.5 ${isLocating ? "animate-spin" : ""}`} />
+                    {isLocating ? "Locating..." : "Locate Me"}
+                  </button>
                 </div>
               </Field>
 

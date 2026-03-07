@@ -27,9 +27,10 @@ const CityAdminManageIssues = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selectedIssue, setSelectedIssue] = useState<CityAdminIssue | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
 
   const loadIssues = async () => {
-    const startedAt = Date.now();
+    const startedAt = performance.now();
     try {
       setLoading(true);
       const response = await getCityAdminDistrictIssues({
@@ -37,6 +38,7 @@ const CityAdminManageIssues = () => {
         category: categoryFilter,
       });
       setIssues(response);
+      setLastFetchMs(Math.round(performance.now() - startedAt));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error || "Failed to load district issues.");
@@ -44,10 +46,6 @@ const CityAdminManageIssues = () => {
       }
       toast.error(t("loading"));
     } finally {
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < 1000) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
-      }
       setLoading(false);
     }
   };
@@ -140,6 +138,7 @@ const CityAdminManageIssues = () => {
       <div className="text-sm text-muted-foreground inline-flex items-center gap-2">
         <Layers3 className="h-4 w-4" />
         {t("showingIssues", { count: sortedIssues.length })}
+        {lastFetchMs !== null ? ` · fetched in ${lastFetchMs} ms` : ""}
       </div>
 
       {loading ? (

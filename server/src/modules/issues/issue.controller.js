@@ -47,8 +47,8 @@ export const createIssueController = async (req, res, next) => {
 export const listCommunityIssuesController = async (req, res, next) => {
   try {
     const query = listIssueQuerySchema.parse(req.query);
-    const issues = await listCommunityIssues(query);
-    return res.status(200).json({ issues });
+    const result = await listCommunityIssues(query);
+    return res.status(200).json(result);
   } catch (error) {
     return handleError(error, res, next);
   }
