@@ -3,6 +3,7 @@ import {
   ISSUE_CATEGORIES,
   TAMIL_NADU_DISTRICTS,
 } from "../constants/issue.constants";
+import { MAX_REPORT_ISSUE_PHOTOS } from "../constants/report-issue-upload.constants";
 
 export const reportIssueSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -14,7 +15,7 @@ export const reportIssueSchema = z.object({
   }),
   address: z.string().min(5, "Address is required"),
   district: z.enum(TAMIL_NADU_DISTRICTS),
-  photos: z.array(z.string()).max(5, "Maximum 5 photos allowed"),
+  photos: z.array(z.string()).max(MAX_REPORT_ISSUE_PHOTOS, "Maximum 5 photos allowed"),
 });
 
 export type ReportIssueFormValues = z.infer<typeof reportIssueSchema>;

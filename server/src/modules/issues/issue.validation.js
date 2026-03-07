@@ -5,6 +5,7 @@ import {
   ISSUE_STATUS,
   TAMIL_NADU_DISTRICTS,
 } from "./issue.constants.js";
+import { MAX_ISSUE_PHOTOS } from "./issue-upload.constants.js";
 
 const imageInputSchema = z
   .string()
@@ -27,7 +28,11 @@ export const createIssueSchema = z.object({
   }),
   address: z.string().min(5).max(250),
   district: z.enum(TAMIL_NADU_DISTRICTS),
-  photos: z.array(imageInputSchema).max(5).optional().default([]),
+  photos: z
+    .array(imageInputSchema)
+    .optional()
+    .default([])
+    .transform((photos) => photos.slice(0, MAX_ISSUE_PHOTOS)),
 });
 
 export const listIssueQuerySchema = z
@@ -62,7 +67,11 @@ export const updateIssueStatusSchema = z
   .object({
     status: z.enum(ISSUE_STATUS),
     description: z.string().trim().min(3).max(300).optional(),
-    resolvedEvidencePhotos: z.array(imageInputSchema).max(5).optional().default([]),
+    resolvedEvidencePhotos: z
+      .array(imageInputSchema)
+      .optional()
+      .default([])
+      .transform((photos) => photos.slice(0, MAX_ISSUE_PHOTOS)),
     rejectionReason: z.enum(ISSUE_REJECTION_REASONS).optional(),
   })
   .superRefine((payload, ctx) => {

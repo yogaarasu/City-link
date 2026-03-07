@@ -52,7 +52,7 @@ const getPublicIdFromCloudinaryUrl = (url) => {
   }
 };
 
-export const uploadImageToCloudinary = async (image, { folder }) => {
+export const uploadImageToCloudinary = async (image, { folder, transformation } = {}) => {
   ensureCloudinaryConfig();
 
   if (!isImageDataUri(image)) {
@@ -61,22 +61,33 @@ export const uploadImageToCloudinary = async (image, { folder }) => {
     throw error;
   }
 
-  const uploaded = await cloudinary.uploader.upload(image, {
+  const uploadOptions = {
     folder,
     resource_type: "image",
-  });
+  };
+
+  if (Array.isArray(transformation) && transformation.length > 0) {
+    uploadOptions.transformation = transformation;
+  }
+
+  const uploaded = await cloudinary.uploader.upload(image, uploadOptions);
 
   return uploaded.secure_url;
 };
 
-export const uploadManyImagesToCloudinary = async (images = [], { folder }) => {
+export const uploadManyImagesToCloudinary = async (
+  images = [],
+  { folder, maxCount, transformation } = {}
+) => {
   const normalized = Array.isArray(images) ? images : [];
-  if (normalized.length === 0) return [];
+  const limitEnabled = Number.isInteger(maxCount) && maxCount > 0;
+  const limitedImages = limitEnabled ? normalized.slice(0, maxCount) : normalized;
+  if (limitedImages.length === 0) return [];
 
   return Promise.all(
-    normalized.map(async (image) => {
+    limitedImages.map(async (image) => {
       if (isCloudinaryImageUrl(image)) return image;
-      return uploadImageToCloudinary(image, { folder });
+      return uploadImageToCloudinary(image, { folder, transformation });
     })
   );
 };

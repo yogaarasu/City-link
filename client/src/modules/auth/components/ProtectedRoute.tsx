@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import type { UserRole } from "@/types/user";
 import { useUserState } from "@/store/user.store";
 import { getAuthTokenFromCookie } from "@/lib/user-session-cookie";
+import { getMe } from "@/modules/user/api/user.api";
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -11,10 +12,53 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) => {
   const user = useUserState((state) => state.user);
+  const setUser = useUserState((state) => state.setUser);
+  const clearUser = useUserState((state) => state.clearUser);
   const location = useLocation();
   const token = getAuthTokenFromCookie();
+  const [isHydratingUser, setIsHydratingUser] = useState(Boolean(token && !user));
 
-  if (!user || !token) {
+  useEffect(() => {
+    let isCancelled = false;
+
+    const hydrateUser = async () => {
+      if (!token || user) {
+        setIsHydratingUser(false);
+        return;
+      }
+
+      try {
+        setIsHydratingUser(true);
+        const me = await getMe();
+        if (!isCancelled) {
+          setUser(me);
+        }
+      } catch {
+        if (!isCancelled) {
+          clearUser();
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsHydratingUser(false);
+        }
+      }
+    };
+
+    void hydrateUser();
+    return () => {
+      isCancelled = true;
+    };
+  }, [clearUser, setUser, token, user]);
+
+  if (!token) {
+    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (!user && isHydratingUser) {
+    return <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (!user) {
     return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
 

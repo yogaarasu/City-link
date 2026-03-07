@@ -5,7 +5,10 @@ import {
   isValidDistrict,
   isValidIssueStatus,
 } from "./issue.validation.js";
-import { uploadManyImagesToCloudinary } from "../../lib/cloudinary.js";
+import {
+  uploadReportedIssuePhotos,
+  uploadResolvedIssueEvidencePhotos,
+} from "./issue-photo-upload.service.js";
 import { redis } from "../../lib/redis.js";
 import { transporter } from "../../lib/mailer.js";
 import { SMTP_USER } from "../../../utils/constants.js";
@@ -239,9 +242,7 @@ const buildFilters = (query) => {
 export const createIssue = async (payload, authUser) => {
   await enforceIssueReportRateLimit(authUser._id);
 
-  const uploadedPhotos = await uploadManyImagesToCloudinary(payload.photos || [], {
-    folder: "city-link/issues/reported",
-  });
+  const uploadedPhotos = await uploadReportedIssuePhotos(payload.photos || []);
 
   const issue = await Issue.create({
     ...payload,
@@ -541,11 +542,8 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
   issue.assignedTo = "city_admin";
 
   if (payload.status === "resolved") {
-    issue.resolvedEvidencePhotos = await uploadManyImagesToCloudinary(
-      payload.resolvedEvidencePhotos,
-      {
-        folder: "city-link/issues/resolved",
-      }
+    issue.resolvedEvidencePhotos = await uploadResolvedIssueEvidencePhotos(
+      payload.resolvedEvidencePhotos
     );
     issue.rejectionReason = null;
   } else if (payload.status === "rejected") {

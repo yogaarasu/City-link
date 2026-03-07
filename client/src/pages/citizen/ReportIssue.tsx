@@ -17,8 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { checkDuplicateIssues, createIssue, getIssueById, voteIssue } from "@/modules/citizen/api/issue.api";
 import { ISSUE_CATEGORIES, TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import { MAX_REPORT_ISSUE_PHOTOS } from "@/modules/citizen/constants/report-issue-upload.constants";
 import type { IIssue } from "@/modules/citizen/types/issue.types";
 import { statusToLabel } from "@/modules/citizen/utils/issue-ui";
+import { compressIssuePhotoFiles } from "@/modules/citizen/utils/report-issue-image.utils";
 import { reportIssueSchema, type ReportIssueFormValues } from "@/modules/citizen/validation/report-issue.schema";
 import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
@@ -52,14 +54,6 @@ const LocationPicker = ({ onPick, position }: LocationPickerProps) => {
 
   return <Marker position={position} icon={markerIcon} />;
 };
-
-const toBase64 = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Failed to read image file"));
-    reader.readAsDataURL(file);
-  });
 
 const StepCircle = ({
   step,
@@ -204,14 +198,24 @@ const ReportIssue = () => {
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
     const fileArray = Array.from(files);
+    const remainingSlots = Math.max(0, MAX_REPORT_ISSUE_PHOTOS - photoPreviews.length);
 
-    if (photoPreviews.length + fileArray.length > 5) {
-      toast.error("You can upload a maximum of 5 photos.");
+    if (remainingSlots === 0) {
+      toast.error(`You can upload a maximum of ${MAX_REPORT_ISSUE_PHOTOS} photos.`);
       return;
     }
 
+    const filesToProcess = fileArray.slice(0, remainingSlots);
+    const ignoredCount = fileArray.length - filesToProcess.length;
+
+    if (ignoredCount > 0) {
+      toast.warning(
+        `Maximum ${MAX_REPORT_ISSUE_PHOTOS} photos allowed. ${ignoredCount} extra image(s) were skipped.`
+      );
+    }
+
     try {
-      const encoded = await Promise.all(fileArray.map((file) => toBase64(file)));
+      const encoded = await compressIssuePhotoFiles(filesToProcess);
       const merged = [...photoPreviews, ...encoded];
       setPhotoPreviews(merged);
       setValue("photos", merged, { shouldValidate: true });
@@ -552,7 +556,7 @@ const ReportIssue = () => {
                 </div>
 
                 <Field>
-                  <FieldLabel>Photos (Max 5)</FieldLabel>
+                  <FieldLabel>Photos (Max {MAX_REPORT_ISSUE_PHOTOS})</FieldLabel>
                   <div className="flex flex-wrap gap-3">
                     <input
                       ref={galleryInputRef}
@@ -560,7 +564,10 @@ const ReportIssue = () => {
                       accept="image/*"
                       multiple
                       hidden
-                      onChange={(event) => addFiles(event.target.files)}
+                      onChange={(event) => {
+                        void addFiles(event.target.files);
+                        event.target.value = "";
+                      }}
                     />
                     <input
                       ref={cameraInputRef}
@@ -568,7 +575,10 @@ const ReportIssue = () => {
                       accept="image/*"
                       capture="environment"
                       hidden
-                      onChange={(event) => addFiles(event.target.files)}
+                      onChange={(event) => {
+                        void addFiles(event.target.files);
+                        event.target.value = "";
+                      }}
                     />
 
                     <button

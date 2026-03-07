@@ -1,4 +1,5 @@
 import { api } from "@/lib/axios";
+import { MAX_REPORT_ISSUE_PHOTOS } from "../constants/report-issue-upload.constants";
 import type { IIssue, IssueStats } from "../types/issue.types";
 
 export interface CreateIssuePayload {
@@ -41,7 +42,14 @@ export interface CommunityIssueListResponse {
 }
 
 export const createIssue = async (payload: CreateIssuePayload) => {
-  const response = await api.post<{ message: string; issue: IIssue }>("/issues", payload);
+  const safePayload: CreateIssuePayload = {
+    ...payload,
+    photos: Array.isArray(payload.photos)
+      ? payload.photos.slice(0, MAX_REPORT_ISSUE_PHOTOS)
+      : [],
+  };
+
+  const response = await api.post<{ message: string; issue: IIssue }>("/issues", safePayload);
   return response.data;
 };
 

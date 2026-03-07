@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Filter, Layers3 } from "lucide-react";
@@ -16,6 +16,11 @@ import { getCityAdminDistrictIssues } from "@/modules/city-admin/api/city-admin-
 import { CityAdminIssueCard } from "@/modules/city-admin/components/CityAdminIssueCard";
 import { CityAdminIssueDetailsDialog } from "@/modules/city-admin/components/CityAdminIssueDetailsDialog";
 import type { CityAdminIssue } from "@/modules/city-admin/types/city-admin-issue.types";
+import {
+  buildCityAdminIssuesCacheKey,
+  readCityAdminIssuesCache,
+  writeCityAdminIssuesCache,
+} from "@/modules/city-admin/utils/city-admin-issues-cache";
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 
@@ -30,51 +35,92 @@ const toVoteNumber = (value: string): number | undefined => {
 const CityAdminManageIssues = () => {
   const user = useUserState((state) => state.user);
   const { t } = useI18n();
-  const [issues, setIssues] = useState<CityAdminIssue[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<CityAdminStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [minVotes, setMinVotes] = useState("");
   const [maxVotes, setMaxVotes] = useState("");
+  const [initialCache] = useState(() =>
+    readCityAdminIssuesCache(
+      buildCityAdminIssuesCacheKey("all", "all", undefined, undefined)
+    )
+  );
+  const [issues, setIssues] = useState<CityAdminIssue[]>(initialCache?.issues || []);
+  const [loading, setLoading] = useState(!initialCache);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<CityAdminIssue | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const requestIdRef = useRef(0);
 
-  const loadIssues = async () => {
-    const parsedMinVotes = toVoteNumber(minVotes);
-    const parsedMaxVotes = toVoteNumber(maxVotes);
+  const parsedMinVotes = useMemo(() => toVoteNumber(minVotes), [minVotes]);
+  const parsedMaxVotes = useMemo(() => toVoteNumber(maxVotes), [maxVotes]);
+  const filterKey = useMemo(
+    () =>
+      buildCityAdminIssuesCacheKey(
+        statusFilter,
+        categoryFilter,
+        parsedMinVotes,
+        parsedMaxVotes
+      ),
+    [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter]
+  );
 
+  const fetchIssues = async (blocking: boolean) => {
     if (
       typeof parsedMinVotes === "number" &&
       typeof parsedMaxVotes === "number" &&
       parsedMinVotes > parsedMaxVotes
     ) {
       toast.error("Min votes cannot be greater than max votes.");
+      setLoading(false);
+      setIsRefreshing(false);
       return;
     }
 
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     try {
-      setLoading(true);
+      if (blocking) setLoading(true);
+      else setIsRefreshing(true);
+
       const response = await getCityAdminDistrictIssues({
         status: statusFilter,
         category: categoryFilter,
         minVotes: parsedMinVotes,
         maxVotes: parsedMaxVotes,
       });
+
+      if (requestId !== requestIdRef.current) return;
       setIssues(response);
+      writeCityAdminIssuesCache(filterKey, response);
     } catch (error: unknown) {
+      if (requestId !== requestIdRef.current) return;
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error || "Failed to load district issues.");
         return;
       }
       toast.error(t("loading"));
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        if (blocking) setLoading(false);
+        else setIsRefreshing(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadIssues();
-  }, [statusFilter, categoryFilter, minVotes, maxVotes]);
+    const cached = readCityAdminIssuesCache(filterKey);
+
+    if (cached) {
+      setIssues(cached.issues);
+      setLoading(false);
+      void fetchIssues(false);
+      return;
+    }
+
+    setIssues([]);
+    void fetchIssues(true);
+  }, [filterKey]);
 
   const sortedIssues = useMemo(
     () =>
@@ -104,8 +150,12 @@ const CityAdminManageIssues = () => {
             {t("manageIssuesSubtitle", { district: user?.district || "" })}
           </p>
         </div>
-        <Button variant="outline" onClick={loadIssues}>
-          {t("refresh")}
+        <Button
+          variant="outline"
+          onClick={() => void fetchIssues(false)}
+          disabled={loading || isRefreshing}
+        >
+          {isRefreshing ? `${t("refresh")}...` : t("refresh")}
         </Button>
       </div>
 

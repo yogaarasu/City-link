@@ -35,6 +35,9 @@ import "leaflet/dist/leaflet.css";
 
 const PAGE_SIZE = 10;
 const COMMUNITY_CACHE_KEY = "citylink:community-issues-cache:v1";
+const DEFAULT_DISTRICT_FILTER = "all";
+const DEFAULT_CATEGORY_FILTER = "all";
+const DEFAULT_STATUS_FILTER = "all";
 
 type CommunityCacheEntry = {
   issues: IIssue[];
@@ -69,14 +72,23 @@ const writeCommunityCache = (filterKey: string, entry: CommunityCacheEntry) => {
 
 const CommunityIssues = () => {
   const user = useUserState((state) => state.user);
-  const [issues, setIssues] = useState<IIssue[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [district, setDistrict] = useState(DEFAULT_DISTRICT_FILTER);
+  const [category, setCategory] = useState(DEFAULT_CATEGORY_FILTER);
+  const [status, setStatus] = useState(DEFAULT_STATUS_FILTER);
+  const [initialCache] = useState(() =>
+    readCommunityCache(
+      getCommunityFilterKey(
+        DEFAULT_DISTRICT_FILTER,
+        DEFAULT_CATEGORY_FILTER,
+        DEFAULT_STATUS_FILTER
+      )
+    )
+  );
+  const [issues, setIssues] = useState<IIssue[]>(initialCache?.issues || []);
+  const [isLoading, setIsLoading] = useState(!initialCache);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [district, setDistrict] = useState("all");
-  const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(initialCache?.page || 1);
+  const [hasMore, setHasMore] = useState(initialCache?.hasMore || false);
   const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,7 +101,6 @@ const CommunityIssues = () => {
 
   useEffect(() => {
     const cached = readCommunityCache(filterKey);
-    const hasCachedEntry = Boolean(cached);
     if (cached) {
       setIssues(cached.issues);
       setPage(cached.page);
@@ -102,7 +113,10 @@ const CommunityIssues = () => {
       requestIdRef.current = requestId;
 
       try {
-        if (!hasCachedEntry) {
+        if (!cached) {
+          setIssues([]);
+          setPage(1);
+          setHasMore(false);
           setIsLoading(true);
         }
         const response = await getCommunityIssues({
@@ -132,7 +146,7 @@ const CommunityIssues = () => {
         }
         toast.error("Failed to load community issues");
       } finally {
-        if (requestId === requestIdRef.current && !hasCachedEntry) {
+        if (requestId === requestIdRef.current && !cached) {
           setIsLoading(false);
         }
       }
