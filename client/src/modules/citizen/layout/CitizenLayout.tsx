@@ -76,7 +76,7 @@ export const CitizenLayout = () => {
   const requestLogout = () => setIsLogoutDialogOpen(true);
 
   const sidebar = (
-    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
+    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden overscroll-none">
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/citizen/dashboard" className="flex items-center gap-2 text-3xl font-bold text-emerald-500">
           <img src="/citylink-logo.png" alt="CityLink logo" className="h-7 w-7 rounded-md" />
@@ -180,7 +180,7 @@ export const CitizenLayout = () => {
 
   return (
     <div className="h-svh overflow-hidden bg-muted/30">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-gradient-to-b from-background via-background/95 to-background/80 px-4 py-3 shadow-sm backdrop-blur-md transition-colors duration-300 md:hidden">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -285,7 +285,7 @@ export const CitizenLayout = () => {
           {sidebar}
         </aside>
 
-        <main className="flex-1 scrollbar-hide overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 scrollbar-hide overflow-y-auto overscroll-none p-4 md:p-8">
           <Outlet />
         </main>
       </div>

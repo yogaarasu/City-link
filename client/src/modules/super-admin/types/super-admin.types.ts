@@ -4,6 +4,7 @@ export interface CityIssueOverviewItem {
   districtState: "active" | "inactive";
   statusBreakdown: {
     pending: number;
+    verified: number;
     in_progress: number;
     resolved: number;
     rejected: number;
@@ -23,6 +24,7 @@ export interface CityIssueDetail {
   statusBreakdown: {
     total: number;
     pending: number;
+    verified: number;
     in_progress: number;
     resolved: number;
     rejected: number;
@@ -44,15 +46,27 @@ export interface CityIssueDetail {
     category: string;
     description: string;
     district: string;
-    status: "pending" | "in_progress" | "resolved" | "rejected";
+    status: "pending" | "verified" | "in_progress" | "resolved" | "rejected";
     address: string;
     createdAt: string;
+    assignedTo?: "city_admin" | "super_admin";
+    escalationReason?: string;
+    escalatedAt?: string | null;
     reportedBy?: {
       _id: string;
       name: string;
       email: string;
       phone?: string;
     };
+  }>;
+  escalatedIssues?: Array<{
+    _id: string;
+    title: string;
+    status: "pending" | "verified" | "in_progress" | "resolved" | "rejected";
+    escalationReason?: string;
+    escalatedAt?: string | null;
+    createdAt: string;
+    address: string;
   }>;
 }
 
@@ -90,6 +104,7 @@ export interface CityAdminDetailsResponse {
   districtIssueSummary: {
     total: number;
     pending: number;
+    verified: number;
     in_progress: number;
     resolved: number;
     rejected: number;
@@ -109,7 +124,7 @@ export interface CityAdminDetailsResponse {
     title: string;
     category: string;
     description: string;
-    status: "pending" | "in_progress" | "resolved" | "rejected";
+    status: "pending" | "verified" | "in_progress" | "resolved" | "rejected";
     createdAt: string;
     reportedBy?: {
       name: string;
@@ -117,4 +132,3 @@ export interface CityAdminDetailsResponse {
     };
   }>;
 }
-

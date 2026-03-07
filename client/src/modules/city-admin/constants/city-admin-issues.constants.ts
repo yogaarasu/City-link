@@ -3,6 +3,7 @@ import { ISSUE_CATEGORIES } from "@/modules/citizen/constants/issue.constants";
 export const CITY_ADMIN_STATUS_FILTERS = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
+  { value: "verified", label: "Verified" },
   { value: "in_progress", label: "In Progress" },
   { value: "resolved", label: "Resolved" },
   { value: "rejected", label: "Rejected" },
@@ -10,6 +11,7 @@ export const CITY_ADMIN_STATUS_FILTERS = [
 
 export const CITY_ADMIN_STATUSES = [
   "pending",
+  "verified",
   "in_progress",
   "resolved",
   "rejected",

@@ -30,13 +30,29 @@ export const createIssueSchema = z.object({
   photos: z.array(imageInputSchema).max(5).optional().default([]),
 });
 
-export const listIssueQuerySchema = z.object({
-  district: z.string().optional(),
-  category: z.string().optional(),
-  status: z.string().optional(),
-  page: z.coerce.number().int().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(50).optional(),
-});
+export const listIssueQuerySchema = z
+  .object({
+    district: z.string().optional(),
+    category: z.string().optional(),
+    status: z.string().optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(50).optional(),
+    minVotes: z.coerce.number().int().min(0).optional(),
+    maxVotes: z.coerce.number().int().min(0).optional(),
+  })
+  .superRefine((payload, ctx) => {
+    if (
+      typeof payload.minVotes === "number" &&
+      typeof payload.maxVotes === "number" &&
+      payload.minVotes > payload.maxVotes
+    ) {
+      ctx.addIssue({
+        path: ["maxVotes"],
+        code: z.ZodIssueCode.custom,
+        message: "Max votes must be greater than or equal to min votes.",
+      });
+    }
+  });
 
 export const voteIssueSchema = z.object({
   type: z.enum(["up", "down"]),
@@ -70,6 +86,16 @@ export const updateIssueStatusSchema = z
 export const reviewIssueSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().trim().min(2).max(400).optional().default(""),
+});
+
+export const duplicateIssueCheckSchema = z.object({
+  category: z.enum(ISSUE_CATEGORIES),
+  district: z.enum(TAMIL_NADU_DISTRICTS),
+  location: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  }),
+  radiusMeters: z.coerce.number().int().min(20).max(1000).optional().default(100),
 });
 
 export const isValidIssueStatus = (status) => ISSUE_STATUS.includes(status);

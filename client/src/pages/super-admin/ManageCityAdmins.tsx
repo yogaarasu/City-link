@@ -136,7 +136,11 @@ const ManageCityAdminsPage = () => {
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-140" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent
+          className="sm:max-w-140"
+          onInteractOutside={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Add Administrator</DialogTitle>
             <DialogDescription>
@@ -147,7 +151,6 @@ const ManageCityAdminsPage = () => {
             submitLabel="Save"
             isSubmitting={submitting}
             onSubmit={onCreate}
-            onCancel={() => setIsCreateDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>

@@ -23,5 +23,5 @@ export const changePasswordSchema = z.object({
 });
 
 export const deleteAccountSchema = z.object({
-  confirmation: z.string().min(1, "Confirmation is required"),
+  password: z.string().min(1, "Password is required"),
 });

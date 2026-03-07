@@ -21,29 +21,29 @@ const ThemeCard = ({ value, label, icon: Icon, active, onSelect }: ThemeCardProp
     type="button"
     onClick={() => onSelect(value)}
     className={cn(
-      "flex w-44 flex-col items-center gap-3 rounded-xl border p-3 text-left transition hover:border-emerald-500",
-      active && "border-2 border-emerald-500"
+      "flex w-full flex-col items-center gap-2 rounded-lg border p-2 text-left transition hover:border-emerald-500 sm:w-44 sm:gap-3 sm:rounded-xl sm:p-3",
+      active && "border-2 border-emerald-500 ring-1 ring-emerald-500/40"
     )}
   >
     <div
       className={cn(
-        "h-28 w-full rounded-md border p-3",
+        "h-20 w-full rounded-md border p-2 sm:h-28 sm:p-3",
         value === "light" && "bg-gray-100",
         value === "dark" && "bg-gray-900",
         value === "system" && "bg-slate-700"
       )}
     >
       <div className="space-y-2">
-        <div className={cn("rounded-md p-2", value === "light" && "bg-gray-200/80", value === "dark" && "bg-gray-800", value === "system" && "bg-slate-600/70")}>
-          <Skeleton className={cn("h-2.5 w-4/5", value === "light" && "bg-gray-300", value === "dark" && "bg-gray-600", value === "system" && "bg-slate-400/80")} />
+        <div className={cn("rounded-md p-1.5 sm:p-2", value === "light" && "bg-gray-200/80", value === "dark" && "bg-gray-800", value === "system" && "bg-slate-600/70")}>
+          <Skeleton className={cn("h-2 w-4/5 sm:h-2.5", value === "light" && "bg-gray-300", value === "dark" && "bg-gray-600", value === "system" && "bg-slate-400/80")} />
         </div>
-        <div className={cn("rounded-md p-2", value === "light" && "bg-gray-200/80", value === "dark" && "bg-gray-800", value === "system" && "bg-slate-600/70")}>
-          <Skeleton className={cn("h-2.5 w-3/4", value === "light" && "bg-gray-300", value === "dark" && "bg-gray-600", value === "system" && "bg-slate-400/80")} />
+        <div className={cn("rounded-md p-1.5 sm:p-2", value === "light" && "bg-gray-200/80", value === "dark" && "bg-gray-800", value === "system" && "bg-slate-600/70")}>
+          <Skeleton className={cn("h-2 w-3/4 sm:h-2.5", value === "light" && "bg-gray-300", value === "dark" && "bg-gray-600", value === "system" && "bg-slate-400/80")} />
         </div>
       </div>
     </div>
-    <div className="flex items-center gap-2 font-medium">
-      <Icon className="h-4 w-4" />
+    <div className="flex items-center gap-1 text-xs font-medium sm:gap-2 sm:text-sm">
+      <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
       {label}
     </div>
   </button>
@@ -61,7 +61,7 @@ export const AppearanceSection = () => {
       </CardHeader>
       <CardContent>
         <h3 className="mb-3 text-sm font-medium">{t("theme")}</h3>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-4">
           <ThemeCard
             value="light"
             label={t("light")}
@@ -88,4 +88,3 @@ export const AppearanceSection = () => {
     </Card>
   );
 };
-

@@ -9,6 +9,7 @@ export const ISSUE_CATEGORIES = [
 
 export const ISSUE_STATUS = [
   "pending",
+  "verified",
   "in_progress",
   "resolved",
   "rejected",

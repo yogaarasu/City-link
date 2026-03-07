@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
-import { CalendarDays, MapPin, Star, Upload, X } from "lucide-react";
+import { CalendarDays, Camera, ImagePlus, MapPin, Share2, Star, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +16,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { IssueVoteButtons } from "@/modules/citizen/components/IssueVoteButtons";
 import { statusToBadgeVariant, statusToColor, statusToLabel } from "@/modules/citizen/utils/issue-ui";
 import { formatIssueTime } from "@/modules/citizen/utils/time";
+import { shareIssue } from "@/modules/citizen/utils/share";
 import {
   CITY_ADMIN_REJECTION_REASONS,
   CITY_ADMIN_STATUSES,
@@ -39,13 +39,15 @@ interface CityAdminIssueDetailsDialogProps {
 
 const STATUS_BUTTON_STYLES: Record<CityAdminStatus, string> = {
   pending:
-    "border-orange-300 text-orange-700 hover:bg-orange-50 data-[active=true]:bg-orange-100 data-[active=true]:text-orange-800",
+    "border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-500/60 dark:text-orange-300 dark:hover:bg-orange-900/30 data-[active=true]:border-orange-600 data-[active=true]:bg-orange-600 data-[active=true]:text-white dark:data-[active=true]:border-orange-500 dark:data-[active=true]:bg-orange-500 dark:data-[active=true]:text-white",
+  verified:
+    "border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-500/60 dark:text-sky-300 dark:hover:bg-sky-900/30 data-[active=true]:border-sky-600 data-[active=true]:bg-sky-600 data-[active=true]:text-white dark:data-[active=true]:border-sky-500 dark:data-[active=true]:bg-sky-500 dark:data-[active=true]:text-white",
   in_progress:
-    "border-violet-300 text-violet-700 hover:bg-violet-50 data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800",
+    "border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/60 dark:text-violet-300 dark:hover:bg-violet-900/30 data-[active=true]:border-violet-600 data-[active=true]:bg-violet-600 data-[active=true]:text-white dark:data-[active=true]:border-violet-500 dark:data-[active=true]:bg-violet-500 dark:data-[active=true]:text-white",
   resolved:
-    "border-green-300 text-green-700 hover:bg-green-50 data-[active=true]:bg-green-100 data-[active=true]:text-green-800",
+    "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-500/60 dark:text-green-300 dark:hover:bg-green-900/30 data-[active=true]:border-green-600 data-[active=true]:bg-green-600 data-[active=true]:text-white dark:data-[active=true]:border-green-500 dark:data-[active=true]:bg-green-500 dark:data-[active=true]:text-white",
   rejected:
-    "border-red-300 text-red-700 hover:bg-red-50 data-[active=true]:bg-red-100 data-[active=true]:text-red-800",
+    "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/60 dark:text-red-300 dark:hover:bg-red-900/30 data-[active=true]:border-red-600 data-[active=true]:bg-red-600 data-[active=true]:text-white dark:data-[active=true]:border-red-500 dark:data-[active=true]:bg-red-500 dark:data-[active=true]:text-white",
 };
 
 const toBase64 = (file: File) =>
@@ -68,6 +70,8 @@ export const CityAdminIssueDetailsDialog = ({
   const [rejectionReason, setRejectionReason] = useState<CityAdminRejectionReason | "">("");
   const [resolvedEvidencePhotos, setResolvedEvidencePhotos] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!issue) return;
@@ -81,10 +85,10 @@ export const CityAdminIssueDetailsDialog = ({
     if (!issue) return [11.0168, 76.9558];
     return [issue.location.lat, issue.location.lng];
   }, [issue]);
-
-  const allEvidence = useMemo(
-    () => [...(issue?.photos || []), ...(issue?.resolvedEvidencePhotos || [])],
-    [issue]
+  const isStatusLocked = issue?.status === "resolved" || issue?.status === "rejected";
+  const updatableStatuses = useMemo(
+    () => CITY_ADMIN_STATUSES.filter((status) => status !== "pending"),
+    []
   );
 
   const onUploadResolvedEvidence = async (files: FileList | null) => {
@@ -108,6 +112,10 @@ export const CityAdminIssueDetailsDialog = ({
 
   const onSubmitStatusUpdate = async () => {
     if (!issue) return;
+    if (selectedStatus === issue.status) {
+      toast.error("Cannot update to the same status.");
+      return;
+    }
     if (selectedStatus === "resolved" && resolvedEvidencePhotos.length === 0) {
       toast.error(t("resolvedNeedsEvidence"));
       return;
@@ -159,6 +167,14 @@ export const CityAdminIssueDetailsDialog = ({
           <DialogDescription className="mt-1 flex flex-wrap items-center gap-2">
             <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md">{statusToLabel(issue.status)}</Badge>
             <Badge variant="outline" className="rounded-md">{issue.category}</Badge>
+            <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+              <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+              {issue.upVotes}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+              <ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
+              {issue.downVotes}
+            </span>
           </DialogDescription>
         </DialogHeader>
 
@@ -176,71 +192,96 @@ export const CityAdminIssueDetailsDialog = ({
             <p className="text-sm leading-relaxed">{issue.description}</p>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">{t("mapView")}</h3>
-              <div className="relative z-0 h-64 overflow-hidden rounded-lg border">
-                <MapContainer center={mapCenter} zoom={14} className="h-full w-full">
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  <CircleMarker
-                    center={mapCenter}
-                    radius={10}
-                    pathOptions={{
-                      color: statusToColor(issue.status),
-                      fillColor: statusToColor(issue.status),
-                      fillOpacity: 0.8,
-                    }}
-                  />
-                </MapContainer>
-              </div>
+          <div className="rounded-lg border p-3">
+            <h3 className="mb-2 text-sm font-semibold">{t("statusLogs")}</h3>
+            <div className="space-y-2">
+              {(issue.statusLogs || []).slice().reverse().map((log, index) => (
+                <div key={`${log.createdAt}-${index}`} className="rounded-md border p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant={statusToBadgeVariant(log.status)} className="rounded-md">
+                      {statusToLabel(log.status)}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {log.description ? <p className="mt-1 text-sm text-muted-foreground">{log.description}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border p-3">
+            <div className="relative z-0 h-72 overflow-hidden rounded-lg border md:h-96">
+              <MapContainer center={mapCenter} zoom={14} className="h-full w-full">
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <CircleMarker
+                  center={mapCenter}
+                  radius={10}
+                  pathOptions={{
+                    color: statusToColor(issue.status),
+                    fillColor: statusToColor(issue.status),
+                    fillOpacity: 0.8,
+                  }}
+                />
+              </MapContainer>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-muted-foreground inline-flex items-start gap-2 text-sm">
                 <MapPin className="mt-0.5 h-4 w-4" />
                 {issue.address}
               </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="rounded-lg border p-3">
-                <h3 className="mb-2 text-sm font-semibold">{t("statusLogs")}</h3>
-                <div className="space-y-2">
-                  {(issue.statusLogs || []).slice().reverse().map((log, index) => (
-                    <div key={`${log.createdAt}-${index}`} className="rounded-md border p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge variant={statusToBadgeVariant(log.status)} className="rounded-md">
-                          {statusToLabel(log.status)}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      {log.description ? <p className="mt-1 text-sm text-muted-foreground">{log.description}</p> : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-lg border p-3">
-                <h3 className="mb-2 text-sm font-semibold">{t("evidenceImages")}</h3>
-                {allEvidence.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">{t("noEvidence")}</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                    {allEvidence.map((photo, index) => (
-                      <img
-                        key={`${photo}-${index}`}
-                        src={photo}
-                        alt={`Issue evidence ${index + 1}`}
-                        className="h-28 w-full rounded-md object-cover md:h-32"
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await shareIssue(issue);
+                }}
+              >
+                <Share2 className="h-4 w-4" />
+                Share Report
+              </Button>
             </div>
           </div>
+
+          <div className="rounded-lg border p-3">
+            <h3 className="mb-2 text-sm font-semibold">Reported Evidence</h3>
+            {(issue.photos || []).length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t("noEvidence")}</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(issue.photos || []).map((photo, index) => (
+                  <a key={`${photo}-${index}`} href={photo} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={photo}
+                      alt={`Reported evidence ${index + 1}`}
+                      className="h-44 w-full rounded-md object-cover sm:h-52"
+                    />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(issue.resolvedEvidencePhotos || []).length > 0 ? (
+            <div className="rounded-lg border p-3">
+              <h3 className="mb-2 text-sm font-semibold">Resolved Evidence</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(issue.resolvedEvidencePhotos || []).map((photo, index) => (
+                  <a key={`${photo}-${index}`} href={photo} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={photo}
+                      alt={`Resolved evidence ${index + 1}`}
+                      className="h-44 w-full rounded-md object-cover sm:h-52"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {issue.review?.rating ? (
             <div className="rounded-lg border p-3">
@@ -264,45 +305,71 @@ export const CityAdminIssueDetailsDialog = ({
           <div className="rounded-lg border p-3">
             <h3 className="mb-2 text-sm font-semibold">{t("updateStatus")}</h3>
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              {CITY_ADMIN_STATUSES.map((status) => (
+              {updatableStatuses.map((status) => (
                 <Button
                   key={status}
                   type="button"
                   variant="outline"
-                  size="sm"
+                  disabled={isStatusLocked}
                   data-active={selectedStatus === status}
-                  className={STATUS_BUTTON_STYLES[status]}
+                  className={`h-10 rounded-md px-4 text-sm font-medium ${STATUS_BUTTON_STYLES[status]}`}
                   onClick={() => setSelectedStatus(status)}
                 >
                   {statusToLabel(status)}
                 </Button>
               ))}
             </div>
+            {isStatusLocked ? (
+              <p className="mb-3 text-sm text-muted-foreground">
+                This issue is closed. Resolved or rejected issues cannot be updated further.
+              </p>
+            ) : null}
 
-            {selectedStatus === "resolved" && (
+            {selectedStatus === "resolved" && !isStatusLocked && (
               <div className="mb-3 space-y-2">
                 <Label className="text-sm font-medium">{t("resolvedEvidenceRequired")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/60">
-                    <Upload className="h-4 w-4" />
-                    {t("uploadImage")}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      hidden
-                      onChange={(event) => onUploadResolvedEvidence(event.target.files)}
-                    />
-                  </label>
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    onChange={(event) => onUploadResolvedEvidence(event.target.files)}
+                  />
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    hidden
+                    onChange={(event) => onUploadResolvedEvidence(event.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
+                  >
+                    <ImagePlus className="mb-2 h-6 w-6" />
+                    Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
+                  >
+                    <Camera className="mb-2 h-6 w-6 text-emerald-600" />
+                    Camera
+                  </button>
                   {resolvedEvidencePhotos.map((photo, index) => (
-                    <div key={`${photo}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-md border">
+                    <div key={`${photo}-${index}`} className="relative h-24 w-24 overflow-hidden rounded-lg border">
                       <img src={photo} alt={`Resolved evidence ${index + 1}`} className="h-full w-full object-cover" />
                       <button
                         type="button"
-                        className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-0.5 text-white"
+                        className="absolute top-1 right-1 rounded-full bg-red-500 p-0.5 text-white"
                         onClick={() => removeResolvedEvidence(index)}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ))}
@@ -310,7 +377,7 @@ export const CityAdminIssueDetailsDialog = ({
               </div>
             )}
 
-            {selectedStatus === "rejected" && (
+            {selectedStatus === "rejected" && !isStatusLocked && (
               <div className="mb-3">
                 <Label className="mb-1.5 block text-sm font-medium">{t("rejectionReasonRequired")}</Label>
                 <Select
@@ -342,21 +409,15 @@ export const CityAdminIssueDetailsDialog = ({
             </div>
 
             <DialogFooter className="mt-4">
-              <Button type="button" onClick={onSubmitStatusUpdate} disabled={isUpdating}>
+              <Button
+                type="button"
+                className="h-10 px-5 text-sm"
+                onClick={onSubmitStatusUpdate}
+                disabled={isUpdating || isStatusLocked}
+              >
                 {isUpdating ? t("updating") : t("updateStatusAction")}
               </Button>
             </DialogFooter>
-          </div>
-
-          <div className="rounded-lg border p-3">
-            <h3 className="mb-2 text-sm font-semibold">{t("communityVotes")}</h3>
-            <IssueVoteButtons
-              mode="split"
-              canVote={false}
-              upVotes={issue.upVotes}
-              downVotes={issue.downVotes}
-              onVote={() => undefined}
-            />
           </div>
         </div>
       </DialogContent>

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Ban, CheckCircle2, Clock3, Loader2, Timer } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Ban, CheckCircle2, Clock3, Loader2, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCityIssueDetails } from "@/modules/super-admin/api/super-admin.api";
 import type { CityIssueDetail } from "@/modules/super-admin/types/super-admin.types";
+import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/issue-ui";
 
 const CityIssueDetailsPage = () => {
   const navigate = useNavigate();
@@ -79,7 +81,7 @@ const CityIssueDetailsPage = () => {
       </div>
 
       <Card>
-        <CardContent className="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-5">
+        <CardContent className="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-6">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
@@ -92,6 +94,13 @@ const CityIssueDetailsPage = () => {
             <div>
               <p className="text-xs font-medium text-muted-foreground">Pending</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.pending}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-8 w-8 rounded-full bg-sky-100 p-1.5 text-sky-700" />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Verified</p>
+              <p className="text-2xl font-bold">{details.statusBreakdown.verified}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -132,6 +141,40 @@ const CityIssueDetailsPage = () => {
             ))
           ) : (
             <p className="text-sm text-muted-foreground">No category records found.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Escalated to Super Admin</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {(details.escalatedIssues || []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No escalated issues in this district.</p>
+          ) : (
+            details.escalatedIssues!.map((issue) => (
+              <div key={issue._id} className="space-y-2 rounded-md border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold">{issue.title}</h3>
+                  <Badge variant={statusToBadgeVariant(issue.status)}>{statusToLabel(issue.status)}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{issue.address}</p>
+                {issue.escalationReason ? (
+                  <p className="text-sm">
+                    <span className="font-medium">Escalation reason:</span> {issue.escalationReason}
+                  </p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Reported: {new Date(issue.createdAt).toLocaleString()}
+                </p>
+                {issue.escalatedAt ? (
+                  <p className="text-xs text-muted-foreground">
+                    Escalated: {new Date(issue.escalatedAt).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            ))
           )}
         </CardContent>
       </Card>

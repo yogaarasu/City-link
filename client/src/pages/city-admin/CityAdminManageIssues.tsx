@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   CITY_ADMIN_CATEGORIES,
   CITY_ADMIN_STATUS_FILTERS,
@@ -18,6 +19,14 @@ import type { CityAdminIssue } from "@/modules/city-admin/types/city-admin-issue
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 
+const toVoteNumber = (value: string): number | undefined => {
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return Math.floor(parsed);
+};
+
 const CityAdminManageIssues = () => {
   const user = useUserState((state) => state.user);
   const { t } = useI18n();
@@ -25,20 +34,33 @@ const CityAdminManageIssues = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<CityAdminStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [minVotes, setMinVotes] = useState("");
+  const [maxVotes, setMaxVotes] = useState("");
   const [selectedIssue, setSelectedIssue] = useState<CityAdminIssue | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
 
   const loadIssues = async () => {
-    const startedAt = performance.now();
+    const parsedMinVotes = toVoteNumber(minVotes);
+    const parsedMaxVotes = toVoteNumber(maxVotes);
+
+    if (
+      typeof parsedMinVotes === "number" &&
+      typeof parsedMaxVotes === "number" &&
+      parsedMinVotes > parsedMaxVotes
+    ) {
+      toast.error("Min votes cannot be greater than max votes.");
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await getCityAdminDistrictIssues({
         status: statusFilter,
         category: categoryFilter,
+        minVotes: parsedMinVotes,
+        maxVotes: parsedMaxVotes,
       });
       setIssues(response);
-      setLastFetchMs(Math.round(performance.now() - startedAt));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error || "Failed to load district issues.");
@@ -52,7 +74,7 @@ const CityAdminManageIssues = () => {
 
   useEffect(() => {
     loadIssues();
-  }, [statusFilter, categoryFilter]);
+  }, [statusFilter, categoryFilter, minVotes, maxVotes]);
 
   const sortedIssues = useMemo(
     () =>
@@ -93,17 +115,22 @@ const CityAdminManageIssues = () => {
             <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center">
               <Skeleton className="h-11 w-full rounded-lg lg:w-140" />
               <Skeleton className="h-11 w-full rounded-lg lg:w-65" />
+              <Skeleton className="h-11 w-full rounded-lg lg:w-80" />
             </div>
           ) : (
             <>
-              <div className="min-w-0 rounded-lg border bg-background/80 p-1.5 lg:h-12">
-                <div className="flex flex-wrap items-center gap-1.5 lg:h-full">
+              <div className="min-w-0 rounded-lg border bg-background/80 p-1.5 lg:h-12 lg:flex-1">
+                <div className="flex h-full items-center gap-1 overflow-x-auto whitespace-nowrap pb-0.5 lg:overflow-visible">
                   {CITY_ADMIN_STATUS_FILTERS.map((item) => (
                     <Button
                       key={item.value}
                       size="sm"
                       variant={statusFilter === item.value ? "default" : "outline"}
-                      className={statusFilter === item.value ? " bg-emerald-500 hover:bg-emerald-600 text-white" : "border-transparent bg-transparent"}
+                      className={
+                        statusFilter === item.value
+                          ? "h-8 shrink-0 rounded-md px-3 text-xs leading-tight bg-emerald-500 text-white hover:bg-emerald-600 lg:h-9 lg:min-w-0 lg:flex-1 lg:px-2"
+                          : "h-8 shrink-0 rounded-md border-transparent bg-transparent px-3 text-xs leading-tight lg:h-9 lg:min-w-0 lg:flex-1 lg:px-2"
+                      }
                       onClick={() => setStatusFilter(item.value)}
                     >
                       {item.value === "all" ? t("all") : item.label}
@@ -112,9 +139,9 @@ const CityAdminManageIssues = () => {
                 </div>
               </div>
 
-              <div className="flex items-center px-1 w-fit max-w-full shrink-0 rounded-lg border bg-background/80 lg:h-12">
+              <div className="flex h-12 w-full items-center rounded-lg border bg-background/80 px-1 sm:w-auto sm:max-w-full sm:shrink-0">
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="h-10 w-auto min-w-52.5 border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0 lg:h-full">
+                  <SelectTrigger className="h-10 w-full min-w-52.5 border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0">
                     <div className="pointer-events-none inline-flex items-center gap-2">
                       <Filter className="h-4 w-4 text-muted-foreground" />
                       <SelectValue placeholder={t("filterByCategory")} />
@@ -130,6 +157,25 @@ const CityAdminManageIssues = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border bg-background/80 p-2 lg:h-12 lg:w-auto lg:flex-nowrap">
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Min votes"
+                  value={minVotes}
+                  onChange={(event) => setMinVotes(event.target.value)}
+                  className="h-8 w-30"
+                />
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Max votes"
+                  value={maxVotes}
+                  onChange={(event) => setMaxVotes(event.target.value)}
+                  className="h-8 w-30"
+                />
+              </div>
             </>
           )}
         </CardContent>
@@ -138,7 +184,6 @@ const CityAdminManageIssues = () => {
       <div className="text-sm text-muted-foreground inline-flex items-center gap-2">
         <Layers3 className="h-4 w-4" />
         {t("showingIssues", { count: sortedIssues.length })}
-        {lastFetchMs !== null ? ` · fetched in ${lastFetchMs} ms` : ""}
       </div>
 
       {loading ? (
@@ -184,4 +229,3 @@ const CityAdminManageIssues = () => {
 };
 
 export default CityAdminManageIssues;
-

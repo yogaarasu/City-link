@@ -172,7 +172,7 @@ const CityAdminLayout = () => {
 
   return (
     <div className="h-svh overflow-hidden bg-muted/30">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border/70 bg-gradient-to-b from-background via-background/95 to-background/80 px-4 py-3 shadow-sm backdrop-blur-md transition-colors duration-300 md:hidden">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   createIssue,
+  findNearbyDuplicateIssues,
   getCityAdminIssueStats,
   getIssueById,
   getMyIssueStats,
@@ -13,6 +14,7 @@ import {
 } from "./issue.service.js";
 import {
   createIssueSchema,
+  duplicateIssueCheckSchema,
   listIssueQuerySchema,
   updateIssueStatusSchema,
   voteIssueSchema,
@@ -49,6 +51,16 @@ export const listCommunityIssuesController = async (req, res, next) => {
     const query = listIssueQuerySchema.parse(req.query);
     const result = await listCommunityIssues(query);
     return res.status(200).json(result);
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+export const checkDuplicateIssuesController = async (req, res, next) => {
+  try {
+    const payload = duplicateIssueCheckSchema.parse(req.body);
+    const issues = await findNearbyDuplicateIssues(payload);
+    return res.status(200).json({ issues });
   } catch (error) {
     return handleError(error, res, next);
   }

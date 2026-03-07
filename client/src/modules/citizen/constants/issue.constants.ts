@@ -10,6 +10,7 @@ export const ISSUE_CATEGORIES = [
 export const ISSUE_STATUS = [
   "all",
   "pending",
+  "verified",
   "in_progress",
   "resolved",
   "rejected",
@@ -18,6 +19,7 @@ export const ISSUE_STATUS = [
 export const STATUS_LABELS: Record<string, string> = {
   all: "All",
   pending: "Pending",
+  verified: "Verified",
   in_progress: "In Progress",
   resolved: "Resolved",
   rejected: "Rejected",

@@ -14,23 +14,23 @@ interface DangerZoneSectionProps {
 }
 
 export const DangerZoneSection = ({ onAccountDeleted }: DangerZoneSectionProps) => {
-  const [confirmation, setConfirmation] = useState("");
+  const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (confirmation !== "DELETE") {
-      toast.error("Type DELETE to continue.");
+    if (!password.trim()) {
+      toast.error("Enter your password to continue.");
       return;
     }
     
     try {
       setIsDeleting(true);
       const stats = await getMyIssueStats();
-      if ((stats.pending ?? 0) > 0 || (stats.in_progress ?? 0) > 0) {
-        toast.error("You cannot delete account while issues are pending or in progress.");
+      if ((stats.pending ?? 0) > 0 || (stats.verified ?? 0) > 0 || (stats.in_progress ?? 0) > 0) {
+        toast.error("You cannot delete account while issues are pending, verified, or in progress.");
         return;
       }
-      const response = await deleteAccount({ confirmation });
+      const response = await deleteAccount({ password });
       toast.success(response.message);
       onAccountDeleted();
     } catch (error: unknown) {
@@ -57,15 +57,20 @@ export const DangerZoneSection = ({ onAccountDeleted }: DangerZoneSectionProps) 
             Permanently remove your account details. Reported issues remain in the system.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            You cannot delete while any issue is pending or in progress.
+            You cannot delete while any issue is pending, verified, or in progress.
           </p>
         </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium">
-            Type <span className="font-bold">DELETE</span> to confirm
+            Enter your password to confirm
           </label>
-          <Input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
+          <Input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Current password"
+          />
         </div>
 
         <div className="flex justify-end">

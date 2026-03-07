@@ -71,25 +71,26 @@ export const changeMyPassword = async (authUser, currentPassword, newPassword) =
   await user.save();
 };
 
-export const deleteMyAccount = async (authUser, confirmation) => {
-  if (confirmation !== "DELETE") {
-    throw createHttpError(400, "Type DELETE to confirm account deletion.");
-  }
-
+export const deleteMyAccount = async (authUser, password) => {
   const user = await User.findById(authUser._id);
   if (!user || user.isDeleted) {
     throw createHttpError(404, "User not found");
   }
 
+  const isPasswordValid = await compare(password, user.password);
+  if (!isPasswordValid) {
+    throw createHttpError(401, "Incorrect password.");
+  }
+
   const activeIssue = await Issue.exists({
     reportedBy: authUser._id,
-    status: { $in: ["pending", "in_progress"] },
+    status: { $in: ["pending", "verified", "in_progress"] },
   });
 
   if (activeIssue) {
     throw createHttpError(
       409,
-      "You cannot delete your account while you have issues in pending or in-progress status."
+      "You cannot delete your account while you have issues in pending, verified, or in-progress status."
     );
   }
 

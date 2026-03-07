@@ -1,6 +1,6 @@
 import type { IUser } from "@/types/user";
 
-export type IssueStatus = "pending" | "in_progress" | "resolved" | "rejected";
+export type IssueStatus = "pending" | "verified" | "in_progress" | "resolved" | "rejected";
 
 export interface IssueStatusLog {
   status: IssueStatus;
@@ -28,10 +28,14 @@ export interface IIssue {
   photos: string[];
   resolvedEvidencePhotos?: string[];
   rejectionReason?: string | null;
+  assignedTo?: "city_admin" | "super_admin";
+  escalationReason?: string;
+  escalatedAt?: string | null;
   status: IssueStatus;
   reportedBy: Pick<IUser, "_id" | "name" | "email" | "district" | "role" | "avatar">;
   upVotes: number;
   downVotes: number;
+  distanceMeters?: number;
   statusLogs?: IssueStatusLog[];
   review?: IssueReview | null;
   createdAt: string;
@@ -41,6 +45,7 @@ export interface IIssue {
 export interface IssueStats {
   total: number;
   pending: number;
+  verified?: number;
   in_progress: number;
   resolved: number;
   rejected: number;

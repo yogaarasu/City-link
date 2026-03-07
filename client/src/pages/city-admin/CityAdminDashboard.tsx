@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { CheckCircle2, Clock3, ShieldAlert, Timer, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, ShieldAlert, ShieldCheck, Timer, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CircleLoader } from "@/components/ui/circle-loader";
 import { getCityAdminIssueStats } from "@/modules/city-admin/api/city-admin-issues.api";
@@ -12,6 +12,7 @@ import { useI18n } from "@/modules/i18n/useI18n";
 const defaultStats: CityAdminIssueStats = {
   total: 0,
   pending: 0,
+  verified: 0,
   in_progress: 0,
   resolved: 0,
   rejected: 0,
@@ -25,7 +26,6 @@ const CityAdminDashboard = () => {
 
   useEffect(() => {
     const run = async () => {
-      const startedAt = Date.now();
       try {
         setLoading(true);
         const response = await getCityAdminIssueStats();
@@ -37,10 +37,6 @@ const CityAdminDashboard = () => {
         }
         toast.error(t("loading"));
       } finally {
-        const elapsed = Date.now() - startedAt;
-        if (elapsed < 1000) {
-          await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
-        }
         setLoading(false);
       }
     };
@@ -64,6 +60,14 @@ const CityAdminDashboard = () => {
       icon: Clock3,
       textClass: "text-orange-600",
       iconBg: "bg-orange-500/15",
+    },
+    {
+      key: "verified",
+      label: "Verified",
+      value: stats.verified ?? 0,
+      icon: ShieldCheck,
+      textClass: "text-sky-600",
+      iconBg: "bg-sky-500/15",
     },
     {
       key: "in_progress",
@@ -101,7 +105,7 @@ const CityAdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         {cards.map((card) => (
           <Card key={card.key} className="overflow-hidden">
             <CardHeader className="pb-2">

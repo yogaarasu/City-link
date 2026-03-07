@@ -106,6 +106,21 @@ const IssueSchema = new mongoose.Schema(
       enum: ISSUE_STATUS,
       default: "pending",
     },
+    assignedTo: {
+      type: String,
+      enum: ["city_admin", "super_admin"],
+      default: "city_admin",
+    },
+    escalationReason: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 300,
+    },
+    escalatedAt: {
+      type: Date,
+      default: null,
+    },
     reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

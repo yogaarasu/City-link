@@ -22,6 +22,16 @@ export interface CommunityIssueFilters {
   limit?: number;
 }
 
+export interface DuplicateIssueCheckPayload {
+  category: string;
+  district: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  radiusMeters?: number;
+}
+
 export interface CommunityIssueListResponse {
   issues: IIssue[];
   total: number;
@@ -33,6 +43,11 @@ export interface CommunityIssueListResponse {
 export const createIssue = async (payload: CreateIssuePayload) => {
   const response = await api.post<{ message: string; issue: IIssue }>("/issues", payload);
   return response.data;
+};
+
+export const checkDuplicateIssues = async (payload: DuplicateIssueCheckPayload) => {
+  const response = await api.post<{ issues: IIssue[] }>("/issues/duplicate-check", payload);
+  return response.data.issues;
 };
 
 export const getCommunityIssues = async (filters: CommunityIssueFilters) => {

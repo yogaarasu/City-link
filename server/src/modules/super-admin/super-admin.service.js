@@ -8,6 +8,7 @@ import { cityAdminWelcomeTemplate } from "./super-admin.mail-template.js";
 import { appendUserActivityLog } from "./shared/activity-log.js";
 import { TAMIL_NADU_DISTRICTS } from "../issues/issue.constants.js";
 import { DISTRICT_RTO_CODES, getNormalizedAdminAccess } from "./super-admin.constants.js";
+import { autoEscalateOverdueIssues } from "../issues/issue.service.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -106,6 +107,11 @@ export const getSystemOverview = async () => {
               $cond: [{ $eq: ["$status", "in_progress"] }, 1, 0],
             },
           },
+          verified: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "verified"] }, 1, 0],
+            },
+          },
           resolved: {
             $sum: {
               $cond: [{ $eq: ["$status", "resolved"] }, 1, 0],
@@ -132,6 +138,7 @@ export const getSystemOverview = async () => {
         issueCount: item.issueCount,
         pending: item.pending,
         in_progress: item.in_progress,
+        verified: item.verified || 0,
         resolved: item.resolved,
         rejected: item.rejected,
       },
@@ -141,10 +148,11 @@ export const getSystemOverview = async () => {
   const districtRows = TAMIL_NADU_DISTRICTS.map((district) => {
     const row = issueMap.get(district) || {
       issueCount: 0,
-      pending: 0,
-      in_progress: 0,
-      resolved: 0,
-      rejected: 0,
+        pending: 0,
+        verified: 0,
+        in_progress: 0,
+        resolved: 0,
+        rejected: 0,
     };
     return {
       district,
@@ -152,6 +160,7 @@ export const getSystemOverview = async () => {
       districtState: activeDistrictSet.has(district) ? "active" : "inactive",
       statusBreakdown: {
         pending: row.pending,
+        verified: row.verified,
         in_progress: row.in_progress,
         resolved: row.resolved,
         rejected: row.rejected,
@@ -183,6 +192,8 @@ export const getSystemOverview = async () => {
 };
 
 export const getCityIssueDetails = async (district) => {
+  await autoEscalateOverdueIssues(district);
+
   const [issueStatusBreakdown, issueCategoryBreakdown, repeatedIssues, issues, cityAdmins] =
     await Promise.all([
       Issue.aggregate([
@@ -228,6 +239,7 @@ export const getCityIssueDetails = async (district) => {
   const statusMap = {
     total: issues.length,
     pending: 0,
+    verified: 0,
     in_progress: 0,
     resolved: 0,
     rejected: 0,
@@ -257,6 +269,7 @@ export const getCityIssueDetails = async (district) => {
       activityLogs: Array.isArray(admin.activityLogs) ? admin.activityLogs.slice(0, 20) : [],
     })),
     issues,
+    escalatedIssues: issues.filter((item) => item.assignedTo === "super_admin"),
   };
 };
 
@@ -510,6 +523,7 @@ export const getCityAdminDetails = async (adminId) => {
   const stats = {
     total: 0,
     pending: 0,
+    verified: 0,
     in_progress: 0,
     resolved: 0,
     rejected: 0,

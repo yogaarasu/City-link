@@ -1,6 +1,7 @@
 import express from "express";
 import { requireAuth, requireRoles } from "../middleware/auth.middleware.js";
 import {
+  checkDuplicateIssuesController,
   createIssueController,
   getCityAdminIssueStatsController,
   getIssueByIdController,
@@ -20,6 +21,7 @@ issueRoutes.use(requireAuth);
 issueRoutes.get("/community", listCommunityIssuesController);
 issueRoutes.get("/mine", requireRoles("citizen"), listMyIssuesController);
 issueRoutes.get("/mine/stats", requireRoles("citizen"), getMyIssueStatsController);
+issueRoutes.post("/duplicate-check", requireRoles("citizen"), checkDuplicateIssuesController);
 issueRoutes.get("/city-admin/district", requireRoles("city_admin"), listCityAdminIssuesController);
 issueRoutes.get("/city-admin/stats", requireRoles("city_admin"), getCityAdminIssueStatsController);
 issueRoutes.patch("/:issueId/status", requireRoles("city_admin"), updateIssueStatusByCityAdminController);

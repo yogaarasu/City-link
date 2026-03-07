@@ -16,7 +16,7 @@ export const changePassword = async (payload: { currentPassword: string; newPass
   return response.data;
 };
 
-export const deleteAccount = async (payload: { confirmation: string }) => {
+export const deleteAccount = async (payload: { password: string }) => {
   const response = await api.delete<{ message: string }>("/user/account", { data: payload });
   return response.data;
 };

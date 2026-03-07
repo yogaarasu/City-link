@@ -56,8 +56,8 @@ export const changePassword = async (req, res, next) => {
 
 export const deleteAccount = async (req, res, next) => {
   try {
-    const { confirmation } = deleteAccountSchema.parse(req.body);
-    await deleteMyAccount(req.authUser, confirmation);
+    const { password } = deleteAccountSchema.parse(req.body);
+    await deleteMyAccount(req.authUser, password);
     return res.status(200).json({ message: "Account deleted successfully." });
   } catch (error) {
     return handleError(error, res, next);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
-import { Loader, List, Map as MapIcon } from "lucide-react";
+import { List, Map as MapIcon } from "lucide-react";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,12 +28,46 @@ import {
 } from "@/modules/citizen/utils/issue-ui";
 import { formatIssueTime } from "@/modules/citizen/utils/time";
 import { IssueCard } from "@/modules/citizen/components/IssueCard";
+import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSkeleton";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
 
+const PAGE_SIZE = 10;
+const COMMUNITY_CACHE_KEY = "citylink:community-issues-cache:v1";
+
+type CommunityCacheEntry = {
+  issues: IIssue[];
+  page: number;
+  hasMore: boolean;
+};
+
+const getCommunityFilterKey = (district: string, category: string, status: string) =>
+  `${district}__${category}__${status}`;
+
+const readCommunityCache = (filterKey: string): CommunityCacheEntry | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(COMMUNITY_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, CommunityCacheEntry>;
+    const entry = parsed[filterKey];
+    if (!entry || !Array.isArray(entry.issues)) return null;
+    return entry;
+  } catch {
+    return null;
+  }
+};
+
+const writeCommunityCache = (filterKey: string, entry: CommunityCacheEntry) => {
+  if (typeof window === "undefined") return;
+  const currentRaw = window.sessionStorage.getItem(COMMUNITY_CACHE_KEY);
+  const current = currentRaw ? (JSON.parse(currentRaw) as Record<string, CommunityCacheEntry>) : {};
+  current[filterKey] = entry;
+  window.sessionStorage.setItem(COMMUNITY_CACHE_KEY, JSON.stringify(current));
+};
+
 const CommunityIssues = () => {
-  const PAGE_SIZE = 10;
   const user = useUserState((state) => state.user);
   const [issues, setIssues] = useState<IIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,21 +77,34 @@ const CommunityIssues = () => {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const requestIdRef = useRef(0);
+  const filterKey = useMemo(
+    () => getCommunityFilterKey(district, category, status),
+    [district, category, status]
+  );
 
   useEffect(() => {
+    const cached = readCommunityCache(filterKey);
+    const hasCachedEntry = Boolean(cached);
+    if (cached) {
+      setIssues(cached.issues);
+      setPage(cached.page);
+      setHasMore(cached.hasMore);
+      setIsLoading(false);
+    }
+
     const load = async () => {
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
-      const startedAt = performance.now();
 
       try {
-        setIsLoading(true);
+        if (!hasCachedEntry) {
+          setIsLoading(true);
+        }
         const response = await getCommunityIssues({
           district,
           category,
@@ -68,10 +115,15 @@ const CommunityIssues = () => {
 
         if (requestId !== requestIdRef.current) return;
 
-        setIssues(response.issues);
+        const nextIssues = response.issues;
+        setIssues(nextIssues);
         setPage(response.page);
         setHasMore(response.hasMore);
-        setLastFetchMs(Math.round(performance.now() - startedAt));
+        writeCommunityCache(filterKey, {
+          issues: nextIssues,
+          page: response.page,
+          hasMore: response.hasMore,
+        });
       } catch (error: unknown) {
         if (requestId !== requestIdRef.current) return;
         if (error instanceof AxiosError) {
@@ -80,20 +132,19 @@ const CommunityIssues = () => {
         }
         toast.error("Failed to load community issues");
       } finally {
-        if (requestId === requestIdRef.current) {
+        if (requestId === requestIdRef.current && !hasCachedEntry) {
           setIsLoading(false);
         }
       }
     };
 
-    load();
-  }, [district, category, status]);
+    void load();
+  }, [district, category, status, filterKey]);
 
   const handleLoadMore = async () => {
     const nextPage = page + 1;
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    const startedAt = performance.now();
 
     try {
       setIsLoadingMore(true);
@@ -110,11 +161,16 @@ const CommunityIssues = () => {
       setIssues((prev) => {
         const seen = new Set(prev.map((item) => item._id));
         const incoming = response.issues.filter((item) => !seen.has(item._id));
-        return [...prev, ...incoming];
+        const nextIssues = [...prev, ...incoming];
+        writeCommunityCache(filterKey, {
+          issues: nextIssues,
+          page: response.page,
+          hasMore: response.hasMore,
+        });
+        return nextIssues;
       });
       setPage(response.page);
       setHasMore(response.hasMore);
-      setLastFetchMs(Math.round(performance.now() - startedAt));
     } catch (error: unknown) {
       if (requestId !== requestIdRef.current) return;
       if (error instanceof AxiosError) {
@@ -145,7 +201,15 @@ const CommunityIssues = () => {
 
     try {
       const updated = await voteIssue(issueId, type);
-      setIssues((prev) => prev.map((item) => (item._id === issueId ? updated : item)));
+      setIssues((prev) => {
+        const nextIssues = prev.map((item) => (item._id === issueId ? updated : item));
+        writeCommunityCache(filterKey, {
+          issues: nextIssues,
+          page,
+          hasMore,
+        });
+        return nextIssues;
+      });
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -163,9 +227,17 @@ const CommunityIssues = () => {
 
     try {
       const details = await getIssueById(issue._id);
-      setIssues((prev) =>
-        prev.map((item) => (item._id === details._id ? { ...item, ...details } : item))
-      );
+      setIssues((prev) => {
+        const nextIssues = prev.map((item) =>
+          item._id === details._id ? { ...item, ...details } : item
+        );
+        writeCommunityCache(filterKey, {
+          issues: nextIssues,
+          page,
+          hasMore,
+        });
+        return nextIssues;
+      });
       setSelectedIssue(details);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -183,9 +255,9 @@ const CommunityIssues = () => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <h1 className="text-2xl font-bold md:text-3xl">Community Issues</h1>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center xl:w-auto">
           <Select value={district} onValueChange={setDistrict}>
-            <SelectTrigger className="w-full min-w-45 sm:w-auto">
+            <SelectTrigger className="w-full sm:w-auto xl:min-w-45">
               <SelectValue placeholder="Select District" />
             </SelectTrigger>
             <SelectContent>
@@ -199,7 +271,7 @@ const CommunityIssues = () => {
           </Select>
 
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-full min-w-55 sm:w-auto">
+            <SelectTrigger className="w-full sm:w-auto xl:min-w-55">
               <SelectValue placeholder="Select Category" />
             </SelectTrigger>
             <SelectContent>
@@ -212,22 +284,24 @@ const CommunityIssues = () => {
             </SelectContent>
           </Select>
 
-          <div className="inline-flex rounded-lg border p-1 gap-3 ">
+          <div className="inline-flex w-full items-center gap-2 rounded-lg border p-1 sm:w-auto">
             <Button
-              size="icon-sm"
+              size="sm"
               variant={viewMode === "list" ? "secondary" : "ghost"}
+              className="flex-1 sm:flex-none"
               onClick={() => setViewMode("list")}
-              
             >
               <List className="h-4 w-4" />
+              <span className="sm:hidden">List</span>
             </Button>
             <Button
-              size="icon-sm"
+              size="sm"
               variant={viewMode === "map" ? "secondary" : "ghost"}
+              className="flex-1 sm:flex-none"
               onClick={() => setViewMode("map")}
-             
             >
               <MapIcon className="h-4 w-4" />
+              <span className="sm:hidden">Map</span>
             </Button>
           </div>
         </div>
@@ -246,17 +320,8 @@ const CommunityIssues = () => {
         ))}
       </div>
 
-      {lastFetchMs !== null ? (
-        <p className="text-xs text-muted-foreground">Fetched in {lastFetchMs} ms</p>
-      ) : null}
-
       {isLoading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
-            <Loader className="mr-2 h-5 w-5 animate-spin" />
-            Loading community issues...
-          </CardContent>
-        </Card>
+        <IssueCardSkeletonList count={5} />
       ) : viewMode === "map" ? (
         <Card>
           <CardContent className="p-3">

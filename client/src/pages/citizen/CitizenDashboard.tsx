@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Ban, CheckCircle2, Clock3, Loader, Timer } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock3, ShieldCheck, Timer } from "lucide-react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getIssueById, getMyIssueStats, getMyIssues, voteIssue } from "@/modules/citizen/api/issue.api";
 import { useUserState } from "@/store/user.store";
 import type { IIssue, IssueStats } from "@/modules/citizen/types/issue.types";
 import { IssueCard } from "@/modules/citizen/components/IssueCard";
+import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSkeleton";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 
 const defaultStats: IssueStats = {
   total: 0,
   pending: 0,
+  verified: 0,
   in_progress: 0,
   resolved: 0,
   rejected: 0,
@@ -50,55 +53,67 @@ const writeDashboardCache = (issues: IIssue[], stats: IssueStats) => {
   window.sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(payload));
 };
 
-const mergeIssuesPreservingExistingCards = (previous: IIssue[], incoming: IIssue[]) => {
+const mergeIssuesByLatest = (previous: IIssue[], incoming: IIssue[]) => {
   const previousMap = new Map(previous.map((item) => [item._id, item]));
-  return incoming.map((item) => previousMap.get(item._id) || item);
+  return incoming.map((item) => {
+    const existing = previousMap.get(item._id);
+    if (!existing) return item;
+    return {
+      ...existing,
+      ...item,
+    };
+  });
 };
 
 const CitizenDashboard = () => {
-  const cachedPayload = readDashboardCache();
+  const [cachedPayload] = useState<DashboardCachePayload | null>(() => readDashboardCache());
   const user = useUserState((state) => state.user);
   const [stats, setStats] = useState<IssueStats>(cachedPayload?.stats || defaultStats);
   const [issues, setIssues] = useState<IIssue[]>(cachedPayload?.issues || []);
   const [isLoading, setIsLoading] = useState(!cachedPayload);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastFetchMs, setLastFetchMs] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(5);
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   useEffect(() => {
-    const hasCache = Boolean(cachedPayload);
+    let isCancelled = false;
 
     const load = async () => {
-      const startedAt = performance.now();
       try {
-        if (hasCache) setIsRefreshing(true);
-        else setIsLoading(true);
-
+        if (!cachedPayload) {
+          setIsLoading(true);
+        }
         const [statsRes, issuesRes] = await Promise.all([getMyIssueStats(), getMyIssues()]);
-        const mergedIssues = hasCache
-          ? mergeIssuesPreservingExistingCards(cachedPayload?.issues || [], issuesRes)
-          : issuesRes;
+        if (isCancelled) return;
 
+        const mergedIssues = mergeIssuesByLatest(cachedPayload?.issues || [], issuesRes);
         setStats(statsRes);
         setIssues(mergedIssues);
         writeDashboardCache(mergedIssues, statsRes);
-        setLastFetchMs(Math.round(performance.now() - startedAt));
       } catch (error: unknown) {
+        if (isCancelled) return;
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error ?? "Failed to load dashboard");
           return;
         }
         toast.error("Failed to load dashboard");
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (!cachedPayload && !isCancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     void load();
-  }, []);
+    return () => {
+      isCancelled = true;
+    };
+  }, [cachedPayload]);
+
+  useEffect(() => {
+    setVisibleCount((prev) => Math.min(Math.max(prev, 5), Math.max(issues.length, 5)));
+  }, [issues.length]);
 
   const handleVote = async (issueId: string, type: "up" | "down") => {
     const targetIssue = issues.find((item) => item._id === issueId);
@@ -161,7 +176,7 @@ const CitizenDashboard = () => {
       </Card>
 
       <Card>
-        <CardContent className="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-5">
+        <CardContent className="grid grid-cols-2 gap-3 py-4 md:grid-cols-3 xl:grid-cols-6">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
@@ -174,6 +189,13 @@ const CitizenDashboard = () => {
             <div>
               <p className="text-xs font-medium text-muted-foreground">Pending</p>
               <p className="text-2xl font-bold">{stats.pending}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-8 w-8 rounded-full bg-sky-100 p-1.5 text-sky-700" />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Verified</p>
+              <p className="text-2xl font-bold">{stats.verified ?? 0}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -203,18 +225,9 @@ const CitizenDashboard = () => {
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-2xl font-bold">My Recent Reports</h2>
-          <div className="text-xs text-muted-foreground">
-            {isRefreshing ? "Refreshing..." : null}
-            {lastFetchMs !== null ? ` Fetched in ${lastFetchMs} ms` : null}
-          </div>
         </div>
         {isLoading ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-10 text-muted-foreground">
-              <Loader className="mr-2 h-5 w-5 animate-spin" />
-              Loading reports...
-            </CardContent>
-          </Card>
+          <IssueCardSkeletonList count={5} />
         ) : issues.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
@@ -227,7 +240,7 @@ const CitizenDashboard = () => {
           </Card>
         ) : (
           <div className="space-y-3 scrollbar-hide pr-1">
-            {issues.slice(0, 5).map((issue) => (
+            {issues.slice(0, visibleCount).map((issue) => (
               <IssueCard
                 key={issue._id}
                 issue={issue}
@@ -237,6 +250,13 @@ const CitizenDashboard = () => {
                 onBlockedVote={() => toast.error("You cannot vote your own report.")}
               />
             ))}
+            {visibleCount < issues.length ? (
+              <div className="flex justify-center">
+                <Button variant="outline" onClick={() => setVisibleCount((prev) => prev + 5)}>
+                  Show More
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
       </div>

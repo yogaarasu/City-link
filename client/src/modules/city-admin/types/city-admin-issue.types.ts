@@ -12,6 +12,8 @@ export interface CityAdminIssue extends IIssue {
 export interface CityAdminIssueFilters {
   status?: "all" | CityAdminStatus;
   category?: "all" | string;
+  minVotes?: number;
+  maxVotes?: number;
 }
 
 export interface CityAdminStatusUpdatePayload {
