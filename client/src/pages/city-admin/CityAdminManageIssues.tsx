@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { Filter, Layers3 } from "lucide-react";
+import { Filter, Layers3, List, Map as MapIcon } from "lucide-react";
+import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,12 +19,19 @@ import { CityAdminIssueCard } from "@/modules/city-admin/components/CityAdminIss
 import { CityAdminIssueDetailsDialog } from "@/modules/city-admin/components/CityAdminIssueDetailsDialog";
 import type { CityAdminIssue } from "@/modules/city-admin/types/city-admin-issue.types";
 import {
+  statusToBadgeVariant,
+  statusToColor,
+  statusToLabel,
+} from "@/modules/citizen/utils/issue-ui";
+import {
   buildCityAdminIssuesCacheKey,
   readCityAdminIssuesCache,
   writeCityAdminIssuesCache,
 } from "@/modules/city-admin/utils/city-admin-issues-cache";
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { formatIssueTime } from "@/modules/citizen/utils/time";
+import "leaflet/dist/leaflet.css";
 
 const toVoteNumber = (value: string): number | undefined => {
   const normalized = value.trim();
@@ -35,6 +44,7 @@ const toVoteNumber = (value: string): number | undefined => {
 const CityAdminManageIssues = () => {
   const user = useUserState((state) => state.user);
   const { t } = useI18n();
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [statusFilter, setStatusFilter] = useState<CityAdminStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [minVotes, setMinVotes] = useState("");
@@ -141,6 +151,13 @@ const CityAdminManageIssues = () => {
     setSelectedIssue(updatedIssue);
   };
 
+  const mapCenter = useMemo<[number, number]>(() => {
+    if (sortedIssues.length > 0) {
+      return [sortedIssues[0].location.lat, sortedIssues[0].location.lng];
+    }
+    return [11.0168, 76.9558];
+  }, [sortedIssues]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -150,13 +167,36 @@ const CityAdminManageIssues = () => {
             {t("manageIssuesSubtitle", { district: user?.district || "" })}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => void fetchIssues(false)}
-          disabled={loading || isRefreshing}
-        >
-          {isRefreshing ? `${t("refresh")}...` : t("refresh")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center gap-1 rounded-lg border p-1">
+            <Button
+              size="sm"
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              className="h-8 px-3"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">List View</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "map" ? "secondary" : "ghost"}
+              className="h-8 px-3"
+              onClick={() => setViewMode("map")}
+            >
+              <MapIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("mapView")}</span>
+            </Button>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => void fetchIssues(false)}
+            disabled={loading || isRefreshing}
+          >
+            {isRefreshing ? `${t("refresh")}...` : t("refresh")}
+          </Button>
+        </div>
       </div>
 
       <Card className="border bg-muted/30">
@@ -254,6 +294,50 @@ const CityAdminManageIssues = () => {
             </Card>
           ))}
         </div>
+      ) : viewMode === "map" ? (
+        <Card>
+          <CardContent className="p-3">
+            <div className="relative z-0 h-105 overflow-hidden rounded-xl border md:h-115">
+              <MapContainer center={mapCenter} zoom={13} className="h-full w-full">
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {sortedIssues.map((issue) => (
+                  <CircleMarker
+                    key={issue._id}
+                    center={[issue.location.lat, issue.location.lng]}
+                    radius={8}
+                    pathOptions={{
+                      color: statusToColor(issue.status),
+                      fillColor: statusToColor(issue.status),
+                      fillOpacity: 0.9,
+                      weight: 2,
+                    }}
+                  >
+                    <Popup>
+                      <div className="space-y-1">
+                        <h3 className="font-semibold">{issue.title}</h3>
+                        <p className="text-xs">{issue.category}</p>
+                        <p className="text-xs text-muted-foreground">{issue.address}</p>
+                        <Badge variant={statusToBadgeVariant(issue.status)}>
+                          {statusToLabel(issue.status)}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt)}</p>
+                        <Button size="sm" variant="link" className="px-0" onClick={() => onOpenIssue(issue)}>
+                          View details
+                        </Button>
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                ))}
+              </MapContainer>
+            </div>
+            {sortedIssues.length === 0 ? (
+              <p className="mt-2 text-center text-sm text-muted-foreground">{t("noIssuesFound")}</p>
+            ) : null}
+          </CardContent>
+        </Card>
       ) : sortedIssues.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">

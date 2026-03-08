@@ -350,7 +350,12 @@ const CommunityIssues = () => {
                     key={issue._id}
                     center={[issue.location.lat, issue.location.lng]}
                     radius={8}
-                    pathOptions={{ color: statusToColor(issue.status), fillOpacity: 0.85 }}
+                    pathOptions={{
+                      color: statusToColor(issue.status),
+                      fillColor: statusToColor(issue.status),
+                      fillOpacity: 0.9,
+                      weight: 2,
+                    }}
                   >
                     <Popup>
                       <div className="space-y-1">

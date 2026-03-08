@@ -1,13 +1,13 @@
 import type { IIssue } from "../types/issue.types";
 
-export type IssueBadgeVariant = "warning" | "info" | "success" | "destructive";
+export type IssueBadgeVariant = "warning" | "info" | "success" | "destructive" | "secondary";
 
 export const statusToBadgeVariant = (status: IIssue["status"]): IssueBadgeVariant => {
-  if (status === "pending") return "warning";
-  if (status === "verified") return "info";
+  if (status === "pending") return "destructive";
+  if (status === "verified") return "warning";
   if (status === "in_progress") return "info";
   if (status === "resolved") return "success";
-  return "destructive";
+  return "secondary";
 };
 
 export const statusToLabel = (status: IIssue["status"]) => {
@@ -17,10 +17,10 @@ export const statusToLabel = (status: IIssue["status"]) => {
 };
 
 export const statusToColor = (status: IIssue["status"]) => {
-  if (status === "pending") return "#f97316";
-  if (status === "verified") return "#0ea5e9";
-  if (status === "in_progress") return "#8b5cf6";
-  if (status === "resolved") return "#16a34a";
-  return "#ef4444";
+  if (status === "pending") return "#ef4444";
+  if (status === "verified") return "#f59e0b";
+  if (status === "in_progress") return "#3b82f6";
+  if (status === "resolved") return "#22c55e";
+  return "#6b7280";
 };
 

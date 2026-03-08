@@ -39,15 +39,15 @@ interface CityAdminIssueDetailsDialogProps {
 
 const STATUS_BUTTON_STYLES: Record<CityAdminStatus, string> = {
   pending:
-    "border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-500/60 dark:text-orange-300 dark:hover:bg-orange-900/30 data-[active=true]:border-orange-600 data-[active=true]:bg-orange-600 data-[active=true]:text-white dark:data-[active=true]:border-orange-500 dark:data-[active=true]:bg-orange-500 dark:data-[active=true]:text-white",
+    "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/60 dark:text-red-300 dark:hover:bg-red-900/30 data-[active=true]:border-red-600 data-[active=true]:bg-red-600 data-[active=true]:text-white dark:data-[active=true]:border-red-500 dark:data-[active=true]:bg-red-500 dark:data-[active=true]:text-white",
   verified:
-    "border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-500/60 dark:text-sky-300 dark:hover:bg-sky-900/30 data-[active=true]:border-sky-600 data-[active=true]:bg-sky-600 data-[active=true]:text-white dark:data-[active=true]:border-sky-500 dark:data-[active=true]:bg-sky-500 dark:data-[active=true]:text-white",
+    "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/60 dark:text-amber-300 dark:hover:bg-amber-900/30 data-[active=true]:border-amber-600 data-[active=true]:bg-amber-600 data-[active=true]:text-white dark:data-[active=true]:border-amber-500 dark:data-[active=true]:bg-amber-500 dark:data-[active=true]:text-white",
   in_progress:
-    "border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/60 dark:text-violet-300 dark:hover:bg-violet-900/30 data-[active=true]:border-violet-600 data-[active=true]:bg-violet-600 data-[active=true]:text-white dark:data-[active=true]:border-violet-500 dark:data-[active=true]:bg-violet-500 dark:data-[active=true]:text-white",
+    "border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/60 dark:text-blue-300 dark:hover:bg-blue-900/30 data-[active=true]:border-blue-600 data-[active=true]:bg-blue-600 data-[active=true]:text-white dark:data-[active=true]:border-blue-500 dark:data-[active=true]:bg-blue-500 dark:data-[active=true]:text-white",
   resolved:
     "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-500/60 dark:text-green-300 dark:hover:bg-green-900/30 data-[active=true]:border-green-600 data-[active=true]:bg-green-600 data-[active=true]:text-white dark:data-[active=true]:border-green-500 dark:data-[active=true]:bg-green-500 dark:data-[active=true]:text-white",
   rejected:
-    "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/60 dark:text-red-300 dark:hover:bg-red-900/30 data-[active=true]:border-red-600 data-[active=true]:bg-red-600 data-[active=true]:text-white dark:data-[active=true]:border-red-500 dark:data-[active=true]:bg-red-500 dark:data-[active=true]:text-white",
+    "border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-500/60 dark:text-slate-300 dark:hover:bg-slate-900/30 data-[active=true]:border-slate-600 data-[active=true]:bg-slate-600 data-[active=true]:text-white dark:data-[active=true]:border-slate-500 dark:data-[active=true]:bg-slate-500 dark:data-[active=true]:text-white",
 };
 
 const toBase64 = (file: File) =>
