@@ -17,7 +17,10 @@ export const reportIssueSchema = z.object({
   district: z
     .string()
     .min(1, "District is required")
-    .refine((value) => TAMIL_NADU_DISTRICTS.includes(value), "Invalid district"),
+    .refine(
+      (value) => (TAMIL_NADU_DISTRICTS as readonly string[]).includes(value),
+      "Invalid district"
+    ),
   photos: z
     .array(z.string())
     .min(1, "At least one evidence photo is required")
@@ -25,4 +28,3 @@ export const reportIssueSchema = z.object({
 });
 
 export type ReportIssueFormValues = z.infer<typeof reportIssueSchema>;
-

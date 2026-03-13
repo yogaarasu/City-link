@@ -163,6 +163,7 @@ const CommunityIssues = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const queryClient = useQueryClient();
+  
   const filterKey = useMemo(
     () => getCommunityFilterKey(district, category, status),
     [district, category, status]
@@ -171,22 +172,16 @@ const CommunityIssues = () => {
 
   const communityQuery = useInfiniteQuery({
     queryKey: ["communityIssues", district, category, status],
-    queryFn: ({ pageParam = 1 }) =>
+    queryFn: ({ pageParam }) =>
       getCommunityIssues({
         district,
         category,
         status,
-        page: pageParam,
+        page: pageParam as number,
         limit: PAGE_SIZE,
       }),
+    initialPageParam: 1, // Added for TanStack Query v5 compatibility
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
-    onError: (error: unknown) => {
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to load community issues");
-        return;
-      }
-      toast.error("Failed to load community issues");
-    },
     initialData: cached
       ? {
           pages: [
@@ -209,6 +204,17 @@ const CommunityIssues = () => {
   const hasMore = Boolean(lastPage?.hasMore);
   const isLoading = communityQuery.isLoading;
   const isLoadingMore = communityQuery.isFetchingNextPage;
+
+  // New useEffect to handle errors correctly in TanStack Query v5
+  useEffect(() => {
+    if (communityQuery.isError && communityQuery.error) {
+      if (communityQuery.error instanceof AxiosError) {
+        toast.error(communityQuery.error.response?.data?.error ?? "Failed to load community issues");
+      } else {
+        toast.error("Failed to load community issues");
+      }
+    }
+  }, [communityQuery.isError, communityQuery.error]);
 
   useEffect(() => {
     if (!communityQuery.data) return;

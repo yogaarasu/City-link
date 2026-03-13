@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeft, Ban, CheckCircle2, Clock3, Loader2, ShieldChe
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+//import { Skeleton } from "@/components/ui/skeleton";
 import { getCityIssueDetails } from "@/modules/super-admin/api/super-admin.api";
 import type { CityIssueDetail } from "@/modules/super-admin/types/super-admin.types";
 import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/issue-ui";
