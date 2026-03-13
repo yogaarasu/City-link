@@ -3,18 +3,16 @@ import { ThemeToggler } from "@/components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { getAuthTokenFromCookie } from "@/lib/user-session-cookie";
 import { getMe } from "@/modules/user/api/user.api";
 import { useUserState } from "@/store/user.store";
 import type { IUser } from "@/types/user";
 
 export const AuthLayout = () => {
   const navigate = useNavigate();
-  const token = getAuthTokenFromCookie();
   const user = useUserState((state) => state.user);
   const setUser = useUserState((state) => state.setUser);
   const clearUser = useUserState((state) => state.clearUser);
-  const [isCheckingSession, setIsCheckingSession] = useState(Boolean(token && !user));
+  const [isCheckingSession, setIsCheckingSession] = useState(!user);
 
   const navigateByRole = useCallback((role: IUser["role"]) => {
     if (role === "citizen") {
@@ -34,11 +32,6 @@ export const AuthLayout = () => {
     let isCancelled = false;
 
     const redirectIfAuthenticated = async () => {
-      if (!token) {
-        setIsCheckingSession(false);
-        return;
-      }
-
       if (user) {
         navigateByRole(user.role);
         return;
@@ -61,9 +54,9 @@ export const AuthLayout = () => {
     return () => {
       isCancelled = true;
     };
-  }, [clearUser, navigateByRole, setUser, token, user]);
+  }, [clearUser, navigateByRole, setUser, user]);
 
-  if (token && (user || isCheckingSession)) {
+  if (user || isCheckingSession) {
     return (
       <div className="bg-background flex min-h-svh items-center justify-center text-sm text-muted-foreground">
         Loading...
@@ -78,7 +71,7 @@ export const AuthLayout = () => {
           <Button
             size="icon"
             variant="secondary"
-            className="h-11 w-11"
+            className="h-9 w-9"
             onClick={() => navigate("/")}
           >
             <ArrowLeft strokeWidth={3} className="h-6 w-6" />

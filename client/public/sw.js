@@ -3,7 +3,7 @@ const APP_SHELL = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
-  "/citylink-logo.png",
+  "/citylink-logo-new.png",
   "/icon-192x192.png",
   "/icon-512x512.png",
 ];
@@ -53,3 +53,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { List, Map as MapIcon } from "lucide-react";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
@@ -32,9 +32,15 @@ import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSke
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
+import { getSocket } from "@/lib/socket";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
 const COMMUNITY_CACHE_KEY = "citylink:community-issues-cache:v1";
+const COMMUNITY_CACHE_MAX_BYTES = 2_000_000;
+const COMMUNITY_CACHE_MAX_ISSUES = 40;
+const COMMUNITY_CACHE_MIN_ISSUES = 10;
+let isCommunityCacheDisabled = false;
 const DEFAULT_DISTRICT_FILTER = "all";
 const DEFAULT_CATEGORY_FILTER = "all";
 const DEFAULT_STATUS_FILTER = "all";
@@ -64,10 +70,87 @@ const readCommunityCache = (filterKey: string): CommunityCacheEntry | null => {
 
 const writeCommunityCache = (filterKey: string, entry: CommunityCacheEntry) => {
   if (typeof window === "undefined") return;
-  const currentRaw = window.sessionStorage.getItem(COMMUNITY_CACHE_KEY);
-  const current = currentRaw ? (JSON.parse(currentRaw) as Record<string, CommunityCacheEntry>) : {};
-  current[filterKey] = entry;
-  window.sessionStorage.setItem(COMMUNITY_CACHE_KEY, JSON.stringify(current));
+  if (isCommunityCacheDisabled) return;
+
+  const isQuotaExceeded = (error: unknown) => {
+    if (!(error instanceof DOMException)) return false;
+    return (
+      error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      error.code === 22 ||
+      error.code === 1014
+    );
+  };
+
+  const compactIssueForCache = (issue: IIssue): IIssue => ({
+    ...issue,
+    description:
+      issue.description && issue.description.length > 500
+        ? `${issue.description.slice(0, 500)}...`
+        : issue.description,
+    photos: Array.isArray(issue.photos) ? issue.photos.slice(0, 1) : [],
+    resolvedEvidencePhotos: issue.resolvedEvidencePhotos?.slice(0, 1),
+    statusLogs: undefined,
+    review: issue.review
+      ? {
+          ...issue.review,
+          comment:
+            issue.review.comment && issue.review.comment.length > 200
+              ? `${issue.review.comment.slice(0, 200)}...`
+              : issue.review.comment,
+        }
+      : issue.review,
+  });
+
+  const tryWrite = (payload: Record<string, CommunityCacheEntry>) => {
+    const serialized = JSON.stringify(payload);
+    if (serialized.length > COMMUNITY_CACHE_MAX_BYTES) return false;
+    try {
+      window.sessionStorage.setItem(COMMUNITY_CACHE_KEY, serialized);
+      return true;
+    } catch (error: unknown) {
+      if (!isQuotaExceeded(error)) {
+        return true;
+      }
+      return false;
+    }
+  };
+
+  let current: Record<string, CommunityCacheEntry> = {};
+  try {
+    const currentRaw = window.sessionStorage.getItem(COMMUNITY_CACHE_KEY);
+    current = currentRaw ? (JSON.parse(currentRaw) as Record<string, CommunityCacheEntry>) : {};
+  } catch {
+    current = {};
+  }
+
+  const trimmedIssues =
+    entry.issues.length > COMMUNITY_CACHE_MAX_ISSUES
+      ? entry.issues.slice(0, COMMUNITY_CACHE_MAX_ISSUES)
+      : entry.issues;
+  const compactEntry: CommunityCacheEntry = {
+    ...entry,
+    issues: trimmedIssues.map(compactIssueForCache),
+  };
+
+  if (tryWrite({ ...current, [filterKey]: entry })) return;
+  if (tryWrite({ [filterKey]: compactEntry })) return;
+  if (
+    tryWrite({
+      [filterKey]: {
+        ...compactEntry,
+        issues: compactEntry.issues.slice(0, COMMUNITY_CACHE_MIN_ISSUES),
+      },
+    })
+  )
+    return;
+
+  try {
+    window.sessionStorage.removeItem(COMMUNITY_CACHE_KEY);
+  } catch {
+    // ignore cleanup errors
+  }
+  isCommunityCacheDisabled = true;
 };
 
 const CommunityIssues = () => {
@@ -75,127 +158,98 @@ const CommunityIssues = () => {
   const [district, setDistrict] = useState(DEFAULT_DISTRICT_FILTER);
   const [category, setCategory] = useState(DEFAULT_CATEGORY_FILTER);
   const [status, setStatus] = useState(DEFAULT_STATUS_FILTER);
-  const [initialCache] = useState(() =>
-    readCommunityCache(
-      getCommunityFilterKey(
-        DEFAULT_DISTRICT_FILTER,
-        DEFAULT_CATEGORY_FILTER,
-        DEFAULT_STATUS_FILTER
-      )
-    )
-  );
-  const [issues, setIssues] = useState<IIssue[]>(initialCache?.issues || []);
-  const [isLoading, setIsLoading] = useState(!initialCache);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [page, setPage] = useState(initialCache?.page || 1);
-  const [hasMore, setHasMore] = useState(initialCache?.hasMore || false);
   const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
-  const requestIdRef = useRef(0);
+  const queryClient = useQueryClient();
   const filterKey = useMemo(
     () => getCommunityFilterKey(district, category, status),
     [district, category, status]
   );
+  const cached = useMemo(() => readCommunityCache(filterKey), [filterKey]);
 
-  useEffect(() => {
-    const cached = readCommunityCache(filterKey);
-    if (cached) {
-      setIssues(cached.issues);
-      setPage(cached.page);
-      setHasMore(cached.hasMore);
-      setIsLoading(false);
-    }
-
-    const load = async () => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-
-      try {
-        if (!cached) {
-          setIssues([]);
-          setPage(1);
-          setHasMore(false);
-          setIsLoading(true);
-        }
-        const response = await getCommunityIssues({
-          district,
-          category,
-          status,
-          page: 1,
-          limit: PAGE_SIZE,
-        });
-
-        if (requestId !== requestIdRef.current) return;
-
-        const nextIssues = response.issues;
-        setIssues(nextIssues);
-        setPage(response.page);
-        setHasMore(response.hasMore);
-        writeCommunityCache(filterKey, {
-          issues: nextIssues,
-          page: response.page,
-          hasMore: response.hasMore,
-        });
-      } catch (error: unknown) {
-        if (requestId !== requestIdRef.current) return;
-        if (error instanceof AxiosError) {
-          toast.error(error.response?.data?.error ?? "Failed to load community issues");
-          return;
-        }
-        toast.error("Failed to load community issues");
-      } finally {
-        if (requestId === requestIdRef.current && !cached) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-  }, [district, category, status, filterKey]);
-
-  const handleLoadMore = async () => {
-    const nextPage = page + 1;
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-
-    try {
-      setIsLoadingMore(true);
-      const response = await getCommunityIssues({
+  const communityQuery = useInfiniteQuery({
+    queryKey: ["communityIssues", district, category, status],
+    queryFn: ({ pageParam = 1 }) =>
+      getCommunityIssues({
         district,
         category,
         status,
-        page: nextPage,
+        page: pageParam,
         limit: PAGE_SIZE,
-      });
+      }),
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    onError: (error: unknown) => {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to load community issues");
+        return;
+      }
+      toast.error("Failed to load community issues");
+    },
+    initialData: cached
+      ? {
+          pages: [
+            {
+              issues: cached.issues,
+              page: cached.page,
+              hasMore: cached.hasMore,
+              total: cached.issues.length,
+              limit: PAGE_SIZE,
+            },
+          ],
+          pageParams: [cached.page],
+        }
+      : undefined,
+  });
 
-      if (requestId !== requestIdRef.current) return;
+  const pages = communityQuery.data?.pages ?? [];
+  const issues = pages.flatMap((page) => page.issues);
+  const lastPage = pages[pages.length - 1];
+  const hasMore = Boolean(lastPage?.hasMore);
+  const isLoading = communityQuery.isLoading;
+  const isLoadingMore = communityQuery.isFetchingNextPage;
 
-      setIssues((prev) => {
-        const seen = new Set(prev.map((item) => item._id));
-        const incoming = response.issues.filter((item) => !seen.has(item._id));
-        const nextIssues = [...prev, ...incoming];
-        writeCommunityCache(filterKey, {
-          issues: nextIssues,
-          page: response.page,
-          hasMore: response.hasMore,
-        });
-        return nextIssues;
-      });
-      setPage(response.page);
-      setHasMore(response.hasMore);
+  useEffect(() => {
+    if (!communityQuery.data) return;
+    const last = communityQuery.data.pages[communityQuery.data.pages.length - 1];
+    writeCommunityCache(filterKey, {
+      issues,
+      page: last?.page || 1,
+      hasMore: Boolean(last?.hasMore),
+    });
+  }, [communityQuery.data, filterKey, issues]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["communityIssues", district, category, status] });
+    };
+
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
+    return () => {
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
+    };
+  }, [category, district, queryClient, status]);
+
+  const handleLoadMore = async () => {
+    try {
+      if (!communityQuery.hasNextPage) return;
+      await communityQuery.fetchNextPage();
     } catch (error: unknown) {
-      if (requestId !== requestIdRef.current) return;
       if (error instanceof AxiosError) {
         toast.error(error.response?.data?.error ?? "Failed to load more issues");
         return;
       }
       toast.error("Failed to load more issues");
-    } finally {
-      if (requestId === requestIdRef.current) {
-        setIsLoadingMore(false);
-      }
     }
   };
 
@@ -215,14 +269,15 @@ const CommunityIssues = () => {
 
     try {
       const updated = await voteIssue(issueId, type);
-      setIssues((prev) => {
-        const nextIssues = prev.map((item) => (item._id === issueId ? updated : item));
-        writeCommunityCache(filterKey, {
-          issues: nextIssues,
-          page,
-          hasMore,
-        });
-        return nextIssues;
+      queryClient.setQueryData(["communityIssues", district, category, status], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pages: prev.pages.map((page: any) => ({
+            ...page,
+            issues: page.issues.map((item: IIssue) => (item._id === issueId ? updated : item)),
+          })),
+        };
       });
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
@@ -241,16 +296,17 @@ const CommunityIssues = () => {
 
     try {
       const details = await getIssueById(issue._id);
-      setIssues((prev) => {
-        const nextIssues = prev.map((item) =>
-          item._id === details._id ? { ...item, ...details } : item
-        );
-        writeCommunityCache(filterKey, {
-          issues: nextIssues,
-          page,
-          hasMore,
-        });
-        return nextIssues;
+      queryClient.setQueryData(["communityIssues", district, category, status], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pages: prev.pages.map((page: any) => ({
+            ...page,
+            issues: page.issues.map((item: IIssue) =>
+              item._id === details._id ? { ...item, ...details } : item
+            ),
+          })),
+        };
       });
       setSelectedIssue(details);
     } catch (error: unknown) {

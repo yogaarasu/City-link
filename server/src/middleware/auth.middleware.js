@@ -1,7 +1,7 @@
 import { User } from "../models/user.model.js";
 import mongoose from "mongoose";
 import { getNormalizedAdminAccess } from "../modules/super-admin/super-admin.constants.js";
-import { verifyAuthToken } from "../lib/jwt.js";
+import { getAuthTokenFromRequest, verifyAuthToken } from "../lib/jwt.js";
 
 const normalizeRole = (role) => {
   const value = String(role || "").trim().toLowerCase();
@@ -14,16 +14,9 @@ const normalizeRole = (role) => {
   return "";
 };
 
-const getBearerToken = (authorizationHeader = "") => {
-  const [scheme, token] = String(authorizationHeader || "").split(" ");
-  if (!scheme || !token) return "";
-  if (scheme.toLowerCase() !== "bearer") return "";
-  return token.trim();
-};
-
 export const requireAuth = async (req, res, next) => {
   try {
-    const token = getBearerToken(req.header("authorization"));
+    const token = getAuthTokenFromRequest(req);
     if (!token) {
       return res.status(401).json({ error: "Unauthorized" });
     }

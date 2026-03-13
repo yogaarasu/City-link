@@ -65,7 +65,7 @@ const CityAdminLayout = () => {
     <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/city-admin/dashboard" className="flex items-center gap-2 text-3xl font-bold text-emerald-500">
-          <img src="/citylink-logo.png" alt="CityLink logo" className="h-8 w-8 rounded-md" />
+          <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-8 w-8 rounded-md" />
           CityLink
         </Link>
         <Button
@@ -187,7 +187,7 @@ const CityAdminLayout = () => {
             )}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo.png" alt="CityLink logo" className="h-5 w-5 rounded-lg" />
+            <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-5 w-5 rounded-lg" />
             CityLink
           </h1>
         </div>
@@ -296,4 +296,5 @@ const CityAdminLayout = () => {
 };
 
 export default CityAdminLayout;
+
 

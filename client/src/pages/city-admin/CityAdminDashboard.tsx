@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { CheckCircle2, Clock3, ShieldAlert, ShieldCheck, Timer, XCircle } from "lucide-react";
@@ -8,6 +8,7 @@ import { getCityAdminIssueStats } from "@/modules/city-admin/api/city-admin-issu
 import type { CityAdminIssueStats } from "@/modules/city-admin/types/city-admin-issue.types";
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { getSocket } from "@/lib/socket";
 
 const defaultStats: CityAdminIssueStats = {
   total: 0,
@@ -24,25 +25,47 @@ const CityAdminDashboard = () => {
   const [stats, setStats] = useState<CityAdminIssueStats>(defaultStats);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true);
-        const response = await getCityAdminIssueStats();
-        setStats(response);
-      } catch (error: unknown) {
+  const refreshStats = useCallback(async (showLoading: boolean) => {
+    try {
+      if (showLoading) setLoading(true);
+      const response = await getCityAdminIssueStats();
+      setStats(response);
+    } catch (error: unknown) {
+      if (showLoading) {
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error || t("loading"));
           return;
         }
         toast.error(t("loading"));
-      } finally {
-        setLoading(false);
       }
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void refreshStats(true);
+  }, [refreshStats]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      void refreshStats(false);
     };
 
-    run();
-  }, [t]);
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
+    return () => {
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
+    };
+  }, [refreshStats]);
 
   const cards = [
     {

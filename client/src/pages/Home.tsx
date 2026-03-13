@@ -1,4 +1,5 @@
-﻿import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Globe,
@@ -10,6 +11,7 @@ import {
   Clock,
   Sparkles,
   RefreshCcw,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggler } from "@/components/ThemeToggler";
@@ -39,11 +41,53 @@ const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
 const Home = () => {
   const { language, toggleLanguage } = useLanguageState();
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isInstalled =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+
+    setIsPwaInstalled(isInstalled);
+
+    const handleBeforeInstall = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const handleInstalled = () => {
+      setInstallPrompt(null);
+      setIsPwaInstalled(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-slate-900 selection:bg-emerald-500/30 dark:bg-[#050505] dark:text-white font-sans overflow-hidden">
@@ -63,7 +107,7 @@ const Home = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 pl-2 group">
             <img
-              src="/citylink-logo.png"
+              src="/citylink-logo-new.png"
               alt="CityLink logo"
               className="h-9 w-9 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
             />
@@ -156,6 +200,7 @@ const Home = () => {
                 </Button>
               </Link>
 
+
               <Button
                 variant="outline"
                 onClick={(e) => {
@@ -177,6 +222,21 @@ const Home = () => {
                 className="h-14 rounded-full border-slate-200 px-8 text-lg transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900"
               >
                 See how it works
+              </Button>
+
+              <Button
+                variant="outline"
+                disabled={!installPrompt || isPwaInstalled}
+                onClick={handleInstallClick}
+                className="group h-14 rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 disabled:cursor-not-allowed"
+                title={
+                  !installPrompt || isPwaInstalled
+                    ? "Install prompt is not available in this browser."
+                    : "Install CityLink"
+                }
+              >
+                <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                Install App
               </Button>
             </motion.div>
           </motion.div>
@@ -230,17 +290,35 @@ const Home = () => {
                     </div>
 
                     {/* Animated connecting path */}
-                    <div className="relative flex-1 h-0.5 bg-slate-200 dark:bg-slate-700">
+                    <div className="relative flex-1 h-0.5 overflow-hidden bg-slate-200 dark:bg-slate-700">
                       <motion.div
-                        initial={{ scaleX: 0, originX: 0 }}
-                        whileInView={{ scaleX: 1 }}
+                        initial={{ x: "-100%", backgroundColor: "#ef4444" }}
+                        animate={{
+                          x: ["-100%", "100%", "-100%"],
+                          backgroundColor: ["#ef4444", "#ef4444", "#22c55e", "#22c55e"],
+                        }}
                         transition={{
-                          duration: 2.5,
+                          duration: 4,
                           repeat: Infinity,
                           ease: "linear",
+                          times: [0, 0.48, 0.52, 1],
                         }}
-                        className="absolute inset-0 bg-linear-to-r from-red-500 via-red-400 to-teal-500"
-                      ></motion.div>
+                        className="absolute inset-0 opacity-85"
+                      />
+                      <motion.span
+                        className="absolute -top-1 h-2 w-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.45)]"
+                        initial={{ left: "0%", backgroundColor: "#ef4444" }}
+                        animate={{
+                          left: ["0%", "100%", "0%"],
+                          backgroundColor: ["#ef4444", "#ef4444", "#22c55e", "#22c55e"],
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          ease: "linear",
+                          times: [0, 0.48, 0.52, 1],
+                        }}
+                      />
                     </div>
 
                     <div className="flex flex-col items-center gap-2">
@@ -276,18 +354,24 @@ const Home = () => {
                 </p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-500 dark:text-slate-400">
                   <li>
-                    <span className="font-bold text-red-400">Pending:</span>{" "}
-                    Report is received and waiting for assignment.
+                    <span className="font-semibold text-amber-500">Pending:</span>{" "}
+                    Report received and queued for verification.
                   </li>
                   <li>
-                    <span className="font-bold text-purple-400">
-                      In Progress:{" "}
-                    </span>{" "}
-                    Team has started field work.
+                    <span className="font-semibold text-sky-500">Verified:</span>{" "}
+                    Admin confirms the report is valid.
                   </li>
                   <li>
-                    <span className="font-bold text-green-300">Resolved:</span>{" "}
-                    Work is complete and proof is uploaded.
+                    <span className="font-semibold text-purple-500">In Progress:</span>{" "}
+                    Field team assigned and work has started.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-emerald-500">Resolved:</span>{" "}
+                    Fix completed with evidence uploaded.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-rose-500">Rejected:</span>{" "}
+                    Report doesn&apos;t meet verification rules.
                   </li>
                 </ul>
               </div>
@@ -465,7 +549,7 @@ const Home = () => {
             <div className="lg:col-span-2">
               <Link to="/" className="flex items-center gap-2 mb-6 group">
                 <img
-                  src="/citylink-logo.png"
+                  src="/citylink-logo-new.png"
                   alt="CityLink logo"
                   className="h-7 w-7 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
                 />
@@ -593,7 +677,7 @@ const Home = () => {
 
           <div className="mt-16 flex flex-col items-center justify-between border-t border-slate-200 pt-8 dark:border-white/10 sm:flex-row">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              © {new Date().getFullYear()} CityLink Tamil Nadu. All rights
+              &copy; {new Date().getFullYear()} CityLink Tamil Nadu. All rights
               reserved.
             </p>
             <div className="mt-4 flex gap-6 sm:mt-0">
@@ -627,3 +711,4 @@ const Home = () => {
 };
 
 export default Home;
+

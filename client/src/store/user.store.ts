@@ -6,11 +6,12 @@ import {
   setAuthSessionCookie,
   setUserCookie,
 } from "@/lib/user-session-cookie";
+import { logout } from "@/modules/auth/api/auth.api";
 
 interface UserState {
   user: IUser | null;
   setUser: (user: IUser) => void;
-  setAuthSession: (user: IUser, token: string) => void;
+  setAuthSession: (user: IUser) => void;
   updateUser: (payload: Partial<IUser>) => void;
   clearUser: () => void;
 }
@@ -21,8 +22,8 @@ export const useUserState = create<UserState>((set) => ({
     setUserCookie(user);
     set({ user });
   },
-  setAuthSession: (user, token) => {
-    setAuthSessionCookie(user, token);
+  setAuthSession: (user) => {
+    setAuthSessionCookie(user);
     set({ user });
   },
   updateUser: (payload) =>
@@ -33,6 +34,7 @@ export const useUserState = create<UserState>((set) => ({
       return { user: updated };
     }),
   clearUser: () => {
+    void logout();
     clearAuthSessionCookie();
     set({ user: null });
   },

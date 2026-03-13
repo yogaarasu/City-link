@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
@@ -23,6 +23,7 @@ import { statusToLabel } from "@/modules/citizen/utils/issue-ui";
 import { compressIssuePhotoFiles } from "@/modules/citizen/utils/report-issue-image.utils";
 import { reportIssueSchema, type ReportIssueFormValues } from "@/modules/citizen/validation/report-issue.schema";
 import { useUserState } from "@/store/user.store";
+import { cleanProfanity } from "@/lib/profanity";
 import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [11.0168, 76.9558];
@@ -101,8 +102,8 @@ const ReportIssue = () => {
       lat: DEFAULT_CENTER[0],
       lng: DEFAULT_CENTER[1],
     },
-    address: user?.address ?? "",
-    district: (user?.district as ReportIssueFormValues["district"]) ?? "Chennai",
+    address: "",
+    district: "",
     photos: [],
   };
 
@@ -118,15 +119,6 @@ const ReportIssue = () => {
     () => [location.lat, location.lng],
     [location.lat, location.lng]
   );
-
-  useEffect(() => {
-    if (user?.district) {
-      setValue("district", user.district as ReportIssueFormValues["district"]);
-    }
-    if (user?.address) {
-      setValue("address", user.address);
-    }
-  }, [setValue, user?.address, user?.district]);
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
@@ -195,7 +187,10 @@ const ReportIssue = () => {
     );
   };
 
-  const addFiles = async (files: FileList | null) => {
+  const addFiles = async (
+    files: FileList | null,
+    options?: { watermarkText?: string }
+  ) => {
     if (!files) return;
     const fileArray = Array.from(files);
     const remainingSlots = Math.max(0, MAX_REPORT_ISSUE_PHOTOS - photoPreviews.length);
@@ -215,7 +210,7 @@ const ReportIssue = () => {
     }
 
     try {
-      const encoded = await compressIssuePhotoFiles(filesToProcess);
+      const encoded = await compressIssuePhotoFiles(filesToProcess, options);
       const merged = [...photoPreviews, ...encoded];
       setPhotoPreviews(merged);
       setValue("photos", merged, { shouldValidate: true });
@@ -464,11 +459,20 @@ const ReportIssue = () => {
 
                 <Field>
                   <FieldLabel htmlFor="description">Description</FieldLabel>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe the issue in detail..."
-                    className={errors.description ? "border-red-500" : ""}
-                    {...register("description")}
+                  <Controller
+                    control={control}
+                    name="description"
+                    render={({ field }) => (
+                      <Textarea
+                        id="description"
+                        placeholder="Describe the issue in detail..."
+                        className={errors.description ? "border-red-500" : ""}
+                        value={field.value}
+                        onChange={(event) =>
+                          field.onChange(cleanProfanity(event.target.value))
+                        }
+                      />
+                    )}
                   />
                   {errors.description ? (
                     <FieldDescription className="text-red-500">{errors.description.message}</FieldDescription>
@@ -556,7 +560,7 @@ const ReportIssue = () => {
                 </div>
 
                 <Field>
-                  <FieldLabel>Photos (Max {MAX_REPORT_ISSUE_PHOTOS})</FieldLabel>
+                <FieldLabel>Photos (Required, Max {MAX_REPORT_ISSUE_PHOTOS})</FieldLabel>
                   <div className="flex flex-wrap gap-3">
                     <input
                       ref={galleryInputRef}
@@ -573,10 +577,9 @@ const ReportIssue = () => {
                       ref={cameraInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       hidden
                       onChange={(event) => {
-                        void addFiles(event.target.files);
+                        void addFiles(event.target.files, { watermarkText: "Taken by CityLink" });
                         event.target.value = "";
                       }}
                     />
@@ -611,6 +614,10 @@ const ReportIssue = () => {
                       </div>
                     ))}
                   </div>
+                  <FieldDescription className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                    Please upload original evidence that includes a geo‑location, date, and time watermark.
+                    Submissions without this may be rejected.
+                  </FieldDescription>
                   {errors.photos ? (
                     <FieldDescription className="text-red-500">{errors.photos.message}</FieldDescription>
                   ) : null}

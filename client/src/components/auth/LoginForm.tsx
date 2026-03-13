@@ -64,11 +64,7 @@ export function LoginForm({
       setIsSubmitting(true);
       const res = await login({ email, password });
       const user = res.data.user as IUser;
-      if (!res.data.token) {
-        toast.error("Authentication failed. Please try again.");
-        return;
-      }
-      setAuthSession(user, res.data.token);
+      setAuthSession(user);
       toast.success(res.data.message ?? "Login successful");
       navigateByRole(user.role);
     } catch (error: unknown) {

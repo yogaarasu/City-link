@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Filter, Layers3, List, Map as MapIcon } from "lucide-react";
@@ -32,6 +32,7 @@ import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 import { formatIssueTime } from "@/modules/citizen/utils/time";
 import "leaflet/dist/leaflet.css";
+import { getSocket } from "@/lib/socket";
 
 const toVoteNumber = (value: string): number | undefined => {
   const normalized = value.trim();
@@ -74,7 +75,7 @@ const CityAdminManageIssues = () => {
     [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter]
   );
 
-  const fetchIssues = async (blocking: boolean) => {
+  const fetchIssues = useCallback(async (blocking: boolean) => {
     if (
       typeof parsedMinVotes === "number" &&
       typeof parsedMaxVotes === "number" &&
@@ -116,7 +117,7 @@ const CityAdminManageIssues = () => {
         else setIsRefreshing(false);
       }
     }
-  };
+  }, [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter, t, filterKey]);
 
   useEffect(() => {
     const cached = readCityAdminIssuesCache(filterKey);
@@ -130,7 +131,27 @@ const CityAdminManageIssues = () => {
 
     setIssues([]);
     void fetchIssues(true);
-  }, [filterKey]);
+  }, [fetchIssues, filterKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      void fetchIssues(false);
+    };
+
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
+    return () => {
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
+    };
+  }, [fetchIssues]);
 
   const sortedIssues = useMemo(
     () =>

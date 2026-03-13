@@ -38,7 +38,37 @@ const getOutputMimeType = (originalType: string) => {
   return supportedTypes.has(originalType) ? originalType : "image/jpeg";
 };
 
-export const compressIssuePhotoFile = async (file: File) => {
+type CompressOptions = {
+  watermarkText?: string;
+};
+
+const applyWatermark = (
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  text: string
+) => {
+  const fontSize = Math.max(12, Math.round(width * 0.035));
+  const padding = Math.max(6, Math.round(fontSize * 0.45));
+  context.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  context.textBaseline = "alphabetic";
+
+  const metrics = context.measureText(text);
+  const textWidth = Math.ceil(metrics.width);
+  const textHeight = Math.ceil(fontSize * 1.2);
+
+  const boxWidth = textWidth + padding * 2;
+  const boxHeight = textHeight + padding * 1.2;
+  const x = Math.max(0, width - boxWidth - padding);
+  const y = Math.max(0, height - boxHeight - padding);
+
+  context.fillStyle = "rgba(0, 0, 0, 0.55)";
+  context.fillRect(x, y, boxWidth, boxHeight);
+  context.fillStyle = "rgba(255, 255, 255, 0.95)";
+  context.fillText(text, x + padding, y + boxHeight - padding * 0.6);
+};
+
+export const compressIssuePhotoFile = async (file: File, options?: CompressOptions) => {
   if (!file.type.startsWith("image/")) {
     throw new Error("Only image files are allowed.");
   }
@@ -58,14 +88,22 @@ export const compressIssuePhotoFile = async (file: File) => {
 
   context.drawImage(image, 0, 0, width, height);
 
+  if (options?.watermarkText) {
+    applyWatermark(context, width, height, options.watermarkText);
+  }
+
   const mimeType = getOutputMimeType(file.type);
   const quality = mimeType === "image/png" ? undefined : REPORT_ISSUE_IMAGE_QUALITY;
   const compressedDataUrl = canvas.toDataURL(mimeType, quality);
 
+  if (options?.watermarkText) {
+    return compressedDataUrl;
+  }
+
   return compressedDataUrl.length < originalDataUrl.length ? compressedDataUrl : originalDataUrl;
 };
 
-export const compressIssuePhotoFiles = async (files: File[]) => {
+export const compressIssuePhotoFiles = async (files: File[], options?: CompressOptions) => {
   const limitedFiles = files.slice(0, MAX_REPORT_ISSUE_PHOTOS);
-  return Promise.all(limitedFiles.map((file) => compressIssuePhotoFile(file)));
+  return Promise.all(limitedFiles.map((file) => compressIssuePhotoFile(file, options)));
 };

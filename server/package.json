@@ -8,14 +8,18 @@
 		"@upstash/redis": "^1.36.2",
 		"bcryptjs": "^3.0.3",
 		"cloudinary": "^2.9.0",
+		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.6",
+		"date-holidays": "^3.26.9",
+		"dayjs": "^1.11.20",
 		"dotenv": "^17.2.4",
-		"express-rate-limit": "^8.1.0",
 		"express": "^5.2.1",
+		"express-rate-limit": "^8.1.0",
 		"jsonwebtoken": "^9.0.3",
 		"mongoose": "^9.2.1",
 		"nodemailer": "^8.0.1",
 		"nodemon": "^3.1.11",
+		"socket.io": "^4.8.3",
 		"zod": "^4.3.6"
 	}
 }

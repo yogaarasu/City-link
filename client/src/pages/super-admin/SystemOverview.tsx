@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
 import { getSystemOverview } from "@/modules/super-admin/api/super-admin.api";
 import type { SystemOverview } from "@/modules/super-admin/types/super-admin.types";
 import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import { getSocket } from "@/lib/socket";
 
 const SystemOverviewPage = () => {
   const navigate = useNavigate();
@@ -24,25 +25,47 @@ const SystemOverviewPage = () => {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [showAllDistricts, setShowAllDistricts] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const response = await getSystemOverview();
-        setData(response);
-      } catch (error: unknown) {
+  const refreshOverview = useCallback(async (showLoading: boolean) => {
+    try {
+      if (showLoading) setLoading(true);
+      const response = await getSystemOverview();
+      setData(response);
+    } catch (error: unknown) {
+      if (showLoading) {
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error || "Failed to load system overview.");
         } else {
           toast.error("Failed to load system overview.");
         }
-      } finally {
-        setLoading(false);
       }
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshOverview(true);
+  }, [refreshOverview]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      void refreshOverview(false);
     };
 
-    load();
-  }, []);
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
+    return () => {
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
+    };
+  }, [refreshOverview]);
 
   const sortedCities = useMemo(() => {
     const list = [...(data?.cityIssueBreakdown || [])];

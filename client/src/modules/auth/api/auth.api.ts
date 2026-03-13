@@ -9,8 +9,9 @@ export interface LoginPayload {
 export interface AuthSuccessResponse {
   message: string;
   user: IUser;
-  token: string;
 }
 
 export const login = (payload: LoginPayload) => api.post<AuthSuccessResponse>("/auth/login", payload);
+
+export const logout = () => api.post<{ message: string }>("/auth/logout");
 

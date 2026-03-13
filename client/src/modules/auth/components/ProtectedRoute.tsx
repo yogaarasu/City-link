@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import type { UserRole } from "@/types/user";
 import { useUserState } from "@/store/user.store";
-import { getAuthTokenFromCookie } from "@/lib/user-session-cookie";
 import { getMe } from "@/modules/user/api/user.api";
 
 interface ProtectedRouteProps {
@@ -15,14 +14,13 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
   const setUser = useUserState((state) => state.setUser);
   const clearUser = useUserState((state) => state.clearUser);
   const location = useLocation();
-  const token = getAuthTokenFromCookie();
-  const [isHydratingUser, setIsHydratingUser] = useState(Boolean(token && !user));
+  const [isHydratingUser, setIsHydratingUser] = useState(!user);
 
   useEffect(() => {
     let isCancelled = false;
 
     const hydrateUser = async () => {
-      if (!token || user) {
+      if (user) {
         setIsHydratingUser(false);
         return;
       }
@@ -48,11 +46,7 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
     return () => {
       isCancelled = true;
     };
-  }, [clearUser, setUser, token, user]);
-
-  if (!token) {
-    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
-  }
+  }, [clearUser, setUser, user]);
 
   if (!user && isHydratingUser) {
     return <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">Loading...</div>;

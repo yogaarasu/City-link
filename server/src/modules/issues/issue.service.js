@@ -11,6 +11,9 @@ import {
 } from "./issue-photo-upload.service.js";
 import { transporter } from "../../lib/mailer.js";
 import { SMTP_USER } from "../../../utils/constants.js";
+import dayjs from "dayjs";
+import Holidays from "date-holidays";
+import { getIo } from "../../lib/socket.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -23,6 +26,52 @@ const ISSUE_COMPLETE_SLA_DAYS = 7;
 
 const PENDING_ESCALATION_REASON = "Not verified within 24 hours.";
 const COMPLETION_ESCALATION_REASON = "Not completed within 7 days.";
+
+const tamilNaduHolidays = new Holidays("IN", "TN");
+
+const isTamilNaduHoliday = (date) => {
+  const holiday = tamilNaduHolidays.isHoliday(date);
+  return Boolean(holiday && (Array.isArray(holiday) ? holiday.length : true));
+};
+
+const subtractWorkingHours = (startDate, hoursToSubtract) => {
+  let remaining = hoursToSubtract;
+  let cursor = dayjs(startDate);
+
+  while (remaining > 0) {
+    if (isTamilNaduHoliday(cursor.toDate())) {
+      cursor = cursor.startOf("day").subtract(1, "millisecond");
+      continue;
+    }
+
+    const dayStart = cursor.startOf("day");
+    const availableHours = cursor.diff(dayStart, "hour", true);
+
+    if (availableHours <= 0) {
+      cursor = dayStart.subtract(1, "millisecond");
+      continue;
+    }
+
+    const consume = Math.min(remaining, availableHours);
+    cursor = cursor.subtract(consume, "hour");
+    remaining -= consume;
+
+    if (remaining > 0 && cursor.isSame(dayStart)) {
+      cursor = dayStart.subtract(1, "millisecond");
+    }
+  }
+
+  return cursor.toDate();
+};
+
+const emitIssueEvent = (event, issue) => {
+  try {
+    const io = getIo();
+    io.emit(event, issue);
+  } catch (error) {
+    console.warn("Socket emit failed:", error?.message || error);
+  }
+};
 
 const sendIssueStatusChangeEmail = async (issue) => {
   const recipient = String(issue?.reportedBy?.email || "").trim();
@@ -110,11 +159,11 @@ const sendIssueStatusChangeEmail = async (issue) => {
 };
 
 const getSlaBoundaries = () => {
-  const now = Date.now();
+  const now = new Date();
   return {
-    verifyDeadline: new Date(now - ISSUE_VERIFY_SLA_HOURS * 60 * 60 * 1000),
-    completionDeadline: new Date(now - ISSUE_COMPLETE_SLA_DAYS * 24 * 60 * 60 * 1000),
-    now: new Date(now),
+    verifyDeadline: subtractWorkingHours(now, ISSUE_VERIFY_SLA_HOURS),
+    completionDeadline: subtractWorkingHours(now, ISSUE_COMPLETE_SLA_DAYS * 24),
+    now,
   };
 };
 
@@ -239,6 +288,8 @@ export const createIssue = async (payload, authUser) => {
     path: "reportedBy",
     select: "name email district role avatar",
   });
+
+  emitIssueEvent("issue:created", populated);
 
   return populated;
 };
@@ -459,6 +510,8 @@ export const voteIssue = async (issueId, type, authUser) => {
   issue.votes = votes;
   await issue.save();
 
+  emitIssueEvent("issue:voted", issue);
+
   return issue;
 };
 
@@ -537,6 +590,8 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
 
   await issue.save();
 
+  emitIssueEvent("issue:updated", issue);
+
   if (issue.status === "resolved" || issue.status === "rejected") {
     try {
       await sendIssueStatusChangeEmail(issue);
@@ -579,5 +634,30 @@ export const reviewResolvedIssue = async (issueId, payload, authUser) => {
   };
 
   await issue.save();
+  emitIssueEvent("issue:reviewed", issue);
+  return issue;
+};
+
+export const deleteIssue = async (issueId, authUser) => {
+  if (!mongoose.Types.ObjectId.isValid(issueId)) {
+    throw createHttpError(400, "Invalid issue id.");
+  }
+
+  const issue = await Issue.findById(issueId);
+  if (!issue) {
+    throw createHttpError(404, "Issue not found.");
+  }
+
+  const issueOwnerId = String(issue.reportedBy);
+  if (issueOwnerId !== String(authUser._id)) {
+    throw createHttpError(403, "You can delete only your own reported issues.");
+  }
+
+  if (issue.status !== "pending") {
+    throw createHttpError(409, "Only pending issues can be deleted.");
+  }
+
+  await Issue.deleteOne({ _id: issue._id });
+  emitIssueEvent("issue:updated", { _id: issue._id, deleted: true, district: issue.district });
   return issue;
 };

@@ -1,7 +1,7 @@
 import { canResendOTP, checkDailyLimit, generateOTP, sendOTP, storeOTP, verifyOTP as verify } from "../../lib/otp.js";
 import { User } from "../../models/user.model.js";
 import { sanitizeUser } from "../../modules/auth/shared/sanitize-user.js";
-import { signAuthToken } from "../../lib/jwt.js";
+import { setAuthCookie, signAuthToken } from "../../lib/jwt.js";
 
 export const verifyOTP = async (req, res, next) => {
   try {
@@ -32,10 +32,11 @@ export const verifyOTP = async (req, res, next) => {
       return res.status(404).json({ error: "User not found." });
     }
 
+    const token = signAuthToken(user);
+    setAuthCookie(res, token);
     return res.status(200).json({
       message: "User registration successfull!",
       user: sanitizeUser(user),
-      token: signAuthToken(user),
     });
   } catch (error) {
     return next(error);

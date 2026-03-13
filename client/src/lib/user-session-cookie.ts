@@ -1,8 +1,6 @@
 import type { IUser, UserRole } from "@/types/user";
-import { getJwtRemainingSeconds, isJwtExpired } from "./jwt-token";
 
 const USER_COOKIE_KEY = "citylink_user";
-const TOKEN_COOKIE_KEY = "citylink_token";
 const SESSION_CACHE_KEYS = [
   "citylink:citizen-dashboard-cache",
   "citylink:community-issues-cache:v1",
@@ -10,7 +8,6 @@ const SESSION_CACHE_KEYS = [
 ];
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const COOKIE_SAFE_PAYLOAD_LIMIT = 3500;
-const TOKEN_MAX_AGE_FALLBACK_SECONDS = COOKIE_MAX_AGE_SECONDS;
 
 const normalizeUser = (value: Partial<IUser> | null | undefined): IUser | null => {
   if (!value) return null;
@@ -82,16 +79,6 @@ const normalizeCookieMaxAge = (value?: number | null) => {
   return Math.max(1, Math.floor(Number(value)));
 };
 
-const getTokenCookieMaxAge = (token: string, explicitMaxAgeSeconds?: number) => {
-  if (typeof explicitMaxAgeSeconds === "number" && Number.isFinite(explicitMaxAgeSeconds)) {
-    return normalizeCookieMaxAge(explicitMaxAgeSeconds);
-  }
-
-  const remaining = getJwtRemainingSeconds(token);
-  if (remaining === null) return TOKEN_MAX_AGE_FALLBACK_SECONDS;
-  return normalizeCookieMaxAge(remaining);
-};
-
 export const setUserCookie = (user: IUser, maxAgeSeconds?: number) => {
   if (typeof document === "undefined") return;
   const payload = buildCookiePayload(user);
@@ -99,26 +86,8 @@ export const setUserCookie = (user: IUser, maxAgeSeconds?: number) => {
   document.cookie = `${USER_COOKIE_KEY}=${encoded}; path=/; max-age=${normalizeCookieMaxAge(maxAgeSeconds)}; samesite=lax`;
 };
 
-export const setAuthTokenCookie = (token: string, maxAgeSeconds?: number) => {
-  if (typeof document === "undefined") return;
-  if (isJwtExpired(token, 0)) {
-    expireCookie(TOKEN_COOKIE_KEY);
-    return;
-  }
-
-  const encoded = encodeURIComponent(token);
-  const cookieMaxAge = getTokenCookieMaxAge(token, maxAgeSeconds);
-  document.cookie = `${TOKEN_COOKIE_KEY}=${encoded}; path=/; max-age=${cookieMaxAge}; samesite=lax`;
-};
-
 export const getUserFromCookie = (): IUser | null => {
   if (typeof document === "undefined") return null;
-  const token = getAuthTokenFromCookie();
-  if (!token) {
-    clearAuthSessionCookie();
-    return null;
-  }
-
   const raw = getCookieValue(USER_COOKIE_KEY);
   if (raw) {
     try {
@@ -136,23 +105,6 @@ export const clearUserCookie = () => {
   expireCookie(USER_COOKIE_KEY);
 };
 
-export const getAuthTokenFromCookie = (): string => {
-  const value = getCookieValue(TOKEN_COOKIE_KEY);
-  if (!value) return "";
-
-  try {
-    const token = decodeURIComponent(value);
-    if (isJwtExpired(token)) {
-      clearAuthSessionCookie();
-      return "";
-    }
-    return token;
-  } catch {
-    clearAuthSessionCookie();
-    return "";
-  }
-};
-
 const clearSessionCaches = () => {
   if (typeof window === "undefined") return;
   for (const cacheKey of SESSION_CACHE_KEYS) {
@@ -164,23 +116,12 @@ const clearSessionCaches = () => {
   }
 };
 
-export const clearAuthTokenCookie = () => {
-  expireCookie(TOKEN_COOKIE_KEY);
-};
-
-export const setAuthSessionCookie = (user: IUser, token: string) => {
-  if (isJwtExpired(token, 0)) {
-    clearAuthSessionCookie();
-    return;
-  }
-  const cookieMaxAge = getTokenCookieMaxAge(token);
-  setAuthTokenCookie(token, cookieMaxAge);
-  setUserCookie(user, cookieMaxAge);
+export const setAuthSessionCookie = (user: IUser, maxAgeSeconds?: number) => {
+  setUserCookie(user, maxAgeSeconds);
 };
 
 export const clearAuthSessionCookie = () => {
   clearUserCookie();
-  clearAuthTokenCookie();
   clearSessionCaches();
 };
 

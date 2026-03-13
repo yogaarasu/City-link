@@ -29,6 +29,7 @@ import { updateCityAdminIssueStatus } from "../api/city-admin-issues.api";
 import type { CityAdminIssue } from "../types/city-admin-issue.types";
 import { useI18n } from "@/modules/i18n/useI18n";
 import "leaflet/dist/leaflet.css";
+import { cleanProfanity } from "@/lib/profanity";
 
 interface CityAdminIssueDetailsDialogProps {
   open: boolean;
@@ -48,6 +49,14 @@ const STATUS_BUTTON_STYLES: Record<CityAdminStatus, string> = {
     "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-500/60 dark:text-green-300 dark:hover:bg-green-900/30 data-[active=true]:border-green-600 data-[active=true]:bg-green-600 data-[active=true]:text-white dark:data-[active=true]:border-green-500 dark:data-[active=true]:bg-green-500 dark:data-[active=true]:text-white",
   rejected:
     "border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-500/60 dark:text-slate-300 dark:hover:bg-slate-900/30 data-[active=true]:border-slate-600 data-[active=true]:bg-slate-600 data-[active=true]:text-white dark:data-[active=true]:border-slate-500 dark:data-[active=true]:bg-slate-500 dark:data-[active=true]:text-white",
+};
+
+const ALLOWED_STATUS_TRANSITIONS: Record<CityAdminStatus, CityAdminStatus[]> = {
+  pending: ["verified", "rejected"],
+  verified: ["in_progress"],
+  in_progress: ["resolved"],
+  resolved: [],
+  rejected: [],
 };
 
 const toBase64 = (file: File) =>
@@ -86,10 +95,11 @@ export const CityAdminIssueDetailsDialog = ({
     return [issue.location.lat, issue.location.lng];
   }, [issue]);
   const isStatusLocked = issue?.status === "resolved" || issue?.status === "rejected";
-  const updatableStatuses = useMemo(
-    () => CITY_ADMIN_STATUSES.filter((status) => status !== "pending"),
-    []
-  );
+  const displayStatuses = useMemo(() => CITY_ADMIN_STATUSES, []);
+  const allowedNextStatuses = useMemo(() => {
+    if (!issue) return [];
+    return ALLOWED_STATUS_TRANSITIONS[issue.status] || [];
+  }, [issue]);
 
   const onUploadResolvedEvidence = async (files: FileList | null) => {
     if (!files) return;
@@ -112,8 +122,9 @@ export const CityAdminIssueDetailsDialog = ({
 
   const onSubmitStatusUpdate = async () => {
     if (!issue) return;
-    if (selectedStatus === issue.status) {
-      toast.error("Cannot update to the same status.");
+    const allowedNextStatuses = ALLOWED_STATUS_TRANSITIONS[issue.status] || [];
+    if (!allowedNextStatuses.includes(selectedStatus)) {
+      toast.error("Please select a valid next status.");
       return;
     }
     if (selectedStatus === "resolved" && resolvedEvidencePhotos.length === 0) {
@@ -150,7 +161,7 @@ export const CityAdminIssueDetailsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[90svh] w-[94vw] max-h-[90svh] max-w-[94vw] overflow-hidden p-0 md:h-[80svh] md:w-[60vw] md:max-h-[80svh] md:max-w-[60vw]">
+      <DialogContent className="h-[95svh] w-[calc(100%-20px)] max-h-[95svh] max-w-7xl overflow-hidden p-0 md:w-[calc(100%-24px)] lg:w-[calc(100%-64px)]">
         <DialogHeader className="sticky top-0 z-20 border-b bg-background px-4 py-3 md:px-6 md:py-4">
           <div className="flex items-start justify-between gap-2">
             <DialogTitle className="line-clamp-2 text-left text-lg md:text-xl">{issue.title}</DialogTitle>
@@ -178,7 +189,7 @@ export const CityAdminIssueDetailsDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="scrollbar-hide max-h-[calc(90svh-76px)] space-y-4 overflow-y-auto px-4 py-4 md:max-h-[calc(80svh-86px)] md:px-6 md:py-5">
+        <div className="scrollbar-hide max-h-[calc(95svh-76px)] space-y-4 overflow-y-auto px-4 py-4 md:max-h-[calc(95svh-86px)] md:px-6 md:py-5">
           <div className="rounded-lg border p-3">
             <h3 className="mb-1 text-sm font-semibold">{t("reportedDateTime")}</h3>
             <p className="text-muted-foreground inline-flex items-center text-sm">
@@ -252,14 +263,22 @@ export const CityAdminIssueDetailsDialog = ({
             {(issue.photos || []).length === 0 ? (
               <p className="text-muted-foreground text-sm">{t("noEvidence")}</p>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {(issue.photos || []).map((photo, index) => (
-                  <a key={`${photo}-${index}`} href={photo} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={photo}
-                      alt={`Reported evidence ${index + 1}`}
-                      className="h-44 w-full rounded-md object-cover sm:h-52"
-                    />
+                  <a
+                    key={`${photo}-${index}`}
+                    href={photo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                      <img
+                        src={photo}
+                        alt={`Reported evidence ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </a>
                 ))}
               </div>
@@ -269,14 +288,22 @@ export const CityAdminIssueDetailsDialog = ({
           {(issue.resolvedEvidencePhotos || []).length > 0 ? (
             <div className="rounded-lg border p-3">
               <h3 className="mb-2 text-sm font-semibold">Resolved Evidence</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {(issue.resolvedEvidencePhotos || []).map((photo, index) => (
-                  <a key={`${photo}-${index}`} href={photo} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={photo}
-                      alt={`Resolved evidence ${index + 1}`}
-                      className="h-44 w-full rounded-md object-cover sm:h-52"
-                    />
+                  <a
+                    key={`${photo}-${index}`}
+                    href={photo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                      <img
+                        src={photo}
+                        alt={`Resolved evidence ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </a>
                 ))}
               </div>
@@ -305,19 +332,25 @@ export const CityAdminIssueDetailsDialog = ({
           <div className="rounded-lg border p-3">
             <h3 className="mb-2 text-sm font-semibold">{t("updateStatus")}</h3>
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              {updatableStatuses.map((status) => (
-                <Button
-                  key={status}
-                  type="button"
-                  variant="outline"
-                  disabled={isStatusLocked}
-                  data-active={selectedStatus === status}
-                  className={`h-10 rounded-md px-4 text-sm font-medium ${STATUS_BUTTON_STYLES[status]}`}
-                  onClick={() => setSelectedStatus(status)}
-                >
-                  {statusToLabel(status)}
-                </Button>
-              ))}
+              {displayStatuses.map((status) => {
+                const isDisabled = isStatusLocked || !allowedNextStatuses.includes(status);
+                return (
+                  <Button
+                    key={status}
+                    type="button"
+                    variant="outline"
+                    disabled={isDisabled}
+                    data-active={selectedStatus === status}
+                    className={`h-10 rounded-md px-4 text-sm font-medium ${STATUS_BUTTON_STYLES[status]}`}
+                    onClick={() => {
+                      if (isDisabled) return;
+                      setSelectedStatus(status);
+                    }}
+                  >
+                    {statusToLabel(status)}
+                  </Button>
+                );
+              })}
             </div>
             {isStatusLocked ? (
               <p className="mb-3 text-sm text-muted-foreground">
@@ -402,7 +435,7 @@ export const CityAdminIssueDetailsDialog = ({
               <Label className="text-sm font-medium">{t("optionalNote")}</Label>
               <Textarea
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) => setDescription(cleanProfanity(event.target.value))}
                 placeholder={t("optionalNotePlaceholder")}
                 className="min-h-20"
               />

@@ -92,3 +92,8 @@ export const reviewIssue = async (issueId: string, payload: { rating: number; co
   return response.data;
 };
 
+export const deleteIssue = async (issueId: string) => {
+  const response = await api.delete<{ message: string; issue: IIssue }>(`/issues/${issueId}`);
+  return response.data.issue;
+};
+

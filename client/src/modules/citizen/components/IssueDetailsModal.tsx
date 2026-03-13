@@ -10,6 +10,7 @@ import { formatIssueTime } from "../utils/time";
 import { shareIssue } from "../utils/share";
 import { IssueVoteButtons } from "./IssueVoteButtons";
 import "leaflet/dist/leaflet.css";
+import { cleanProfanity } from "@/lib/profanity";
 
 interface IssueDetailsModalProps {
   open: boolean;
@@ -172,19 +173,22 @@ export const IssueDetailsModal = ({
             {issue.photos.length === 0 ? (
               <p className="text-sm text-muted-foreground">No reported evidence images.</p>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {issue.photos.map((photo, index) => (
                   <a
                     key={`${photo}-${index}`}
                     href={photo}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="block w-full"
                   >
-                    <img
-                      src={photo}
-                      alt={`reported-evidence-${index + 1}`}
-                      className="h-44 w-full rounded-md object-cover sm:h-52"
-                    />
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                      <img
+                        src={photo}
+                        alt={`reported-evidence-${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </a>
                 ))}
               </div>
@@ -194,19 +198,22 @@ export const IssueDetailsModal = ({
           {(issue.resolvedEvidencePhotos || []).length > 0 ? (
             <div className="rounded-lg border p-3">
               <h3 className="mb-3 font-semibold">Resolved Evidence</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {issue.resolvedEvidencePhotos!.map((photo, index) => (
                   <a
                     key={`${photo}-${index}`}
                     href={photo}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="block w-full"
                   >
-                    <img
-                      src={photo}
-                      alt={`resolved-evidence-${index + 1}`}
-                      className="h-44 w-full rounded-md object-cover sm:h-52"
-                    />
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                      <img
+                        src={photo}
+                        alt={`resolved-evidence-${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </a>
                 ))}
               </div>
@@ -250,7 +257,7 @@ export const IssueDetailsModal = ({
                   <Textarea
                     placeholder="Write your feedback about resolution quality..."
                     value={comment}
-                    onChange={(event) => setComment(event.target.value)}
+                    onChange={(event) => setComment(cleanProfanity(event.target.value))}
                     className="mb-2 min-h-20"
                   />
                   <Button onClick={submitReview} disabled={isSubmittingReview || rating === 0}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
@@ -6,45 +6,87 @@ import { AlertTriangle, ArrowLeft, Ban, CheckCircle2, Clock3, Loader2, ShieldChe
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCityIssueDetails } from "@/modules/super-admin/api/super-admin.api";
 import type { CityIssueDetail } from "@/modules/super-admin/types/super-admin.types";
 import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/issue-ui";
+import { getSocket } from "@/lib/socket";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CityIssueDetailsPage = () => {
   const navigate = useNavigate();
   const { district = "" } = useParams();
   const [details, setDetails] = useState<CityIssueDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [escalatedFilter, setEscalatedFilter] = useState<"all" | "unverified" | "unresolved">("all");
+  const [visibleEscalatedCount, setVisibleEscalatedCount] = useState(10);
+
+  const filteredEscalatedIssues = useMemo(() => {
+    const list = details?.escalatedIssues || [];
+    if (escalatedFilter === "unverified") {
+      return list.filter((issue) => issue.status === "pending");
+    }
+    if (escalatedFilter === "unresolved") {
+      return list.filter((issue) => !["resolved", "rejected"].includes(issue.status));
+    }
+    return list;
+  }, [details?.escalatedIssues, escalatedFilter]);
 
   useEffect(() => {
-    const load = async () => {
-      if (!district) {
-        setLoading(false);
-        return;
-      }
+    setVisibleEscalatedCount(10);
+  }, [escalatedFilter, details?.escalatedIssues?.length]);
 
-      try {
-        setLoading(true);
-        const response = await getCityIssueDetails(district);
-        setDetails(response);
-      } catch (error: unknown) {
+  const refreshDetails = useCallback(async (showLoading: boolean) => {
+    if (!district) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (showLoading) setLoading(true);
+      const response = await getCityIssueDetails(district);
+      setDetails(response);
+    } catch (error: unknown) {
+      if (showLoading) {
         if (error instanceof AxiosError) {
           toast.error(error.response?.data?.error || "Failed to load district issue details.");
         } else {
           toast.error("Failed to load district issue details.");
         }
-      } finally {
-        setLoading(false);
       }
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [district]);
+
+  useEffect(() => {
+    void refreshDetails(true);
+  }, [refreshDetails]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      void refreshDetails(false);
     };
 
-    load();
-  }, [district]);
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
+    return () => {
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
+    };
+  }, [refreshDetails]);
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+      <div className="flex min-h-svh items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-black/80 motion-safe:animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
@@ -146,35 +188,57 @@ const CityIssueDetailsPage = () => {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Escalated to Super Admin</CardTitle>
+          <Select value={escalatedFilter} onValueChange={(value) => setEscalatedFilter(value as "all" | "unverified" | "unresolved")}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder="Filter escalated issues" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All escalated issues</SelectItem>
+              <SelectItem value="unverified">Unverified only</SelectItem>
+              <SelectItem value="unresolved">Unresolved only</SelectItem>
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(details.escalatedIssues || []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No escalated issues in this district.</p>
+          {filteredEscalatedIssues.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No escalated issues for the selected filter.</p>
           ) : (
-            details.escalatedIssues!.map((issue) => (
-              <div key={issue._id} className="space-y-2 rounded-md border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-semibold">{issue.title}</h3>
-                  <Badge variant={statusToBadgeVariant(issue.status)}>{statusToLabel(issue.status)}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{issue.address}</p>
-                {issue.escalationReason ? (
-                  <p className="text-sm">
-                    <span className="font-medium">Escalation reason:</span> {issue.escalationReason}
-                  </p>
-                ) : null}
-                <p className="text-xs text-muted-foreground">
-                  Reported: {new Date(issue.createdAt).toLocaleString()}
-                </p>
-                {issue.escalatedAt ? (
+            <>
+              {filteredEscalatedIssues.slice(0, visibleEscalatedCount).map((issue) => (
+                <div key={issue._id} className="space-y-2 rounded-md border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-semibold">{issue.title}</h3>
+                    <Badge variant={statusToBadgeVariant(issue.status)}>{statusToLabel(issue.status)}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{issue.address}</p>
+                  {issue.escalationReason ? (
+                    <p className="text-sm">
+                      <span className="font-medium">Escalation reason:</span> {issue.escalationReason}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">
-                    Escalated: {new Date(issue.escalatedAt).toLocaleString()}
+                    Reported: {new Date(issue.createdAt).toLocaleString()}
                   </p>
-                ) : null}
-              </div>
-            ))
+                  {issue.escalatedAt ? (
+                    <p className="text-xs text-muted-foreground">
+                      Escalated: {new Date(issue.escalatedAt).toLocaleString()}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+              {visibleEscalatedCount < filteredEscalatedIssues.length ? (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setVisibleEscalatedCount((prev) => prev + 10)}
+                  >
+                    Show More
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>

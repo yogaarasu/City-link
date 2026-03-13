@@ -14,8 +14,14 @@ export const reportIssueSchema = z.object({
     lng: z.number().min(-180).max(180),
   }),
   address: z.string().min(5, "Address is required"),
-  district: z.enum(TAMIL_NADU_DISTRICTS),
-  photos: z.array(z.string()).max(MAX_REPORT_ISSUE_PHOTOS, "Maximum 5 photos allowed"),
+  district: z
+    .string()
+    .min(1, "District is required")
+    .refine((value) => TAMIL_NADU_DISTRICTS.includes(value), "Invalid district"),
+  photos: z
+    .array(z.string())
+    .min(1, "At least one evidence photo is required")
+    .max(MAX_REPORT_ISSUE_PHOTOS, "Maximum 5 photos allowed"),
 });
 
 export type ReportIssueFormValues = z.infer<typeof reportIssueSchema>;

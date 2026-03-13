@@ -75,13 +75,7 @@ export function OtpVerification({
 			toast.success(res.data.message);
 			sessionStorage.removeItem(SIGNUP_OTP_SESSION_KEY);
 			const user = res.data.user as IUser;
-			const token = String(res.data.token || "");
-			if (!token) {
-				toast.error("Authentication failed. Please login again.");
-				navigate("/auth/login", { replace: true });
-				return;
-			}
-			setAuthSession(user, token);
+			setAuthSession(user);
 			if (user.role === "citizen") {
 				navigate("/citizen/dashboard", { replace: true });
 				return;

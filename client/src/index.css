@@ -259,6 +259,12 @@ html::-webkit-scrollbar {
   animation: marquee 20s linear infinite;
 }
 
+@media (max-width: 640px) {
+  .animate-marquee {
+    animation-duration: 16s;
+  }
+}
+
 .district-marquee-wrapper::before,
 .district-marquee-wrapper::after {
   content: "";

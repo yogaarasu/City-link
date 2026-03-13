@@ -5,12 +5,14 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getIssueById, getMyIssueStats, getMyIssues, voteIssue } from "@/modules/citizen/api/issue.api";
+import { deleteIssue, getIssueById, getMyIssueStats, getMyIssues, voteIssue } from "@/modules/citizen/api/issue.api";
 import { useUserState } from "@/store/user.store";
 import type { IIssue, IssueStats } from "@/modules/citizen/types/issue.types";
 import { IssueCard } from "@/modules/citizen/components/IssueCard";
 import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSkeleton";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
+import { getSocket } from "@/lib/socket";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const defaultStats: IssueStats = {
   total: 0,
@@ -22,6 +24,10 @@ const defaultStats: IssueStats = {
 };
 
 const DASHBOARD_CACHE_KEY = "citylink:citizen-dashboard-cache";
+const MAX_CACHE_BYTES = 2_000_000;
+const MAX_CACHE_ISSUES = 40;
+const MIN_CACHE_ISSUES = 10;
+let isDashboardCacheDisabled = false;
 
 type DashboardCachePayload = {
   stats: IssueStats;
@@ -45,71 +51,126 @@ const readDashboardCache = (): DashboardCachePayload | null => {
 
 const writeDashboardCache = (issues: IIssue[], stats: IssueStats) => {
   if (typeof window === "undefined") return;
-  const payload: DashboardCachePayload = {
-    stats,
-    issues,
-    updatedAt: Date.now(),
-  };
-  window.sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(payload));
-};
+  if (isDashboardCacheDisabled) return;
 
-const mergeIssuesByLatest = (previous: IIssue[], incoming: IIssue[]) => {
-  const previousMap = new Map(previous.map((item) => [item._id, item]));
-  return incoming.map((item) => {
-    const existing = previousMap.get(item._id);
-    if (!existing) return item;
-    return {
-      ...existing,
-      ...item,
-    };
+  const isQuotaExceeded = (error: unknown) => {
+    if (!(error instanceof DOMException)) return false;
+    return (
+      error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      error.code === 22 ||
+      error.code === 1014
+    );
+  };
+
+  const compactIssueForCache = (issue: IIssue): IIssue => ({
+    ...issue,
+    description:
+      issue.description && issue.description.length > 500
+        ? `${issue.description.slice(0, 500)}...`
+        : issue.description,
+    photos: Array.isArray(issue.photos) ? issue.photos.slice(0, 1) : [],
+    resolvedEvidencePhotos: issue.resolvedEvidencePhotos?.slice(0, 1),
+    statusLogs: undefined,
+    review: issue.review
+      ? {
+          ...issue.review,
+          comment:
+            issue.review.comment && issue.review.comment.length > 200
+              ? `${issue.review.comment.slice(0, 200)}...`
+              : issue.review.comment,
+        }
+      : issue.review,
   });
+
+  const buildPayload = (payloadIssues: IIssue[]): DashboardCachePayload => ({
+    stats,
+    issues: payloadIssues,
+    updatedAt: Date.now(),
+  });
+
+  const tryWrite = (payload: DashboardCachePayload) => {
+    const serialized = JSON.stringify(payload);
+    if (serialized.length > MAX_CACHE_BYTES) return false;
+    try {
+      window.sessionStorage.setItem(DASHBOARD_CACHE_KEY, serialized);
+      return true;
+    } catch (error: unknown) {
+      if (!isQuotaExceeded(error)) {
+        return true;
+      }
+      return false;
+    }
+  };
+
+  const trimmedIssues =
+    issues.length > MAX_CACHE_ISSUES ? issues.slice(0, MAX_CACHE_ISSUES) : issues;
+
+  if (issues.length <= MAX_CACHE_ISSUES && tryWrite(buildPayload(issues))) return;
+  if (tryWrite(buildPayload(trimmedIssues.map(compactIssueForCache)))) return;
+  if (tryWrite(buildPayload(issues.slice(0, MIN_CACHE_ISSUES).map(compactIssueForCache)))) return;
+
+  try {
+    window.sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
+  } catch {
+    // ignore cleanup errors
+  }
+  isDashboardCacheDisabled = true;
 };
 
 const CitizenDashboard = () => {
-  const [cachedPayload] = useState<DashboardCachePayload | null>(() => readDashboardCache());
+  const cachedPayload = readDashboardCache();
+  const hasCachedPayload = Boolean(cachedPayload);
+  const queryClient = useQueryClient();
   const user = useUserState((state) => state.user);
-  const [stats, setStats] = useState<IssueStats>(cachedPayload?.stats || defaultStats);
-  const [issues, setIssues] = useState<IIssue[]>(cachedPayload?.issues || []);
-  const [isLoading, setIsLoading] = useState(!cachedPayload);
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [deletingIssueId, setDeletingIssueId] = useState<string | null>(null);
+  const statsQuery = useQuery({
+    queryKey: ["citizen", "stats"],
+    queryFn: getMyIssueStats,
+    initialData: cachedPayload?.stats,
+    initialDataUpdatedAt: cachedPayload?.updatedAt,
+  });
+
+  const issuesQuery = useQuery({
+    queryKey: ["citizen", "issues"],
+    queryFn: getMyIssues,
+    initialData: cachedPayload?.issues,
+    initialDataUpdatedAt: cachedPayload?.updatedAt,
+  });
+
+  const stats = statsQuery.data ?? defaultStats;
+  const issues = issuesQuery.data ?? [];
+  const isLoading = !hasCachedPayload && (statsQuery.isLoading || issuesQuery.isLoading);
 
   useEffect(() => {
-    let isCancelled = false;
+    if (!issuesQuery.data || !statsQuery.data) return;
+    writeDashboardCache(issuesQuery.data, statsQuery.data);
+  }, [issuesQuery.data, statsQuery.data]);
 
-    const load = async () => {
-      try {
-        if (!cachedPayload) {
-          setIsLoading(true);
-        }
-        const [statsRes, issuesRes] = await Promise.all([getMyIssueStats(), getMyIssues()]);
-        if (isCancelled) return;
-
-        const mergedIssues = mergeIssuesByLatest(cachedPayload?.issues || [], issuesRes);
-        setStats(statsRes);
-        setIssues(mergedIssues);
-        writeDashboardCache(mergedIssues, statsRes);
-      } catch (error: unknown) {
-        if (isCancelled) return;
-        if (error instanceof AxiosError) {
-          toast.error(error.response?.data?.error ?? "Failed to load dashboard");
-          return;
-        }
-        toast.error("Failed to load dashboard");
-      } finally {
-        if (!cachedPayload && !isCancelled) {
-          setIsLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const socket = getSocket();
+    const onIssueUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["citizen", "issues"] });
     };
 
-    void load();
+    socket.on("issue:created", onIssueUpdate);
+    socket.on("issue:updated", onIssueUpdate);
+    socket.on("issue:voted", onIssueUpdate);
+    socket.on("issue:reviewed", onIssueUpdate);
+
     return () => {
-      isCancelled = true;
+      socket.off("issue:created", onIssueUpdate);
+      socket.off("issue:updated", onIssueUpdate);
+      socket.off("issue:voted", onIssueUpdate);
+      socket.off("issue:reviewed", onIssueUpdate);
     };
-  }, [cachedPayload]);
+  }, [queryClient]);
 
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, 5), Math.max(issues.length, 5)));
@@ -124,11 +185,9 @@ const CitizenDashboard = () => {
 
     try {
       const updated = await voteIssue(issueId, type);
-      setIssues((prev) => {
-        const next = prev.map((item) => (item._id === issueId ? updated : item));
-        writeDashboardCache(next, stats);
-        return next;
-      });
+      queryClient.setQueryData<IIssue[]>(["citizen", "issues"], (prev = []) =>
+        prev.map((item) => (item._id === issueId ? updated : item))
+      );
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -146,11 +205,9 @@ const CitizenDashboard = () => {
 
     try {
       const details = await getIssueById(issue._id);
-      setIssues((prev) => {
-        const next = prev.map((item) => (item._id === details._id ? { ...item, ...details } : item));
-        writeDashboardCache(next, stats);
-        return next;
-      });
+      queryClient.setQueryData<IIssue[]>(["citizen", "issues"], (prev = []) =>
+        prev.map((item) => (item._id === details._id ? { ...item, ...details } : item))
+      );
       setSelectedIssue(details);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -160,6 +217,42 @@ const CitizenDashboard = () => {
       toast.error("Failed to load issue details");
     } finally {
       setIsFetchingDetails(false);
+    }
+  };
+
+  const handleDeleteIssue = async (issue: IIssue) => {
+    if (issue.status !== "pending") {
+      toast.error("Only pending issues can be deleted after verification is started.");
+      return;
+    }
+
+    setDeletingIssueId(issue._id);
+    try {
+      await deleteIssue(issue._id);
+      queryClient.setQueryData<IIssue[]>(["citizen", "issues"], (prev = []) =>
+        prev.filter((item) => item._id !== issue._id)
+      );
+      queryClient.setQueryData<IssueStats>(["citizen", "stats"], (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          total: Math.max(0, prev.total - 1),
+          pending: Math.max(0, prev.pending - 1),
+        };
+      });
+      setSelectedIssue((prev) => (prev?._id === issue._id ? null : prev));
+      if (selectedIssue?._id === issue._id) {
+        setIsModalOpen(false);
+      }
+      toast.success("Issue deleted successfully.");
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to delete issue");
+        return;
+      }
+      toast.error("Failed to delete issue");
+    } finally {
+      setDeletingIssueId(null);
     }
   };
 
@@ -248,6 +341,12 @@ const CitizenDashboard = () => {
                 onViewDetails={handleOpenDetails}
                 canVote={false}
                 onBlockedVote={() => toast.error("You cannot vote your own report.")}
+                onDelete={handleDeleteIssue}
+                canDelete={issue.status === "pending"}
+                isDeleting={deletingIssueId === issue._id}
+                onBlockedDelete={() =>
+                  toast.error("Delete is available only while the issue is pending.")
+                }
               />
             ))}
             {visibleCount < issues.length ? (
