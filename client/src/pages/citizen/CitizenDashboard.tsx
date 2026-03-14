@@ -11,7 +11,6 @@ import type { IIssue, IssueStats } from "@/modules/citizen/types/issue.types";
 import { IssueCard } from "@/modules/citizen/components/IssueCard";
 import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSkeleton";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
-import { getSocket } from "@/lib/socket";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const defaultStats: IssueStats = {
@@ -150,27 +149,6 @@ const CitizenDashboard = () => {
     if (!issuesQuery.data || !statsQuery.data) return;
     writeDashboardCache(issuesQuery.data, statsQuery.data);
   }, [issuesQuery.data, statsQuery.data]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ["citizen", "stats"] });
-      queryClient.invalidateQueries({ queryKey: ["citizen", "issues"] });
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
-  }, [queryClient]);
 
   useEffect(() => {
     setVisibleCount((prev) => Math.min(Math.max(prev, 5), Math.max(issues.length, 5)));

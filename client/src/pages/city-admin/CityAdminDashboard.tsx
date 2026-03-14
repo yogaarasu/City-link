@@ -8,7 +8,6 @@ import { getCityAdminIssueStats } from "@/modules/city-admin/api/city-admin-issu
 import type { CityAdminIssueStats } from "@/modules/city-admin/types/city-admin-issue.types";
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
-import { getSocket } from "@/lib/socket";
 
 const defaultStats: CityAdminIssueStats = {
   total: 0,
@@ -45,26 +44,6 @@ const CityAdminDashboard = () => {
 
   useEffect(() => {
     void refreshStats(true);
-  }, [refreshStats]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      void refreshStats(false);
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
   }, [refreshStats]);
 
   const cards = [

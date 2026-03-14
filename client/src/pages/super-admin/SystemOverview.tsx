@@ -16,7 +16,6 @@ import {
 import { getSystemOverview } from "@/modules/super-admin/api/super-admin.api";
 import type { SystemOverview } from "@/modules/super-admin/types/super-admin.types";
 import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
-import { getSocket } from "@/lib/socket";
 
 const SystemOverviewPage = () => {
   const navigate = useNavigate();
@@ -45,26 +44,6 @@ const SystemOverviewPage = () => {
 
   useEffect(() => {
     void refreshOverview(true);
-  }, [refreshOverview]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      void refreshOverview(false);
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
   }, [refreshOverview]);
 
   const sortedCities = useMemo(() => {

@@ -32,7 +32,6 @@ import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 import { formatIssueTime } from "@/modules/citizen/utils/time";
 import "leaflet/dist/leaflet.css";
-import { getSocket } from "@/lib/socket";
 
 const toVoteNumber = (value: string): number | undefined => {
   const normalized = value.trim();
@@ -132,26 +131,6 @@ const CityAdminManageIssues = () => {
     setIssues([]);
     void fetchIssues(true);
   }, [fetchIssues, filterKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      void fetchIssues(false);
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
-  }, [fetchIssues]);
 
   const sortedIssues = useMemo(
     () =>

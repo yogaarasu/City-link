@@ -13,7 +13,6 @@ import { transporter } from "../../lib/mailer.js";
 import { SMTP_USER } from "../../../utils/constants.js";
 import dayjs from "dayjs";
 import Holidays from "date-holidays";
-import { getIo } from "../../lib/socket.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -62,15 +61,6 @@ const subtractWorkingHours = (startDate, hoursToSubtract) => {
   }
 
   return cursor.toDate();
-};
-
-const emitIssueEvent = (event, issue) => {
-  try {
-    const io = getIo();
-    io.emit(event, issue);
-  } catch (error) {
-    console.warn("Socket emit failed:", error?.message || error);
-  }
 };
 
 const sendIssueStatusChangeEmail = async (issue) => {
@@ -288,8 +278,6 @@ export const createIssue = async (payload, authUser) => {
     path: "reportedBy",
     select: "name email district role avatar",
   });
-
-  emitIssueEvent("issue:created", populated);
 
   return populated;
 };
@@ -510,8 +498,6 @@ export const voteIssue = async (issueId, type, authUser) => {
   issue.votes = votes;
   await issue.save();
 
-  emitIssueEvent("issue:voted", issue);
-
   return issue;
 };
 
@@ -590,8 +576,6 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
 
   await issue.save();
 
-  emitIssueEvent("issue:updated", issue);
-
   if (issue.status === "resolved" || issue.status === "rejected") {
     try {
       await sendIssueStatusChangeEmail(issue);
@@ -634,7 +618,6 @@ export const reviewResolvedIssue = async (issueId, payload, authUser) => {
   };
 
   await issue.save();
-  emitIssueEvent("issue:reviewed", issue);
   return issue;
 };
 
@@ -658,6 +641,5 @@ export const deleteIssue = async (issueId, authUser) => {
   }
 
   await Issue.deleteOne({ _id: issue._id });
-  emitIssueEvent("issue:updated", { _id: issue._id, deleted: true, district: issue.district });
   return issue;
 };

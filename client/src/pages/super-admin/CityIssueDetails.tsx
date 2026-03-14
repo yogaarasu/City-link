@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCityIssueDetails } from "@/modules/super-admin/api/super-admin.api";
 import type { CityIssueDetail } from "@/modules/super-admin/types/super-admin.types";
 import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/issue-ui";
-import { getSocket } from "@/lib/socket";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CityIssueDetailsPage = () => {
@@ -61,26 +60,6 @@ const CityIssueDetailsPage = () => {
 
   useEffect(() => {
     void refreshDetails(true);
-  }, [refreshDetails]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      void refreshDetails(false);
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
   }, [refreshDetails]);
 
   if (loading) {

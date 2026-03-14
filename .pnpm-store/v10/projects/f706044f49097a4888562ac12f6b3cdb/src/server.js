@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import http from "http";
 import cookieParser from "cookie-parser";
 import {
   CLOUDINARY_API_KEY,
@@ -12,10 +11,8 @@ import {
 } from "../utils/constants.js";
 import router from "./routes/router.js";
 import { connection } from "./middleware/db.middleware.js";
-import { initSocket } from "./lib/socket.js";
 
 const server = express();
-const httpServer = http.createServer(server);
 
 const requiredEnv = [
   ["JWT_SECRET", JWT_SECRET],
@@ -59,8 +56,6 @@ server.use((error, _req, res, _next) => {
   return res.status(status).json({ error: error?.message || "Internal Server error" });
 });
 
-initSocket(httpServer);
-
-httpServer.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is Running at http://localhost:${PORT}`)
 });

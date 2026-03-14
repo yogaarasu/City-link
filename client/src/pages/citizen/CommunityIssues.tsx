@@ -32,7 +32,6 @@ import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSke
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
-import { getSocket } from "@/lib/socket";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
 const PAGE_SIZE = 10;
@@ -225,26 +224,6 @@ const CommunityIssues = () => {
       hasMore: Boolean(last?.hasMore),
     });
   }, [communityQuery.data, filterKey, issues]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const socket = getSocket();
-    const onIssueUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ["communityIssues", district, category, status] });
-    };
-
-    socket.on("issue:created", onIssueUpdate);
-    socket.on("issue:updated", onIssueUpdate);
-    socket.on("issue:voted", onIssueUpdate);
-    socket.on("issue:reviewed", onIssueUpdate);
-
-    return () => {
-      socket.off("issue:created", onIssueUpdate);
-      socket.off("issue:updated", onIssueUpdate);
-      socket.off("issue:voted", onIssueUpdate);
-      socket.off("issue:reviewed", onIssueUpdate);
-    };
-  }, [category, district, queryClient, status]);
 
   const handleLoadMore = async () => {
     try {
