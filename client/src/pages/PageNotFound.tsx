@@ -11,7 +11,7 @@ const PageNotFound = () => {
           <img
             src="/citylink-logo-new.png"
             alt="CityLink logo"
-            className="h-10 w-10 rounded-full border border-emerald-200 object-cover dark:border-emerald-900/60"
+            className="h-10 w-10 rounded-full border border-emerald-200 bg-white/90 p-0.5 box-border object-contain dark:border-emerald-900/60 dark:bg-black/40"
           />
           <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold text-transparent">
             CityLink

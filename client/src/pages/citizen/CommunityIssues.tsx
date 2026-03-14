@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCommunityIssues, getIssueById, voteIssue } from "@/modules/citizen/api/issue.api";
+import { deleteIssue, getCommunityIssues, getIssueById, voteIssue } from "@/modules/citizen/api/issue.api";
 import {
   ISSUE_CATEGORIES,
   ISSUE_STATUS,
@@ -161,6 +161,7 @@ const CommunityIssues = () => {
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [deletingIssueId, setDeletingIssueId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
   const filterKey = useMemo(
@@ -302,6 +303,45 @@ const CommunityIssues = () => {
       toast.error("Failed to load issue details");
     } finally {
       setIsFetchingDetails(false);
+    }
+  };
+
+  const handleDeleteIssue = async (issue: IIssue) => {
+    if (issue.reportedBy?._id !== user?._id) {
+      toast.error("You can only delete your own report.");
+      return;
+    }
+    if (issue.status !== "pending") {
+      toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.");
+      return;
+    }
+
+    setDeletingIssueId(issue._id);
+    try {
+      await deleteIssue(issue._id);
+      queryClient.setQueryData(["communityIssues", district, category, status], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pages: prev.pages.map((page: any) => ({
+            ...page,
+            issues: page.issues.filter((item: IIssue) => item._id !== issue._id),
+          })),
+        };
+      });
+      if (selectedIssue?._id === issue._id) {
+        setSelectedIssue(null);
+        setIsModalOpen(false);
+      }
+      toast.success("Issue deleted successfully.");
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to delete issue");
+        return;
+      }
+      toast.error("Failed to delete issue");
+    } finally {
+      setDeletingIssueId(null);
     }
   };
 
@@ -463,6 +503,12 @@ const CommunityIssues = () => {
         canVote={selectedIssue?.reportedBy?._id !== user?._id}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
         isFetchingDetails={isFetchingDetails}
+        onDelete={selectedIssue?.reportedBy?._id === user?._id ? handleDeleteIssue : undefined}
+        canDelete={selectedIssue?.reportedBy?._id === user?._id && selectedIssue?.status === "pending"}
+        isDeleting={Boolean(selectedIssue?._id && deletingIssueId === selectedIssue._id)}
+        onBlockedDelete={() =>
+          toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.")
+        }
       />
     </div>
   );

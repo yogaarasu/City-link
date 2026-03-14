@@ -1,4 +1,4 @@
-import { CalendarDays, ImageIcon, Share2, Star, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { CalendarDays, ImageIcon, Share2, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,6 @@ import { statusToBadgeVariant, statusToLabel } from "../utils/issue-ui";
 import { formatIssueTime } from "../utils/time";
 import { shareIssue } from "../utils/share";
 import { useI18n } from "@/modules/i18n/useI18n";
-import { Alert } from "@/components/Alert";
 
 interface IssueCardProps {
   issue: IIssue;
@@ -15,10 +14,6 @@ interface IssueCardProps {
   onViewDetails: (issue: IIssue) => void;
   canVote?: boolean;
   onBlockedVote?: () => void;
-  onDelete?: (issue: IIssue) => void;
-  canDelete?: boolean;
-  onBlockedDelete?: () => void;
-  isDeleting?: boolean;
 }
 
 export const IssueCard = ({
@@ -27,10 +22,6 @@ export const IssueCard = ({
   onViewDetails,
   canVote = true,
   onBlockedVote,
-  onDelete,
-  canDelete = true,
-  onBlockedDelete,
-  isDeleting = false,
 }: IssueCardProps) => {
   const { t } = useI18n();
 
@@ -41,27 +32,6 @@ export const IssueCard = ({
     }
     onVote(issue._id, type);
   };
-
-  const deleteButton = (
-    <Button
-      variant="outline"
-      size="sm"
-      className={`h-10 rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 ${
-        !canDelete ? "cursor-not-allowed opacity-60" : ""
-      }`}
-      aria-disabled={!canDelete}
-      disabled={isDeleting}
-      onClick={(event) => {
-        event.stopPropagation();
-        if (!canDelete) {
-          onBlockedDelete?.();
-        }
-      }}
-    >
-      <Trash2 className="mr-2 h-4 w-4" />
-      Delete
-    </Button>
-  );
 
   return (
     <Card
@@ -150,20 +120,6 @@ export const IssueCard = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {onDelete ? (
-                  canDelete ? (
-                    <Alert
-                      trigger={deleteButton}
-                      title="Delete issue report"
-                      description="Are you sure you want to delete this report? This action cannot be undone."
-                      onContinue={() => onDelete(issue)}
-                      loading={isDeleting}
-                      variant="destructive"
-                    />
-                  ) : (
-                    deleteButton
-                  )
-                ) : null}
                 <Button
                   variant="outline"
                   size="icon"

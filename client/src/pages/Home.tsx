@@ -109,7 +109,7 @@ const Home = () => {
             <img
               src="/citylink-logo-new.png"
               alt="CityLink logo"
-              className="h-9 w-9 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
+              className="h-9 w-9 rounded-full border border-emerald-200 bg-white/90 p-0.5 box-border object-contain transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60 dark:bg-black/40"
             />
             <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold tracking-tight text-transparent">
               CityLink
@@ -224,20 +224,17 @@ const Home = () => {
                 See how it works
               </Button>
 
-              <Button
-                variant="outline"
-                disabled={!installPrompt || isPwaInstalled}
-                onClick={handleInstallClick}
-                className="group h-14 rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 disabled:cursor-not-allowed"
-                title={
-                  !installPrompt || isPwaInstalled
-                    ? "Install prompt is not available in this browser."
-                    : "Install CityLink"
-                }
-              >
-                <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
-                Install App
-              </Button>
+              {!isPwaInstalled && installPrompt ? (
+                <Button
+                  variant="outline"
+                  onClick={handleInstallClick}
+                  className="group h-14 rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20"
+                  title="Install CityLink"
+                >
+                  <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                  Install App
+                </Button>
+              ) : null}
             </motion.div>
           </motion.div>
         </motion.section>
@@ -551,7 +548,7 @@ const Home = () => {
                 <img
                   src="/citylink-logo-new.png"
                   alt="CityLink logo"
-                  className="h-7 w-7 rounded-full border border-emerald-200 object-cover transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60"
+                  className="h-7 w-7 rounded-full border border-emerald-200 bg-white/90 p-0.5 box-border object-contain transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60 dark:bg-black/40"
                 />
                 <span className="text-lg font-bold tracking-tight">
                   CityLink

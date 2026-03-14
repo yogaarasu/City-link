@@ -30,6 +30,7 @@ import type { CityAdminIssue } from "../types/city-admin-issue.types";
 import { useI18n } from "@/modules/i18n/useI18n";
 import "leaflet/dist/leaflet.css";
 import { cleanProfanity } from "@/lib/profanity";
+import { compressIssuePhotoFiles } from "@/modules/citizen/utils/report-issue-image.utils";
 
 interface CityAdminIssueDetailsDialogProps {
   open: boolean;
@@ -58,14 +59,6 @@ const ALLOWED_STATUS_TRANSITIONS: Record<CityAdminStatus, CityAdminStatus[]> = {
   resolved: [],
   rejected: [],
 };
-
-const toBase64 = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Failed to read image file"));
-    reader.readAsDataURL(file);
-  });
 
 export const CityAdminIssueDetailsDialog = ({
   open,
@@ -109,7 +102,10 @@ export const CityAdminIssueDetailsDialog = ({
       return;
     }
     try {
-      const encoded = await Promise.all(incoming.map((file) => toBase64(file)));
+      const encoded = await compressIssuePhotoFiles(incoming, {
+        watermarkText: "by CityLink",
+        watermarkLogoSrc: "/citylink-logo-new.png",
+      });
       setResolvedEvidencePhotos((prev) => [...prev, ...encoded]);
     } catch {
       toast.error(t("imageProcessFailed"));
@@ -161,8 +157,8 @@ export const CityAdminIssueDetailsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[95svh] w-[calc(100%-20px)] max-h-[95svh] max-w-7xl overflow-hidden p-0 md:w-[calc(100%-24px)] lg:w-[calc(100%-64px)]">
-        <DialogHeader className="sticky top-0 z-20 border-b bg-background px-4 py-3 md:px-6 md:py-4">
+      <DialogContent className="top-1/2 left-1/2 h-[calc(100svh-40px)] w-[calc(100%-20px)] max-h-[calc(100svh-40px)] max-w-none sm:max-w-none -translate-x-1/2 -translate-y-1/2 overflow-hidden p-0 flex flex-col md:h-[calc(100svh-20px)] md:max-h-[calc(100svh-20px)] md:w-[60vw]">
+        <DialogHeader className="sticky top-0 z-20 border-b bg-background px-5 py-3">
           <div className="flex items-start justify-between gap-2">
             <DialogTitle className="line-clamp-2 text-left text-lg md:text-xl">{issue.title}</DialogTitle>
             <Button
@@ -189,7 +185,7 @@ export const CityAdminIssueDetailsDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="scrollbar-hide max-h-[calc(95svh-76px)] space-y-4 overflow-y-auto px-4 py-4 md:max-h-[calc(95svh-86px)] md:px-6 md:py-5">
+        <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto px-5 py-4">
           <div className="rounded-lg border p-3">
             <h3 className="mb-1 text-sm font-semibold">{t("reportedDateTime")}</h3>
             <p className="text-muted-foreground inline-flex items-center text-sm">

@@ -78,7 +78,7 @@ const SuperAdminLayout = () => {
     <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/super-admin/dashboard" className="flex items-center gap-2 text-2xl font-bold text-emerald-500">
-          <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-7 w-7 rounded-md" />
+          <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-8 w-8 rounded-full bg-white/90 p-0.5 box-border object-contain dark:bg-black/40" />
           CityLink
         </Link>
         <Button
@@ -193,7 +193,7 @@ const SuperAdminLayout = () => {
             )}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-5 w-5 rounded-[4px]" />
+            <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-5 w-5 rounded-full bg-white/90 p-0.5 box-border object-contain dark:bg-black/40" />
             CityLink
           </h1>
         </div>

@@ -79,7 +79,7 @@ export const CitizenLayout = () => {
     <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden overscroll-none">
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/citizen/dashboard" className="flex items-center gap-2 text-3xl font-bold text-emerald-500">
-          <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-7 w-7 rounded-md" />
+          <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-8 w-8 rounded-full bg-white/90 p-0.5 box-border object-contain dark:bg-black/40" />
           CityLink
         </Link>
         <Button
@@ -191,7 +191,7 @@ export const CitizenLayout = () => {
             {!isMobileMenuOpen && <HamburgerIcon />}
           </Button>
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-7 w-7 rounded-lg" />
+            <img src="/citylink-logo-new.png" alt="CityLink logo" className="h-7 w-7 rounded-full bg-white/90 p-0.5 box-border object-contain dark:bg-black/40" />
             <span className="text-xl">Citylink</span>
           </h1>
         </div>

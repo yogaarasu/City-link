@@ -20,6 +20,15 @@ const loadImage = (dataUrl: string) =>
     image.src = dataUrl;
   });
 
+const loadImageFromSrc = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to load watermark image"));
+    image.src = src;
+  });
+
 const getScaledDimensions = (width: number, height: number) => {
   const longestEdge = Math.max(width, height);
   if (longestEdge <= REPORT_ISSUE_IMAGE_MAX_DIMENSION) {
@@ -40,32 +49,48 @@ const getOutputMimeType = (originalType: string) => {
 
 type CompressOptions = {
   watermarkText?: string;
+  watermarkLogoSrc?: string;
 };
 
 const applyWatermark = (
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  text: string
+  text?: string,
+  logo?: HTMLImageElement | null
 ) => {
-  const fontSize = Math.max(12, Math.round(width * 0.035));
-  const padding = Math.max(6, Math.round(fontSize * 0.45));
+  if (!text && !logo) return;
+
+  const fontSize = Math.max(12, Math.round(width * 0.03));
+  const padding = Math.max(6, Math.round(fontSize * 0.5));
+  const logoSize = logo ? Math.max(20, Math.round(fontSize * 2.2)) : 0;
+  const gap = logo ? Math.max(6, Math.round(fontSize * 0.5)) : 0;
+
   context.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
-  context.textBaseline = "alphabetic";
+  context.textBaseline = "middle";
 
-  const metrics = context.measureText(text);
+  const metrics = text ? context.measureText(text) : { width: 0 };
   const textWidth = Math.ceil(metrics.width);
-  const textHeight = Math.ceil(fontSize * 1.2);
-
-  const boxWidth = textWidth + padding * 2;
-  const boxHeight = textHeight + padding * 1.2;
+  const contentWidth = logoSize + gap + textWidth;
+  const boxWidth = contentWidth + padding * 2;
+  const boxHeight = Math.max(logoSize, fontSize * 1.4) + padding * 1.2;
   const x = Math.max(0, width - boxWidth - padding);
   const y = Math.max(0, height - boxHeight - padding);
+  const contentY = y + boxHeight / 2;
 
   context.fillStyle = "rgba(0, 0, 0, 0.55)";
   context.fillRect(x, y, boxWidth, boxHeight);
-  context.fillStyle = "rgba(255, 255, 255, 0.95)";
-  context.fillText(text, x + padding, y + boxHeight - padding * 0.6);
+
+  if (logo) {
+    const logoX = x + padding;
+    const logoY = contentY - logoSize / 2;
+    context.drawImage(logo, logoX, logoY, logoSize, logoSize);
+  }
+
+  if (text) {
+    context.fillStyle = "rgba(255, 255, 255, 0.95)";
+    context.fillText(text, x + padding + logoSize + gap, contentY);
+  }
 };
 
 export const compressIssuePhotoFile = async (file: File, options?: CompressOptions) => {
@@ -88,15 +113,18 @@ export const compressIssuePhotoFile = async (file: File, options?: CompressOptio
 
   context.drawImage(image, 0, 0, width, height);
 
-  if (options?.watermarkText) {
-    applyWatermark(context, width, height, options.watermarkText);
+  const watermarkLogo = options?.watermarkLogoSrc
+    ? await loadImageFromSrc(options.watermarkLogoSrc)
+    : null;
+  if (options?.watermarkText || watermarkLogo) {
+    applyWatermark(context, width, height, options?.watermarkText, watermarkLogo);
   }
 
   const mimeType = getOutputMimeType(file.type);
   const quality = mimeType === "image/png" ? undefined : REPORT_ISSUE_IMAGE_QUALITY;
   const compressedDataUrl = canvas.toDataURL(mimeType, quality);
 
-  if (options?.watermarkText) {
+  if (options?.watermarkText || options?.watermarkLogoSrc) {
     return compressedDataUrl;
   }
 

@@ -21,14 +21,42 @@ const SystemOverviewPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<SystemOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [districtFilter, setDistrictFilter] = useState("all");
   const [showAllDistricts, setShowAllDistricts] = useState(false);
+  const overviewCacheKey = "citylink:super-admin-overview-cache:v1";
+
+  const readOverviewCache = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage.getItem(overviewCacheKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { data?: SystemOverview };
+      return parsed?.data || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeOverviewCache = (payload: SystemOverview) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(overviewCacheKey, JSON.stringify({ data: payload, updatedAt: Date.now() }));
+    } catch {
+      // ignore cache write errors
+    }
+  };
 
   const refreshOverview = useCallback(async (showLoading: boolean) => {
     try {
-      if (showLoading) setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       const response = await getSystemOverview();
       setData(response);
+      writeOverviewCache(response);
     } catch (error: unknown) {
       if (showLoading) {
         if (error instanceof AxiosError) {
@@ -38,11 +66,22 @@ const SystemOverviewPage = () => {
         }
       }
     } finally {
-      if (showLoading) setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    const cached = readOverviewCache();
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+      void refreshOverview(false);
+      return;
+    }
     void refreshOverview(true);
   }, [refreshOverview]);
 
@@ -56,6 +95,9 @@ const SystemOverviewPage = () => {
       return b.issueCount - a.issueCount;
     });
   }, [data?.cityIssueBreakdown, districtFilter]);
+  const showStatsSpinner = isRefreshing;
+  const shimmerClass = "h-2 w-8 rounded-full bg-gradient-to-r from-muted/30 via-muted/60 to-muted/30 animate-pulse";
+  const shimmerSmallClass = "h-2 w-6 rounded-full bg-gradient-to-r from-muted/30 via-muted/60 to-muted/30 animate-pulse";
 
   if (loading) {
     return (
@@ -123,36 +165,51 @@ const SystemOverviewPage = () => {
         <Card className="py-0">
           <CardHeader className="space-y-0.5 pb-1 pt-2.5">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Building2 className="h-5 w-5 text-emerald-600" />
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <Building2 className="h-5 w-5" />
+              </span>
               Total City Admins
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
-            <p className="text-3xl font-bold">{data?.totalAdmins ?? 0}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-3xl font-bold">{data?.totalAdmins ?? 0}</p>
+              {showStatsSpinner ? <span className={shimmerClass} /> : null}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="py-0">
           <CardHeader className="space-y-0.5 pb-1 pt-2.5">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <MapPinned className="h-5 w-5 text-emerald-600" />
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+                <MapPinned className="h-5 w-5" />
+              </span>
               Total Districts (Tamil Nadu)
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
-            <p className="text-3xl font-bold">{data?.totalDistricts ?? TAMIL_NADU_DISTRICTS.length}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-3xl font-bold">{data?.totalDistricts ?? TAMIL_NADU_DISTRICTS.length}</p>
+              {showStatsSpinner ? <span className={shimmerClass} /> : null}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="py-0">
           <CardHeader className="space-y-0.5 pb-1 pt-2.5">
             <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <MapPinCheck className="h-5 w-5 text-emerald-600" />
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                <MapPinCheck className="h-5 w-5" />
+              </span>
               Active Districts
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
-            <p className="text-3xl font-bold">{data?.totalActiveDistricts ?? 0}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-3xl font-bold">{data?.totalActiveDistricts ?? 0}</p>
+              {showStatsSpinner ? <span className={shimmerClass} /> : null}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -207,7 +264,10 @@ const SystemOverviewPage = () => {
                       </span>
                     </div>
                     <div className="col-span-2 border-r px-2 py-2.5 font-semibold sm:col-span-2 sm:px-3">
-                      {city.statusBreakdown.pending}
+                      <div className="flex items-center justify-center gap-2">
+                        <span>{city.statusBreakdown.pending}</span>
+                        {showStatsSpinner ? <span className={shimmerSmallClass} /> : null}
+                      </div>
                     </div>
                     <div className="col-span-5 min-w-0 px-1 py-2.5 sm:col-span-3 sm:px-2">
                       <Button

@@ -189,7 +189,7 @@ const ReportIssue = () => {
 
   const addFiles = async (
     files: FileList | null,
-    options?: { watermarkText?: string }
+    options?: { watermarkText?: string; watermarkLogoSrc?: string }
   ) => {
     if (!files) return;
     const fileArray = Array.from(files);
@@ -569,7 +569,7 @@ const ReportIssue = () => {
                       multiple
                       hidden
                       onChange={(event) => {
-                        void addFiles(event.target.files);
+                        void addFiles(event.target.files, { watermarkText: "by CityLink", watermarkLogoSrc: "/citylink-logo-new.png" });
                         event.target.value = "";
                       }}
                     />
@@ -577,9 +577,10 @@ const ReportIssue = () => {
                       ref={cameraInputRef}
                       type="file"
                       accept="image/*"
+                      capture="environment"
                       hidden
                       onChange={(event) => {
-                        void addFiles(event.target.files, { watermarkText: "Taken by CityLink" });
+                        void addFiles(event.target.files, { watermarkText: "by CityLink", watermarkLogoSrc: "/citylink-logo-new.png" });
                         event.target.value = "";
                       }}
                     />

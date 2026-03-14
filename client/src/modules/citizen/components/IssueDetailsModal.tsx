@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Loader2, MapPin, Share2, Star, X } from "lucide-react";
+import { CalendarDays, Loader2, MapPin, Share2, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { shareIssue } from "../utils/share";
 import { IssueVoteButtons } from "./IssueVoteButtons";
 import "leaflet/dist/leaflet.css";
 import { cleanProfanity } from "@/lib/profanity";
+import { Alert } from "@/components/Alert";
 
 interface IssueDetailsModalProps {
   open: boolean;
@@ -22,6 +23,10 @@ interface IssueDetailsModalProps {
   canVote?: boolean;
   onBlockedVote?: () => void;
   isFetchingDetails?: boolean;
+  onDelete?: (issue: IIssue) => void;
+  canDelete?: boolean;
+  onBlockedDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 const getStatusLogs = (issue: IIssue): IssueStatusLog[] => {
@@ -45,6 +50,10 @@ export const IssueDetailsModal = ({
   canVote = true,
   onBlockedVote,
   isFetchingDetails = false,
+  onDelete,
+  canDelete = true,
+  onBlockedDelete,
+  isDeleting = false,
 }: IssueDetailsModalProps) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -76,16 +85,24 @@ export const IssueDetailsModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2 md:p-4">
-      <div className="bg-background max-h-[95svh] w-full max-w-5xl overflow-y-auto scrollbar-hide rounded-xl border shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b bg-background px-3 py-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55">
+      <div className="bg-background h-[calc(100svh-40px)] w-[calc(100%-20px)] max-h-[calc(100svh-40px)] overflow-y-auto scrollbar-hide rounded-xl border shadow-2xl md:h-[calc(100svh-20px)] md:w-[60vw] md:max-h-[calc(100svh-20px)]">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b bg-background px-5 py-3">
           <div>
             <h2 className="text-xl font-semibold">{issue.title}</h2>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-[5px]">
                 {statusToLabel(issue.status)}
               </Badge>
               <Badge variant="outline">{issue.category}</Badge>
+              <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+                <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+                {issue.upVotes}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+                <ThumbsDown className="h-3.5 w-3.5 text-rose-600" />
+                {issue.downVotes}
+              </span>
             </div>
           </div>
           <Button size="icon-sm" variant="ghost" onClick={onClose} className="shrink-0">
@@ -93,7 +110,7 @@ export const IssueDetailsModal = ({
           </Button>
         </div>
 
-        <div className="space-y-4 px-3 py-3">
+        <div className="space-y-4 px-5 py-3">
           {isFetchingDetails ? (
             <div className="text-muted-foreground inline-flex items-center text-sm">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -269,6 +286,57 @@ export const IssueDetailsModal = ({
               )}
             </div>
           )}
+
+          {onDelete ? (
+            <div className="rounded-lg border p-3">
+              <h3 className="mb-2 font-semibold">Delete Report</h3>
+              <p className="text-sm text-muted-foreground">
+                Deleting this report will remove it permanently.
+              </p>
+              <div className="mt-3">
+                {canDelete ? (
+                  <Alert
+                    trigger={
+                      <Button
+                        variant="outline"
+                        className="h-10 rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        disabled={isDeleting}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Issue
+                      </Button>
+                    }
+                    title="Delete issue report"
+                    description="Are you sure you want to delete this report? This action cannot be undone."
+                    onContinue={() => issue && onDelete(issue)}
+                    loading={isDeleting}
+                    variant="destructive"
+                  />
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="h-10 rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 cursor-not-allowed opacity-60"
+                    aria-disabled
+                    disabled={isDeleting}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onBlockedDelete?.();
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Issue
+                  </Button>
+                )}
+                <p className="mt-2 text-xs text-amber-700">
+                  Note: You can delete a report only while it is still pending. Once it is verified,
+                  deletion is not allowed.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

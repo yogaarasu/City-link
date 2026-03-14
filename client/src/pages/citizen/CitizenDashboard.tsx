@@ -144,6 +144,8 @@ const CitizenDashboard = () => {
   const stats = statsQuery.data ?? defaultStats;
   const issues = issuesQuery.data ?? [];
   const isLoading = !hasCachedPayload && (statsQuery.isLoading || issuesQuery.isLoading);
+  const showStatsSpinner = statsQuery.isFetching && hasCachedPayload;
+  const shimmerClass = "h-2 w-8 rounded-full bg-gradient-to-r from-muted/30 via-muted/60 to-muted/30 animate-pulse";
 
   useEffect(() => {
     if (!issuesQuery.data || !statsQuery.data) return;
@@ -238,7 +240,7 @@ const CitizenDashboard = () => {
     <div className="space-y-6">
       <Card className="border-0 bg-linear-to-r from-emerald-600 to-teal-600 text-white">
         <CardContent className="space-y-1.5 px-6 py-4 md:px-6 md:py-5">
-          <h1 className="text-2xl font-bold md:text-3xl">Welcome, {user?.name ?? "Citizen"}!</h1>
+          <h1 className="text-2xl font-bold md:text-3xl">Welcome, {user?.name ?? "Citizen"} !</h1>
           <p className="text-base text-white/90 md:text-lg">
             Connected to <span className="font-semibold underline">{user?.district}</span>. Report
             local issues and help build a cleaner, safer community together.
@@ -252,42 +254,60 @@ const CitizenDashboard = () => {
             <AlertTriangle className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">Total Reports</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.total}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Clock3 className="h-8 w-8 rounded-full bg-orange-100 p-1.5 text-orange-700" />
+            <Clock3 className="h-8 w-8 rounded-full bg-red-100 p-1.5 text-red-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold">{stats.pending}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.pending}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <ShieldCheck className="h-8 w-8 rounded-full bg-sky-100 p-1.5 text-sky-700" />
+            <ShieldCheck className="h-8 w-8 rounded-full bg-yellow-100 p-1.5 text-yellow-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">Verified</p>
-              <p className="text-2xl font-bold">{stats.verified ?? 0}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.verified ?? 0}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Timer className="h-8 w-8 rounded-full bg-violet-100 p-1.5 text-violet-700" />
+            <Timer className="h-8 w-8 rounded-full bg-blue-100 p-1.5 text-blue-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">In Progress</p>
-              <p className="text-2xl font-bold">{stats.in_progress}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.in_progress}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">Resolved</p>
-              <p className="text-2xl font-bold">{stats.resolved}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.resolved}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Ban className="h-8 w-8 rounded-full bg-rose-100 p-1.5 text-rose-700" />
+            <Ban className="h-8 w-8 rounded-full bg-slate-100 p-1.5 text-slate-700" />
             <div>
               <p className="text-xs font-medium text-muted-foreground">Rejected</p>
-              <p className="text-2xl font-bold">{stats.rejected}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-bold">{stats.rejected}</p>
+                {showStatsSpinner ? <span className={shimmerClass} /> : null}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -319,12 +339,6 @@ const CitizenDashboard = () => {
                 onViewDetails={handleOpenDetails}
                 canVote={false}
                 onBlockedVote={() => toast.error("You cannot vote your own report.")}
-                onDelete={handleDeleteIssue}
-                canDelete={issue.status === "pending"}
-                isDeleting={deletingIssueId === issue._id}
-                onBlockedDelete={() =>
-                  toast.error("Delete is available only while the issue is pending.")
-                }
               />
             ))}
             {visibleCount < issues.length ? (
@@ -349,6 +363,12 @@ const CitizenDashboard = () => {
         canVote={false}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
         isFetchingDetails={isFetchingDetails}
+        onDelete={handleDeleteIssue}
+        canDelete={selectedIssue?.status === "pending"}
+        isDeleting={Boolean(selectedIssue?._id && deletingIssueId === selectedIssue._id)}
+        onBlockedDelete={() =>
+          toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.")
+        }
       />
     </div>
   );
