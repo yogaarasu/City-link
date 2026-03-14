@@ -5,7 +5,7 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { deleteIssue, getIssueById, getMyIssueStats, getMyIssues, voteIssue } from "@/modules/citizen/api/issue.api";
+import { deleteIssue, getIssueById, getMyIssueStats, getMyIssues, reviewIssue, voteIssue } from "@/modules/citizen/api/issue.api";
 import { useUserState } from "@/store/user.store";
 import type { IIssue, IssueStats } from "@/modules/citizen/types/issue.types";
 import { IssueCard } from "@/modules/citizen/components/IssueCard";
@@ -200,6 +200,27 @@ const CitizenDashboard = () => {
     }
   };
 
+  const handleReviewIssue = async (issueId: string, rating: number, comment: string) => {
+    try {
+      const response = await reviewIssue(issueId, {
+        rating,
+        comment: comment.trim() ? comment.trim() : undefined,
+      });
+      const updated = response.issue;
+      queryClient.setQueryData<IIssue[]>(["citizen", "issues"], (prev = []) =>
+        prev.map((item) => (item._id === issueId ? updated : item))
+      );
+      setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
+      toast.success(response.message || "Review saved successfully.");
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to submit review");
+        return;
+      }
+      toast.error("Failed to submit review");
+    }
+  };
+
   const handleDeleteIssue = async (issue: IIssue) => {
     if (issue.status !== "pending") {
       toast.error("Only pending issues can be deleted after verification is started.");
@@ -360,6 +381,8 @@ const CitizenDashboard = () => {
           setIsFetchingDetails(false);
         }}
         onVote={handleVote}
+        onReview={handleReviewIssue}
+        currentUserId={user?._id}
         canVote={false}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
         isFetchingDetails={isFetchingDetails}

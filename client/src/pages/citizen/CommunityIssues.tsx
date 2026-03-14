@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { deleteIssue, getCommunityIssues, getIssueById, voteIssue } from "@/modules/citizen/api/issue.api";
+import { deleteIssue, getCommunityIssues, getIssueById, reviewIssue, voteIssue } from "@/modules/citizen/api/issue.api";
 import {
   ISSUE_CATEGORIES,
   ISSUE_STATUS,
@@ -345,6 +345,34 @@ const CommunityIssues = () => {
     }
   };
 
+  const handleReviewIssue = async (issueId: string, rating: number, comment: string) => {
+    try {
+      const response = await reviewIssue(issueId, {
+        rating,
+        comment: comment.trim() ? comment.trim() : undefined,
+      });
+      const updated = response.issue;
+      queryClient.setQueryData(["communityIssues", district, category, status], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pages: prev.pages.map((page: any) => ({
+            ...page,
+            issues: page.issues.map((item: IIssue) => (item._id === issueId ? updated : item)),
+          })),
+        };
+      });
+      setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
+      toast.success(response.message || "Review saved successfully.");
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? "Failed to submit review");
+        return;
+      }
+      toast.error("Failed to submit review");
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -500,6 +528,8 @@ const CommunityIssues = () => {
           setIsFetchingDetails(false);
         }}
         onVote={handleVote}
+        onReview={handleReviewIssue}
+        currentUserId={user?._id}
         canVote={selectedIssue?.reportedBy?._id !== user?._id}
         onBlockedVote={() => toast.error("You cannot vote your own report.")}
         isFetchingDetails={isFetchingDetails}

@@ -115,7 +115,11 @@ export const IssueCard = ({
                   {issue.downVotes}
                 </button>
                 <span className="inline-flex items-center gap-1 rounded-md border px-2 py-1">
-                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                  <Star
+                    className={`h-3.5 w-3.5 text-amber-500 ${
+                      issue.review?.rating ? "fill-amber-400" : ""
+                    }`}
+                  />
                   {issue.review?.rating ? `${issue.review.rating}/5` : t("noRating")}
                 </span>
               </div>

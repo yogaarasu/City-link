@@ -72,6 +72,7 @@ export const IssueDetailsModal = ({
 
   if (!open || !issue) return null;
   const canReview = issue.status === "resolved" && issue.reportedBy?._id === currentUserId;
+  const hasExistingReview = Boolean(issue.review?.rating);
 
   const submitReview = async () => {
     if (!onReview || !issue) return;
@@ -251,7 +252,12 @@ export const IssueDetailsModal = ({
 
           {(canReview || issue.review?.rating) && (
             <div className="rounded-lg border p-3">
-              <h3 className="mb-2 font-semibold">Resolved Issue Review</h3>
+              <div className="mb-2">
+                <h3 className="font-semibold">Resolution Review</h3>
+                <p className="text-xs text-muted-foreground">
+                  Rate the resolution quality. You can update your review anytime.
+                </p>
+              </div>
               <div className="mb-2 inline-flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, index) => {
                   const active = index < rating;
@@ -272,13 +278,13 @@ export const IssueDetailsModal = ({
               {canReview ? (
                 <>
                   <Textarea
-                    placeholder="Write your feedback about resolution quality..."
+                    placeholder="Optional: share notes about the resolution quality..."
                     value={comment}
                     onChange={(event) => setComment(cleanProfanity(event.target.value))}
                     className="mb-2 min-h-20"
                   />
                   <Button onClick={submitReview} disabled={isSubmittingReview || rating === 0}>
-                    {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                    {isSubmittingReview ? "Submitting..." : hasExistingReview ? "Update Review" : "Submit Review"}
                   </Button>
                 </>
               ) : (
