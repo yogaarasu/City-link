@@ -9,6 +9,7 @@ import {
   listCityAdminIssuesController,
   listCommunityIssuesController,
   listMyIssuesController,
+  deleteIssueController,
   reviewIssueController,
   updateIssueStatusByCityAdminController,
   voteIssueController,
@@ -27,6 +28,7 @@ issueRoutes.get("/city-admin/district", requireRoles("city_admin"), listCityAdmi
 issueRoutes.get("/city-admin/stats", requireRoles("city_admin"), getCityAdminIssueStatsController);
 issueRoutes.patch("/:issueId/status", requireRoles("city_admin"), updateIssueStatusByCityAdminController);
 issueRoutes.patch("/:issueId/review", requireRoles("citizen"), reviewIssueController);
+issueRoutes.delete("/:issueId", requireRoles("citizen"), deleteIssueController);
 issueRoutes.get("/:issueId", getIssueByIdController);
 issueRoutes.post("/:issueId/vote", requireRoles("citizen"), voteIssueController);
 issueRoutes.post("/", requireRoles("citizen"), reportIssueRateLimit, createIssueController);

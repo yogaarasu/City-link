@@ -8,6 +8,7 @@ import {
   verifyPasswordResetOTP,
 } from "../modules/auth/password-reset/password-reset.controller.js";
 import { login } from "../modules/auth/login/login.controller.js";
+import { clearAuthCookie } from "../lib/jwt.js";
 
 export const authRoutes = express.Router();
 
@@ -21,3 +22,7 @@ authRoutes.post("/password-reset/update", resetPassword);
 authRoutes.post("/forgot-password/request-otp", requestPasswordReset);
 authRoutes.post("/forgot-password/verify-otp", verifyPasswordResetOTP);
 authRoutes.post("/forgot-password/update", resetPassword);
+authRoutes.post("/logout", (req, res) => {
+  clearAuthCookie(res);
+  return res.status(200).json({ message: "Logged out." });
+});

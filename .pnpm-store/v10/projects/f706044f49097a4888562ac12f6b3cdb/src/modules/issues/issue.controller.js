@@ -10,6 +10,7 @@ import {
   listMyIssues,
   updateIssueStatusByCityAdmin,
   reviewResolvedIssue,
+  deleteIssue,
   voteIssue,
 } from "./issue.service.js";
 import {
@@ -144,6 +145,18 @@ export const reviewIssueController = async (req, res, next) => {
     const issue = await reviewResolvedIssue(req.params.issueId, payload, req.authUser);
     return res.status(200).json({
       message: "Review submitted successfully.",
+      issue,
+    });
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+export const deleteIssueController = async (req, res, next) => {
+  try {
+    const issue = await deleteIssue(req.params.issueId, req.authUser);
+    return res.status(200).json({
+      message: "Issue deleted successfully.",
       issue,
     });
   } catch (error) {

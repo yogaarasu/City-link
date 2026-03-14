@@ -14,17 +14,12 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
   const setUser = useUserState((state) => state.setUser);
   const clearUser = useUserState((state) => state.clearUser);
   const location = useLocation();
-  const [isHydratingUser, setIsHydratingUser] = useState(!user);
+  const [isHydratingUser, setIsHydratingUser] = useState(true);
 
   useEffect(() => {
     let isCancelled = false;
 
     const hydrateUser = async () => {
-      if (user) {
-        setIsHydratingUser(false);
-        return;
-      }
-
       try {
         setIsHydratingUser(true);
         const me = await getMe();
@@ -46,7 +41,7 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
     return () => {
       isCancelled = true;
     };
-  }, [clearUser, setUser, user]);
+  }, [clearUser, setUser]);
 
   if (!user && isHydratingUser) {
     return <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">Loading...</div>;

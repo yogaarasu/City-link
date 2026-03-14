@@ -3,16 +3,13 @@ import { ThemeToggler } from "@/components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { getMe } from "@/modules/user/api/user.api";
 import { useUserState } from "@/store/user.store";
 import type { IUser } from "@/types/user";
 
 export const AuthLayout = () => {
   const navigate = useNavigate();
   const user = useUserState((state) => state.user);
-  const setUser = useUserState((state) => state.setUser);
-  const clearUser = useUserState((state) => state.clearUser);
-  const [isCheckingSession, setIsCheckingSession] = useState(!user);
+  const [isCheckingSession, setIsCheckingSession] = useState(Boolean(user));
 
   const navigateByRole = useCallback((role: IUser["role"]) => {
     if (role === "citizen") {
@@ -29,32 +26,12 @@ export const AuthLayout = () => {
   }, [navigate]);
 
   useEffect(() => {
-    let isCancelled = false;
-
-    const redirectIfAuthenticated = async () => {
-      if (user) {
-        navigateByRole(user.role);
-        return;
-      }
-
-      try {
-        setIsCheckingSession(true);
-        const me = await getMe();
-        if (isCancelled) return;
-        setUser(me);
-        navigateByRole(me.role);
-      } catch {
-        if (isCancelled) return;
-        clearUser();
-        setIsCheckingSession(false);
-      }
-    };
-
-    void redirectIfAuthenticated();
-    return () => {
-      isCancelled = true;
-    };
-  }, [clearUser, navigateByRole, setUser, user]);
+    if (user) {
+      navigateByRole(user.role);
+      return;
+    }
+    setIsCheckingSession(false);
+  }, [navigateByRole, user]);
 
   if (user || isCheckingSession) {
     return (
