@@ -23,6 +23,20 @@ export const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const parseBoolean = (value) => {
+  if (typeof value !== "string") return undefined;
+  if (value.toLowerCase() === "true") return true;
+  if (value.toLowerCase() === "false") return false;
+  return undefined;
+};
+
+export const COOKIE_SAME_SITE =
+  process.env.COOKIE_SAME_SITE ||
+  (NODE_ENV === "production" ? "none" : "lax");
+export const COOKIE_SECURE =
+  parseBoolean(process.env.COOKIE_SECURE) ??
+  NODE_ENV === "production";
+export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
 
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;

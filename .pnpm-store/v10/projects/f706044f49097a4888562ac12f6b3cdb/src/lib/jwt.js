@@ -1,5 +1,11 @@
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV } from "../../utils/constants.js";
+import {
+  COOKIE_DOMAIN,
+  COOKIE_SAME_SITE,
+  COOKIE_SECURE,
+  JWT_EXPIRES_IN,
+  JWT_SECRET,
+} from "../../utils/constants.js";
 
 const TOKEN_COOKIE_NAME = "citylink_token";
 
@@ -33,13 +39,26 @@ const getTokenMaxAgeMs = (token) => {
   return Math.max(0, expiresAtMs - Date.now());
 };
 
-const getCookieOptions = (maxAgeMs) => ({
-  httpOnly: true,
-  sameSite: "lax",
-  secure: NODE_ENV === "production",
-  path: "/",
-  ...(typeof maxAgeMs === "number" ? { maxAge: maxAgeMs } : {}),
-});
+const normalizeSameSite = (value) => {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "strict" || normalized === "none" || normalized === "lax") {
+    return normalized;
+  }
+  return "lax";
+};
+
+const getCookieOptions = (maxAgeMs) => {
+  const sameSite = normalizeSameSite(COOKIE_SAME_SITE);
+  const secure = sameSite === "none" ? true : Boolean(COOKIE_SECURE);
+  return {
+    httpOnly: true,
+    sameSite,
+    secure,
+    path: "/",
+    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+    ...(typeof maxAgeMs === "number" ? { maxAge: maxAgeMs } : {}),
+  };
+};
 
 export const setAuthCookie = (res, token) => {
   const maxAgeMs = getTokenMaxAgeMs(token);
