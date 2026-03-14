@@ -32,12 +32,12 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
     >
       <CardContent className="p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-          <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted/60 md:h-auto md:w-auto md:max-w-[256px] md:min-w-[136px] md:shrink-0">
+          <div className="relative w-full overflow-hidden rounded-xl bg-muted/60 aspect-[4/3] md:w-60 md:min-w-60 md:max-w-60 md:shrink-0">
             {issue.photos[0] ? (
               <img
                 src={issue.photos[0]}
                 alt={issue.title}
-                className="h-full w-full rounded-xl object-cover md:max-h-35 md:object-contain"
+                className="h-full w-full rounded-xl object-cover object-center"
               />
             ) : (
               <div className="text-muted-foreground flex h-full w-full items-center justify-center">
