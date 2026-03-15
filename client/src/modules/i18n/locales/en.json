@@ -45,7 +45,7 @@
   "resolvedNeedsEvidence": "Resolved status requires at least one evidence image.",
   "selectRejectionReasonError": "Please select a rejection reason.",
   "updateFailed": "Unable to update issue status.",
-  "uploadLimit": "You can upload up to 5 resolved evidence images.",
+  "uploadLimit": "You can upload up to 3 resolved evidence images.",
   "imageProcessFailed": "Failed to process one or more images.",
   "systemOverview": "System Overview",
   "manageCityAdmins": "Manage City Admins",

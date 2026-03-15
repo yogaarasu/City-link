@@ -85,7 +85,7 @@ const IssueSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: (val) => Array.isArray(val) && val.length <= 5,
-        message: "Photos can be up to 5 files only.",
+        message: "Photos can be up to 3 files only.",
       },
     },
     resolvedEvidencePhotos: {
@@ -93,7 +93,7 @@ const IssueSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: (val) => Array.isArray(val) && val.length <= 5,
-        message: "Resolved evidence photos can be up to 5 files only.",
+        message: "Resolved evidence photos can be up to 3 files only.",
       },
     },
     rejectionReason: {

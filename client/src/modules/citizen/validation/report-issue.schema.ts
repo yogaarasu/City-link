@@ -24,7 +24,7 @@ export const reportIssueSchema = z.object({
   photos: z
     .array(z.string())
     .min(1, "At least one evidence photo is required")
-    .max(MAX_REPORT_ISSUE_PHOTOS, "Maximum 5 photos allowed"),
+    .max(MAX_REPORT_ISSUE_PHOTOS, "Maximum 3 photos allowed"),
 });
 
 export type ReportIssueFormValues = z.infer<typeof reportIssueSchema>;

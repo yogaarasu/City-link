@@ -1,7 +1,9 @@
 import imageCompression from "browser-image-compression";
 import {
   MAX_REPORT_ISSUE_PHOTOS,
+  REPORT_ISSUE_IMAGE_MAX_DATA_URL_LENGTH,
   REPORT_ISSUE_IMAGE_MAX_DIMENSION,
+  REPORT_ISSUE_IMAGE_MAX_MB,
   REPORT_ISSUE_IMAGE_QUALITY,
 } from "../constants/report-issue-upload.constants";
 
@@ -79,39 +81,70 @@ export const compressIssuePhotoFile = async (file: File, options?: CompressOptio
   }
 
   const mimeType = getOutputMimeType(file.type);
-  const compressionOptions = {
-    maxWidthOrHeight: REPORT_ISSUE_IMAGE_MAX_DIMENSION,
-    initialQuality: REPORT_ISSUE_IMAGE_QUALITY,
-    useWebWorker: true,
-    fileType: mimeType,
-  };
-
   const originalDataUrl = await imageCompression.getDataUrlFromFile(file);
-  const compressedFile = await imageCompression(file, compressionOptions);
-  const compressedDataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
 
-  if (!options?.watermarkText && !options?.watermarkLogoSrc) {
-    return compressedDataUrl.length < originalDataUrl.length ? compressedDataUrl : originalDataUrl;
+  const compressionProfiles = [
+    {
+      maxSizeMB: REPORT_ISSUE_IMAGE_MAX_MB,
+      maxWidthOrHeight: REPORT_ISSUE_IMAGE_MAX_DIMENSION,
+      initialQuality: REPORT_ISSUE_IMAGE_QUALITY,
+    },
+    {
+      maxSizeMB: Math.min(REPORT_ISSUE_IMAGE_MAX_MB, 2.5),
+      maxWidthOrHeight: REPORT_ISSUE_IMAGE_MAX_DIMENSION,
+      initialQuality: Math.min(REPORT_ISSUE_IMAGE_QUALITY, 0.88),
+    },
+    {
+      maxSizeMB: Math.min(REPORT_ISSUE_IMAGE_MAX_MB, 2),
+      maxWidthOrHeight: Math.round(REPORT_ISSUE_IMAGE_MAX_DIMENSION * 0.9),
+      initialQuality: Math.min(REPORT_ISSUE_IMAGE_QUALITY, 0.82),
+    },
+  ];
+
+  const requiresWatermark = Boolean(options?.watermarkText || options?.watermarkLogoSrc);
+  let bestCandidate = originalDataUrl;
+
+  for (const profile of compressionProfiles) {
+    const compressedFile = await imageCompression(file, {
+      ...profile,
+      useWebWorker: true,
+      fileType: mimeType,
+    });
+    const compressedDataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
+    let candidate = compressedDataUrl;
+
+    if (requiresWatermark) {
+      const image = await loadImage(compressedDataUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Failed to process image.");
+      }
+
+      context.drawImage(image, 0, 0, image.width, image.height);
+
+      const watermarkLogo = options?.watermarkLogoSrc
+        ? await loadImageFromSrc(options.watermarkLogoSrc)
+        : null;
+      applyWatermark(context, image.width, image.height, options?.watermarkText, watermarkLogo);
+
+      candidate = canvas.toDataURL(
+        mimeType,
+        mimeType === "image/png" ? undefined : REPORT_ISSUE_IMAGE_QUALITY
+      );
+    }
+
+    if (candidate.length <= REPORT_ISSUE_IMAGE_MAX_DATA_URL_LENGTH) {
+      return candidate;
+    }
+
+    bestCandidate = candidate;
   }
 
-  const image = await loadImage(compressedDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = image.width;
-  canvas.height = image.height;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Failed to process image.");
-  }
-
-  context.drawImage(image, 0, 0, image.width, image.height);
-
-  const watermarkLogo = options?.watermarkLogoSrc
-    ? await loadImageFromSrc(options.watermarkLogoSrc)
-    : null;
-  applyWatermark(context, image.width, image.height, options?.watermarkText, watermarkLogo);
-
-  return canvas.toDataURL(mimeType, mimeType === "image/png" ? undefined : REPORT_ISSUE_IMAGE_QUALITY);
+  return bestCandidate.length < originalDataUrl.length ? bestCandidate : originalDataUrl;
 };
 
 export const compressIssuePhotoFiles = async (files: File[], options?: CompressOptions) => {
