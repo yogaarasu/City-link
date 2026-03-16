@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -147,6 +147,7 @@ function AddressMapHelper({
   const [position, setPosition] = useState<L.LatLng | null>(null);
   const map = useMap();
   const latestRequestId = useRef(0);
+  const locateButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useMapEvents({
     async click(e: L.LeafletMouseEvent) { 
@@ -174,30 +175,61 @@ function AddressMapHelper({
   };
 
   const locateUser = () => {
-    map.once("locationfound", async function (e: L.LocationEvent) {
-      setPosition(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
-      await fetchAddress(e.latlng.lat, e.latlng.lng);
-    });
-    map.once("locationerror", () => {
-      toast.error("Unable to access your location. Please pin manually on map.");
-    });
-    map.locate();
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported on this device.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        const latlng = L.latLng(latitude, longitude);
+        setPosition(latlng);
+        map.flyTo(latlng, Math.max(map.getZoom(), 16));
+        if (accuracy && accuracy > 100) {
+          toast.warning("Location accuracy seems low. Try moving to an open area or enable GPS.");
+        }
+        await fetchAddress(latitude, longitude);
+      },
+      () => {
+        toast.error("Unable to access your location. Please pin manually on map.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    );
   };
+
+  useEffect(() => {
+    if (!locateButtonRef.current) return;
+    L.DomEvent.disableClickPropagation(locateButtonRef.current);
+    L.DomEvent.disableScrollPropagation(locateButtonRef.current);
+  }, []);
 
   return (
     <>
       {position && <Marker position={position} />}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="absolute top-2 right-2 z-[400] border border-border bg-background/95 backdrop-blur-sm shadow-sm hover:bg-background"
-        onClick={locateUser}
-      >
-        <LocateFixed className="w-4 h-4 mr-2" />
-        Locate Me
-      </Button>
+      <div className="leaflet-top leaflet-right">
+        <div className="leaflet-control">
+          <Button
+            ref={locateButtonRef}
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mt-[1px] mr-[1px] border border-border bg-background/95 shadow-sm hover:bg-background"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              locateUser();
+            }}
+          >
+            <LocateFixed className="w-4 h-4 mr-2" />
+            Locate Me
+          </Button>
+        </div>
+      </div>
     </>
   );
 }
