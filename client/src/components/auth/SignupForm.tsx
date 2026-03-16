@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -28,6 +28,7 @@ import { api } from "@/lib/axios"
 import { AxiosError } from "axios"
 import { toast } from "sonner"
 import { AUTHORIZE } from "@/utils/constants"
+import { useI18n } from "@/modules/i18n/useI18n"
 
 // Fix for default Leaflet marker icons in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -122,21 +123,15 @@ const reverseGeocode = async (lat: number, lng: number) => {
   }
 };
 
-// 1. Define the Validation Schema
-const signupSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  district: z.string().min(2, "Please select a district"),
-  address: z.string().min(5, "Please provide a detailed address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
+type SignupFormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  district: string;
+  address: string;
+  password: string;
+  confirmPassword: string;
+};
 
 // 2. Leaflet Map Helper Component
 function AddressMapHelper({
@@ -148,6 +143,7 @@ function AddressMapHelper({
   const map = useMap();
   const latestRequestId = useRef(0);
   const locateButtonRef = useRef<HTMLButtonElement | null>(null);
+  const { t } = useI18n();
 
   useMapEvents({
     async click(e: L.LeafletMouseEvent) { 
@@ -162,7 +158,7 @@ function AddressMapHelper({
 
     const data = await reverseGeocode(lat, lng);
     if (!data) {
-      toast.error("Unable to fetch location details. Please try again.");
+      toast.error(t("authLocationFetchFailed"));
       return;
     }
 
@@ -176,7 +172,7 @@ function AddressMapHelper({
 
   const locateUser = () => {
     if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported on this device.");
+      toast.error(t("authGeolocationUnsupported"));
       return;
     }
 
@@ -187,12 +183,12 @@ function AddressMapHelper({
         setPosition(latlng);
         map.flyTo(latlng, Math.max(map.getZoom(), 16));
         if (accuracy && accuracy > 100) {
-          toast.warning("Location accuracy seems low. Try moving to an open area or enable GPS.");
+          toast.warning(t("authLowAccuracyWarning"));
         }
         await fetchAddress(latitude, longitude);
       },
       () => {
-        toast.error("Unable to access your location. Please pin manually on map.");
+        toast.error(t("authLocationAccessFailed"));
       },
       {
         enableHighAccuracy: true,
@@ -226,7 +222,7 @@ function AddressMapHelper({
             }}
           >
             <LocateFixed className="w-4 h-4 mr-2" />
-            Locate Me
+            {t("authLocateMe")}
           </Button>
         </div>
       </div>
@@ -239,6 +235,22 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
   const [showPassword, setShowPassword] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const navigate = useNavigate();
+  const { t, language } = useI18n();
+
+  const signupSchema = useMemo(() => (
+    z.object({
+      firstName: z.string().min(2, t("authFirstNameMin")),
+      lastName: z.string().min(1, t("authLastNameRequired")),
+      email: z.string().email(t("authInvalidEmail")),
+      district: z.string().min(2, t("authDistrictRequired")),
+      address: z.string().min(5, t("authAddressRequired")),
+      password: z.string().min(8, t("authPasswordMinLength")),
+      confirmPassword: z.string(),
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: t("authPasswordsNoMatch"),
+      path: ["confirmPassword"],
+    })
+  ), [t, language]);
 
   const {
     register,
@@ -270,32 +282,35 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold">Create an Account</h1>
+            <h1 className="text-3xl font-bold">{t("authSignupTitle")}</h1>
             <FieldDescription className="text-base">
-              Already have an account? <Link to="/auth/login" replace className="text-emerald-500  hover:underline" viewTransition>Log in</Link>
+              {t("authAlreadyHaveAccount")}{" "}
+              <Link to="/auth/login" replace className="text-emerald-500  hover:underline" viewTransition>
+                {t("authLogIn")}
+              </Link>
             </FieldDescription>
           </div>
           <Separator />
           <FieldDescription className="text-center pb-4 text-base">
-            The official civic engagement platform connecting citizens across all 38 districts with their local administration.
+            {t("authPlatformDescription")}
           </FieldDescription>
 
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel htmlFor="firstName" className="text-base">First Name</FieldLabel>
+              <FieldLabel htmlFor="firstName" className="text-base">{t("authFirstNameLabel")}</FieldLabel>
               <Input
                 id="firstName"
-                placeholder="Enter your first name"
+                placeholder={t("authFirstNamePlaceholder")}
                 {...register("firstName")}
                 className={cn("h-10 text-base", errors.firstName ? "border-red-500" : "")}
               />
               {errors.firstName && <span className="text-xs text-red-500">{errors.firstName.message}</span>}
             </Field>
             <Field>
-              <FieldLabel htmlFor="lastName" className="text-base">Last Name</FieldLabel>
+              <FieldLabel htmlFor="lastName" className="text-base">{t("authLastNameLabel")}</FieldLabel>
               <Input
                 id="lastName"
-                placeholder="Enter your last name"
+                placeholder={t("authLastNamePlaceholder")}
                 {...register("lastName")}
                 className={cn("h-10 text-base", errors.lastName ? "border-red-500" : "")}
               />
@@ -304,11 +319,11 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           </div>
 
           <Field>
-            <FieldLabel htmlFor="email" className="text-base">Email</FieldLabel>
+            <FieldLabel htmlFor="email" className="text-base">{t("email")}</FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email address"
+              placeholder={t("authEmailPlaceholder")}
               {...register("email")}
               className={cn("h-10 text-base", errors.email ? "border-red-500" : "")}
             />
@@ -318,14 +333,14 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           {/* Address with Map Integration */}
           <Field>
             <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="address" className="text-base">Address</FieldLabel>
+              <FieldLabel htmlFor="address" className="text-base">{t("authAddressLabel")}</FieldLabel>
               <button
                 type="button"
                 onClick={() => setShowMap(!showMap)}
                 className="text-sm text-emerald-500 flex items-center gap-1 hover:underline"
               >
                 <MapPin className="w-3 h-3" />
-                {showMap ? "Hide Map" : "Pin Location"}
+                {showMap ? t("authHideMap") : t("authPinLocation")}
               </button>
             </div>
 
@@ -356,7 +371,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
             <Input
               id="address"
-              placeholder="Enter address or pin on map"
+              placeholder={t("authAddressPlaceholder")}
               {...register("address")}
               className={cn("h-10 text-base", errors.address ? "border-red-500" : "")}
             />
@@ -365,14 +380,14 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
           {/* District Selection (Shadcn) */}
           <Field>
-            <FieldLabel className="text-base">District</FieldLabel>
+            <FieldLabel className="text-base">{t("authDistrictLabel")}</FieldLabel>
             <Controller
               control={control}
               name="district"
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value || ""}>
                   <SelectTrigger className={cn("h-10 text-base", errors.district ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Select your district" />
+                    <SelectValue placeholder={t("authDistrictPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
                     {TAMIL_NADU_DISTRICTS.map((district) => (
@@ -389,7 +404,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel htmlFor="password" className="text-base">Password</FieldLabel>
+              <FieldLabel htmlFor="password" className="text-base">{t("authPasswordLabel")}</FieldLabel>
               <div className="relative">
                 <Input
                   id="password"
@@ -410,7 +425,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="confirmPassword" className="text-base">Confirm Password</FieldLabel>
+              <FieldLabel htmlFor="confirmPassword" className="text-base">{t("authConfirmPasswordLabel")}</FieldLabel>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -424,14 +439,17 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
           <Field className="pt-4">
             <Button type="submit" className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-base" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Account"}
+              {isSubmitting ? t("authCreatingAccount") : t("authCreateAccount")}
             </Button>
           </Field>
         </FieldGroup>
       </form>
       <FieldDescription className="px-6 text-center text-base">
-        By clicking continue, you agree to our <a href="#" className="underline hover:text-[#129141]">Terms of Service</a>{" "}
-        and <a href="#" className="underline hover:text-[#129141]">Privacy Policy</a>.
+        {t("authAgreeTermsPrefix")}{" "}
+        <a href="#" className="underline hover:text-[#129141]">{t("authTerms")}</a>{" "}
+        {t("authAnd")}{" "}
+        <a href="#" className="underline hover:text-[#129141]">{t("authPrivacy")}</a>
+        {t("authAgreeTermsSuffix")}
       </FieldDescription>
     </div>
   )

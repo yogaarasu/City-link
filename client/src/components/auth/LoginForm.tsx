@@ -16,6 +16,7 @@ import { AxiosError } from "axios"
 import { toast } from "sonner"
 import { useUserState } from "@/store/user.store"
 import type { IUser } from "@/types/user"
+import { useI18n } from "@/modules/i18n/useI18n"
 
 export function LoginForm({
   className,
@@ -23,6 +24,7 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const navigate = useNavigate();
   const setAuthSession = useUserState((state) => state.setAuthSession);
+  const { t } = useI18n();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,7 @@ export function LoginForm({
     // Simple email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (val && !emailRegex.test(val)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError(t("authInvalidEmail"));
     } else {
       setEmailError("");
     }
@@ -65,14 +67,14 @@ export function LoginForm({
       const res = await login({ email, password });
       const user = res.data.user as IUser;
       setAuthSession(user);
-      toast.success(res.data.message ?? "Login successful");
+      toast.success(res.data.message ?? t("authLoginSuccess"));
       navigateByRole(user.role);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Unable to login");
+        toast.error(error.response?.data?.error ?? t("authLoginFailed"));
         return;
       }
-      toast.error("Unable to login");
+      toast.error(t("authLoginFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -83,22 +85,25 @@ export function LoginForm({
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <h1 className="text-3xl font-bold">{t("authLoginTitle")}</h1>
             <FieldDescription className="text-base">
-              Don&apos;t have an account? <Link to="/auth/signup" replace className="text-emerald-500 hover:underline" viewTransition>Sign up</Link>
+              {t("authLoginSubtitle")}{" "}
+              <Link to="/auth/signup" replace className="text-emerald-500 hover:underline" viewTransition>
+                {t("authSignUp")}
+              </Link>
             </FieldDescription>
           </div>
           <Separator />
           <FieldDescription className="text-center text-base">
-            The official civic engagement platform connecting citizens across all 38 districts with their local administration.
+            {t("authPlatformDescription")}
           </FieldDescription>
           
           <Field>
-            <FieldLabel htmlFor="email" className="text-base">Email</FieldLabel>
+            <FieldLabel htmlFor="email" className="text-base">{t("email")}</FieldLabel>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email address"
+              placeholder={t("authEmailPlaceholder")}
               required
               value={email}
               onChange={handleEmailChange}
@@ -109,20 +114,20 @@ export function LoginForm({
           
           <Field>
             <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="password" className="text-base">Password</FieldLabel>
+              <FieldLabel htmlFor="password" className="text-base">{t("authPasswordLabel")}</FieldLabel>
               <Link
                 to="/auth/forgot-password"
                 className="text-sm text-emerald-500 hover:underline"
                 viewTransition
               >
-                Forgot password?
+                {t("authForgotPassword")}
               </Link>
             </div>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
+                placeholder={t("authPasswordPlaceholder")}
                 required
                 className="h-10 pr-10 text-base"
                 value={password}
@@ -144,15 +149,18 @@ export function LoginForm({
               className="h-10 w-full  bg-emerald-500 hover:bg-emerald-600 text-white text-base"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Logging in" : "Login"}
+              {isSubmitting ? t("authLoggingIn") : t("authLogin")}
               {isSubmitting && <Loader className="animate-spin" />}
             </Button>
           </Field>
         </FieldGroup>
       </form>
       <FieldDescription className="px-6 text-center text-base">
-        By clicking continue, you agree to our <a href="#" className="underline hover:text-[#129141]">Terms of Service</a>{" "}
-        and <a href="#" className="underline hover:text-[#129141]">Privacy Policy</a>.
+        {t("authAgreeTermsPrefix")}{" "}
+        <a href="#" className="underline hover:text-[#129141]">{t("authTerms")}</a>{" "}
+        {t("authAnd")}{" "}
+        <a href="#" className="underline hover:text-[#129141]">{t("authPrivacy")}</a>
+        {t("authAgreeTermsSuffix")}
       </FieldDescription>
     </div>
   )

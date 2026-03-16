@@ -1,10 +1,11 @@
-import { useState, type ComponentProps } from "react";
+import { useMemo, useState, type ComponentProps } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
 import { Eye, EyeOff, Loader } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import * as z from "zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { updatePassword } from "../api/password-reset.api";
-import { updatePasswordSchema } from "../validation/password-reset.schema";
-import type { UpdatePasswordValues } from "../validation/password-reset.schema";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 export function ResetPasswordForm({
   className,
@@ -29,6 +29,23 @@ export function ResetPasswordForm({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const { t, language } = useI18n();
+
+  const updatePasswordSchema = useMemo(
+    () =>
+      z
+        .object({
+          newPassword: z.string().min(8, t("authPasswordMinLength")),
+          confirmPassword: z.string().min(8, t("authConfirmPasswordRequired")),
+        })
+        .refine((data) => data.newPassword === data.confirmPassword, {
+          message: t("authPasswordsNoMatch"),
+          path: ["confirmPassword"],
+        }),
+    [t, language]
+  );
+
+  type UpdatePasswordValues = z.infer<typeof updatePasswordSchema>;
 
   const {
     register,
@@ -40,7 +57,7 @@ export function ResetPasswordForm({
 
   const onSubmit = async ({ newPassword }: UpdatePasswordValues) => {
     if (!email) {
-      toast.error("Missing email. Start the reset flow again.");
+      toast.error(t("authMissingEmailResetFlow"));
       navigate("/auth/forgot-password", { replace: true });
       return;
     }
@@ -52,10 +69,10 @@ export function ResetPasswordForm({
       navigate("/auth/login", { replace: true });
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Unable to update password");
+        toast.error(error.response?.data?.error ?? t("authUnableToUpdatePassword"));
         return;
       }
-      toast.error("Unable to update password");
+      toast.error(t("authUnableToUpdatePassword"));
     } finally {
       setIsSubmitting(false);
     }
@@ -66,20 +83,20 @@ export function ResetPasswordForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold">Reset Password</h1>
+            <h1 className="text-3xl font-bold">{t("authResetPasswordTitle")}</h1>
             <FieldDescription className="text-base">
-              Set a new password for <b className="text-primary">{email}</b>
+              {t("authResetPasswordSubtitle")} <b className="text-primary">{email}</b>
             </FieldDescription>
           </div>
           <Separator />
 
           <Field>
-            <FieldLabel htmlFor="newPassword" className="text-base">New Password</FieldLabel>
+            <FieldLabel htmlFor="newPassword" className="text-base">{t("authNewPasswordLabel")}</FieldLabel>
             <div className="relative">
               <Input
                 id="newPassword"
                 type={showNewPassword ? "text" : "password"}
-                placeholder="Enter new password"
+                placeholder={t("authNewPasswordPlaceholder")}
                 className={cn("h-10 pr-10 text-base", errors.newPassword && "border-red-500")}
                 {...register("newPassword")}
               />
@@ -101,12 +118,12 @@ export function ResetPasswordForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="confirmPassword" className="text-base">Confirm Password</FieldLabel>
+            <FieldLabel htmlFor="confirmPassword" className="text-base">{t("authConfirmPasswordLabel")}</FieldLabel>
             <div className="relative">
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm new password"
+                placeholder={t("authConfirmNewPasswordPlaceholder")}
                 className={cn("h-10 pr-10 text-base", errors.confirmPassword && "border-red-500")}
                 {...register("confirmPassword")}
               />
@@ -133,14 +150,14 @@ export function ResetPasswordForm({
               className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-base"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Updating" : "Update Password"}
+              {isSubmitting ? t("authUpdating") : t("authUpdatePassword")}
               {isSubmitting && <Loader className="animate-spin" />}
             </Button>
           </Field>
 
           <FieldDescription className="text-center text-base">
             <Link to="/auth/login" className="text-emerald-500 hover:underline">
-              Back to login
+              {t("authBackToLogin")}
             </Link>
           </FieldDescription>
         </FieldGroup>

@@ -1,10 +1,11 @@
-import { useEffect, useState, type ComponentProps, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ComponentProps, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { Loader } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import * as z from "zod";
 import {
   Field,
   FieldDescription,
@@ -21,7 +22,7 @@ import {
   requestPasswordResetOTP,
   verifyPasswordResetOTP,
 } from "../api/password-reset.api";
-import { verifyPasswordResetSchema } from "../validation/password-reset.schema";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 export function ForgotPasswordOTPForm({
   className,
@@ -34,6 +35,15 @@ export function ForgotPasswordOTPForm({
   const [seconds, setSeconds] = useState(60);
   const [isResending, setIsResending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const { t, language } = useI18n();
+
+  const verifyPasswordResetSchema = useMemo(
+    () =>
+      z.object({
+        otp: z.string().regex(/^\d{6}$/, t("authOtpSixDigits")),
+      }),
+    [t, language]
+  );
 
   useEffect(() => {
     if (!email) {
@@ -53,14 +63,14 @@ export function ForgotPasswordOTPForm({
   const handleVerify = async (event: FormEvent) => {
     event.preventDefault();
     if (!email) {
-      toast.error("Missing email. Start again.");
+      toast.error(t("authMissingEmailStartAgain"));
       navigate("/auth/forgot-password", { replace: true });
       return;
     }
 
     const parseResult = verifyPasswordResetSchema.safeParse({ otp });
     if (!parseResult.success) {
-      toast.error(parseResult.error.issues[0]?.message ?? "Invalid OTP");
+      toast.error(parseResult.error.issues[0]?.message ?? t("authInvalidOtp"));
       return;
     }
 
@@ -71,10 +81,10 @@ export function ForgotPasswordOTPForm({
       navigate(`/auth/forgot-password/reset?email=${encodeURIComponent(email)}`);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Invalid OTP");
+        toast.error(error.response?.data?.error ?? t("authInvalidOtp"));
         return;
       }
-      toast.error("Invalid OTP");
+      toast.error(t("authInvalidOtp"));
     } finally {
       setIsVerifying(false);
     }
@@ -82,7 +92,7 @@ export function ForgotPasswordOTPForm({
 
   const handleResend = async () => {
     if (!email) {
-      toast.error("Missing email. Start again.");
+      toast.error(t("authMissingEmailStartAgain"));
       navigate("/auth/forgot-password", { replace: true });
       return;
     }
@@ -94,10 +104,10 @@ export function ForgotPasswordOTPForm({
       setSeconds(60);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Unable to resend OTP");
+        toast.error(error.response?.data?.error ?? t("authUnableToResendOtp"));
         return;
       }
-      toast.error("Unable to resend OTP");
+      toast.error(t("authUnableToResendOtp"));
     } finally {
       setIsResending(false);
     }
@@ -108,15 +118,15 @@ export function ForgotPasswordOTPForm({
       <form onSubmit={handleVerify}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold">Verify OTP</h1>
+            <h1 className="text-3xl font-bold">{t("authVerifyOtpTitle")}</h1>
             <FieldDescription className="text-base">
-              Enter the code sent to <b className="text-primary">{email}</b>
+              {t("authOtpEmailSubtitle")} <b className="text-primary">{email}</b>
             </FieldDescription>
           </div>
 
           <Field>
             <FieldLabel htmlFor="otp" className="sr-only">
-              OTP
+              {t("authOtpLabel")}
             </FieldLabel>
 
             <InputOTP
@@ -144,7 +154,7 @@ export function ForgotPasswordOTPForm({
 
             <FieldDescription className="text-center text-base">
               {seconds > 0 ? (
-                <>Resend OTP in {seconds}s</>
+                <>{t("authResendOtpIn", { seconds })}</>
               ) : (
                 <Button
                   variant="link"
@@ -153,7 +163,7 @@ export function ForgotPasswordOTPForm({
                   disabled={isResending}
                   className="font-semibold text-emerald-500 hover:text-emerald-600"
                 >
-                  Resend OTP
+                  {t("authResendOtp")}
                 </Button>
               )}
             </FieldDescription>
@@ -165,15 +175,15 @@ export function ForgotPasswordOTPForm({
               className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-base"
               disabled={isVerifying}
             >
-              {isVerifying ? "Verifying" : "Verify OTP"}
+              {isVerifying ? t("authVerifying") : t("authVerifyOtp")}
               {isVerifying && <Loader className="animate-spin" />}
             </Button>
           </Field>
 
           <FieldDescription className="text-center text-base">
-            Wrong email?{" "}
+            {t("authWrongEmail")}{" "}
             <Link to="/auth/forgot-password" className="text-emerald-500 hover:underline">
-              Try another email
+              {t("authTryAnotherEmail")}
             </Link>
           </FieldDescription>
         </FieldGroup>

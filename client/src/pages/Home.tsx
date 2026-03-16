@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggler } from "@/components/ThemeToggler";
+import { LanguageToggler } from "@/components/LanguageToggler";
 import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
 import { useLanguageState } from "@/store/language.store";
+import { useI18n } from "@/modules/i18n/useI18n";
 import {
   motion,
   useScroll,
@@ -47,7 +49,8 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const Home = () => {
-  const { language, toggleLanguage } = useLanguageState();
+  const { t, language } = useI18n();
+  const toggleLanguage = useLanguageState((state) => state.toggleLanguage);
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
@@ -124,19 +127,20 @@ const Home = () => {
               onClick={toggleLanguage}
             >
               <Globe className="mr-2 h-4 w-4" />
-              {language === "en" ? "தமிழ்" : "English"}
+              {language === "en" ? t("tamil") : t("english")}
             </Button>
+            <LanguageToggler className="md:hidden" />
             <ThemeToggler />
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
             <Link
               to="/auth/login"
               className="hidden px-2 text-sm font-medium transition-colors hover:text-emerald-500 md:block"
             >
-              Log in
+              {t("homeNavLogin")}
             </Link>
             <Link to="/auth/signup">
               <Button className="rounded-full bg-emerald-500 px-6 text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95">
-                Report Issue
+                {t("homeNavReportIssue")}
               </Button>
             </Link>
           </div>
@@ -163,7 +167,7 @@ const Home = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </span>
-              Welcome to{" "}
+              {t("homeHeroBadgePrefix")}{" "}
               <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
                 CityLink
               </span>
@@ -173,9 +177,9 @@ const Home = () => {
               variants={fadeUp}
               className="max-w-5xl text-6xl font-extrabold tracking-tighter sm:text-7xl md:text-8xl lg:text-9xl"
             >
-              Fix your city. <br />
+              {t("homeHeroTitleLine1")} <br />
               <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
-                Instantly.
+                {t("homeHeroTitleLine2")}
               </span>
             </motion.h1>
 
@@ -183,9 +187,7 @@ const Home = () => {
               variants={fadeUp}
               className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-500 dark:text-slate-400 md:text-xl"
             >
-              Snap a photo, pin the location, and let CityLink route your report
-              directly to the right municipal department. Radical transparency
-              for modern governance.
+              {t("homeHeroSubtitle")}
             </motion.p>
 
             <motion.div
@@ -195,7 +197,7 @@ const Home = () => {
               <Link to="/auth/signup">
                 {/* UPGRADED BUTTON TRANSITIONS */}
                 <Button className="group h-14 rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95">
-                  Get Started
+                  {t("homeGetStarted")}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
               </Link>
@@ -221,7 +223,7 @@ const Home = () => {
                 }}
                 className="h-14 rounded-full border-slate-200 px-8 text-lg transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900"
               >
-                See how it works
+                {t("homeSeeHowItWorks")}
               </Button>
 
               {!isPwaInstalled && installPrompt ? (
@@ -229,10 +231,10 @@ const Home = () => {
                   variant="outline"
                   onClick={handleInstallClick}
                   className="group h-14 rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20"
-                  title="Install CityLink"
+                  title={t("homeInstallApp")}
                 >
                   <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
-                  Install App
+                  {t("homeInstallApp")}
                 </Button>
               ) : null}
             </motion.div>
@@ -243,10 +245,10 @@ const Home = () => {
         <section className="mx-auto max-w-7xl px-4 py-24 md:px-8">
           <div className="mb-16 md:text-center">
             <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-              Why Choose CityLink ?
+              {t("homeWhyTitle")}
             </h2>
             <p className="mt-4 text-slate-500 dark:text-slate-400">
-              The most advanced platform for transparent civic governance.
+              {t("homeWhySubtitle")}
             </p>
           </div>
 
@@ -265,12 +267,10 @@ const Home = () => {
                     <Zap className="h-6 w-6" />
                   </div>
                   <h3 className="text-2xl font-bold md:text-3xl">
-                    Automated Official Routing
+                    {t("homeFeatureRoutingTitle")}
                   </h3>
                   <p className="mt-2 max-w-md text-slate-500 dark:text-slate-400">
-                    No more manual follow-ups. Our system identifies your
-                    location and issue type in seconds, then sends it straight
-                    to the right city officer.
+                    {t("homeFeatureRoutingDesc")}
                   </p>
                 </div>
 
@@ -282,7 +282,7 @@ const Home = () => {
                         <MapPin className="text-red-600 dark:text-red-400 h-5 w-5" />
                       </div>
                       <span className="text-[10px] font-bold uppercase text-red-400">
-                        Your Report
+                        {t("homeFeatureRoutingBadgeReport")}
                       </span>
                     </div>
 
@@ -323,7 +323,7 @@ const Home = () => {
                         <ShieldCheck className="text-emerald-600 dark:text-emerald-400 h-5 w-5" />
                       </div>
                       <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">
-                        Local Admin
+                        {t("homeFeatureRoutingBadgeAdmin")}
                       </span>
                     </div>
                   </div>
@@ -343,32 +343,30 @@ const Home = () => {
                 <div className="mb-4 inline-flex rounded-xl bg-blue-500/10 p-3 text-blue-500">
                   <Clock className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">Live Tracking</h3>
+                <h3 className="text-xl font-bold">{t("homeFeatureLiveTitle")}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                  You can clearly see what is happening after you submit a
-                  complaint. Status updates are shown step by step, so there is
-                  no confusion.
+                  {t("homeFeatureLiveDesc")}
                 </p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-500 dark:text-slate-400">
                   <li>
-                    <span className="font-semibold text-amber-500">Pending:</span>{" "}
-                    Report received and queued for verification.
+                    <span className="font-semibold text-amber-500">{t("homeFeatureLivePendingLabel")}:</span>{" "}
+                    {t("homeFeatureLivePendingDesc")}
                   </li>
                   <li>
-                    <span className="font-semibold text-sky-500">Verified:</span>{" "}
-                    Admin confirms the report is valid.
+                    <span className="font-semibold text-sky-500">{t("homeFeatureLiveVerifiedLabel")}:</span>{" "}
+                    {t("homeFeatureLiveVerifiedDesc")}
                   </li>
                   <li>
-                    <span className="font-semibold text-purple-500">In Progress:</span>{" "}
-                    Field team assigned and work has started.
+                    <span className="font-semibold text-purple-500">{t("homeFeatureLiveProgressLabel")}:</span>{" "}
+                    {t("homeFeatureLiveProgressDesc")}
                   </li>
                   <li>
-                    <span className="font-semibold text-emerald-500">Resolved:</span>{" "}
-                    Fix completed with evidence uploaded.
+                    <span className="font-semibold text-emerald-500">{t("homeFeatureLiveResolvedLabel")}:</span>{" "}
+                    {t("homeFeatureLiveResolvedDesc")}
                   </li>
                   <li>
-                    <span className="font-semibold text-rose-500">Rejected:</span>{" "}
-                    Report doesn&apos;t meet verification rules.
+                    <span className="font-semibold text-rose-500">{t("homeFeatureLiveRejectedLabel")}:</span>{" "}
+                    {t("homeFeatureLiveRejectedDesc")}
                   </li>
                 </ul>
               </div>
@@ -386,16 +384,14 @@ const Home = () => {
                 <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-500">
                   <MapPin className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">Geo-Tagged Evidence</h3>
+                <h3 className="text-xl font-bold">{t("homeFeatureEvidenceTitle")}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                  Every report includes exact location details. City teams can
-                  open the ticket, follow the map pin, and reach the correct
-                  place quickly.
+                  {t("homeFeatureEvidenceDesc")}
                 </p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-500 dark:text-slate-400">
-                  <li>Photo and location are stored together.</li>
-                  <li>No need to call and explain directions repeatedly.</li>
-                  <li>Reduces wrong-site visits and delays.</li>
+                  <li>{t("homeFeatureEvidencePoint1")}</li>
+                  <li>{t("homeFeatureEvidencePoint2")}</li>
+                  <li>{t("homeFeatureEvidencePoint3")}</li>
                 </ul>
               </div>
             </motion.div>
@@ -412,17 +408,15 @@ const Home = () => {
                 <div>
                   <Sparkles className="mb-4 h-8 w-8 text-emerald-100" />
                   <h3 className="text-2xl font-bold md:text-3xl">
-                    Verified Resolution
+                    {t("homeFeatureVerifiedTitle")}
                   </h3>
                   <p className="mt-2 text-lg leading-relaxed text-emerald-50">
-                    A complaint is marked resolved only after field proof is
-                    uploaded. This keeps the process honest and easy to trust
-                    for every citizen.
+                    {t("homeFeatureVerifiedDesc")}
                   </p>
                   <ul className="mt-4 space-y-2 text-sm text-emerald-50/95">
-                    <li>Before and after photo evidence is attached.</li>
-                    <li>Closure time is recorded in the ticket history.</li>
-                    <li>You can reopen the issue if the fix is incomplete.</li>
+                    <li>{t("homeFeatureVerifiedPoint1")}</li>
+                    <li>{t("homeFeatureVerifiedPoint2")}</li>
+                    <li>{t("homeFeatureVerifiedPoint3")}</li>
                   </ul>
                 </div>
               </div>
@@ -448,10 +442,10 @@ const Home = () => {
               className="mb-20 text-center"
             >
               <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-                How CityLink Works
+                {t("homeHowTitle")}
               </h2>
               <p className="mt-4 text-lg text-slate-500 dark:text-slate-400">
-                A radically simple process to improve your neighborhood.
+                {t("homeHowSubtitle")}
               </p>
             </motion.div>
 
@@ -460,24 +454,24 @@ const Home = () => {
                 {
                   step: "01",
                   icon: Camera,
-                  title: "Snap & Describe",
-                  desc: "Take a quick photo of the pothole, broken light, or garbage. Add a brief description. We automatically handle the exact GPS location.",
+                  title: t("homeHowStep1Title"),
+                  desc: t("homeHowStep1Desc"),
                   bg: "bg-blue-50 dark:bg-blue-900/10",
                   iconColor: "text-blue-500",
                 },
                 {
                   step: "02",
                   icon: RefreshCcw,
-                  title: "System Assigns",
-                  desc: "The moment you submit, CityLink's routing engine instantly assigns the ticket to the specific local officer responsible for that area.",
+                  title: t("homeHowStep2Title"),
+                  desc: t("homeHowStep2Desc"),
                   bg: "bg-amber-50 dark:bg-amber-900/10",
                   iconColor: "text-amber-500",
                 },
                 {
                   step: "03",
                   icon: CheckCircle2,
-                  title: "Track & Verify",
-                  desc: "Watch the status update live. When the work is done, you'll receive a notification with a verified photo of the completed repair.",
+                  title: t("homeHowStep3Title"),
+                  desc: t("homeHowStep3Desc"),
                   bg: "bg-emerald-50 dark:bg-emerald-900/10",
                   iconColor: "text-emerald-500",
                 },
@@ -519,7 +513,7 @@ const Home = () => {
         {/* MINIMALIST MARQUEE */}
         <section className="py-20 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-transparent overflow-hidden">
           <div className="mb-8 text-center text-sm font-semibold uppercase tracking-widest text-slate-400">
-            Active across all 38 districts
+            {t("homeMarqueeTitle")}
           </div>
           <div className="flex w-[500%] animate-marquee whitespace-nowrap">
             {/* Note: Keep the @keyframes marquee in your CSS */}
@@ -555,14 +549,13 @@ const Home = () => {
                 </span>
               </Link>
               <p className="max-w-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Empowering the citizens of Tamil Nadu to build cleaner, safer,
-                and smarter cities through transparent civic governance.
+                {t("homeFooterTagline")}
               </p>
             </div>
 
             <div>
               <h4 className="mb-6 text-sm font-semibold tracking-wider text-slate-900 dark:text-white uppercase">
-                Platform
+                {t("homeFooterPlatformTitle")}
               </h4>
               <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
                 <li>
@@ -570,7 +563,7 @@ const Home = () => {
                     to="/auth/login"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Official Login
+                    {t("homeFooterOfficialLogin")}
                   </Link>
                 </li>
                 <li>
@@ -578,7 +571,7 @@ const Home = () => {
                     to="/auth/signup"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Citizen Registration
+                    {t("homeFooterCitizenRegistration")}
                   </Link>
                 </li>
                 <li>
@@ -600,7 +593,7 @@ const Home = () => {
                     }}
                     className="hover:text-emerald-500 transition-colors cursor-pointer"
                   >
-                    How it Works
+                    {t("homeFooterHowItWorks")}
                   </a>
                 </li>
                 
@@ -609,7 +602,7 @@ const Home = () => {
 
             <div>
               <h4 className="mb-6 text-sm font-semibold tracking-wider text-slate-900 dark:text-white uppercase">
-                Resources
+                {t("homeFooterResourcesTitle")}
               </h4>
               <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
                 <li>
@@ -617,7 +610,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Help Center
+                    {t("homeFooterHelpCenter")}
                   </a>
                 </li>
                 <li>
@@ -625,7 +618,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Department Directory
+                    {t("homeFooterDepartmentDirectory")}
                   </a>
                 </li>
                 <li>
@@ -633,7 +626,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    API Documentation
+                    {t("homeFooterApiDocs")}
                   </a>
                 </li>
               </ul>
@@ -641,7 +634,7 @@ const Home = () => {
 
             <div>
               <h4 className="mb-6 text-sm font-semibold tracking-wider text-slate-900 dark:text-white uppercase">
-                Legal
+                {t("homeFooterLegalTitle")}
               </h4>
               <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
                 <li>
@@ -649,7 +642,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Privacy Policy
+                    {t("homeFooterPrivacy")}
                   </a>
                 </li>
                 <li>
@@ -657,7 +650,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Terms of Service
+                    {t("homeFooterTerms")}
                   </a>
                 </li>
                 <li>
@@ -665,7 +658,7 @@ const Home = () => {
                     href="#"
                     className="hover:text-emerald-500 transition-colors"
                   >
-                    Security
+                    {t("homeFooterSecurity")}
                   </a>
                 </li>
               </ul>
@@ -674,8 +667,7 @@ const Home = () => {
 
           <div className="mt-16 flex flex-col items-center justify-between border-t border-slate-200 pt-8 dark:border-white/10 sm:flex-row">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              &copy; {new Date().getFullYear()} CityLink Tamil Nadu. All rights
-              reserved.
+              &copy; {new Date().getFullYear()} {t("homeFooterCopyright")}
             </p>
             <div className="mt-4 flex gap-6 sm:mt-0">
               <a

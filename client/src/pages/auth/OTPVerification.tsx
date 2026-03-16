@@ -24,6 +24,7 @@ import { Loader } from "lucide-react";
 import { AUTHORIZE } from "@/utils/constants";
 import { useUserState } from "@/store/user.store";
 import type { IUser } from "@/types/user";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const SIGNUP_OTP_SESSION_KEY = "citylink:signup-otp-email";
 
@@ -41,6 +42,7 @@ export function OtpVerification({
 	const isAuthorized = location.state?.isAuthorized;
 	const email = String(searchParams.get("email") || "").trim().toLowerCase();
 	const setAuthSession = useUserState((state) => state.setAuthSession);
+	const { t } = useI18n();
 
 	useEffect(() => {
 		const storedEmail = String(sessionStorage.getItem(SIGNUP_OTP_SESSION_KEY) || "")
@@ -67,7 +69,7 @@ export function OtpVerification({
 
 	const handleVerify = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (otp.length !== 6) return toast.error("Enter valid OTP");
+		if (otp.length !== 6) return toast.error(t("authEnterValidOtp"));
 
 		try {
 			setIsVerifying(true);
@@ -87,7 +89,7 @@ export function OtpVerification({
 			navigate("/super-admin/dashboard", { replace: true });
 		} catch (err: unknown) {
 			if (err instanceof AxiosError)
-				toast.error(err.response?.data?.error || "Invalid OTP");
+				toast.error(err.response?.data?.error || t("authInvalidOtp"));
 		} finally {
 			setIsVerifying(false);
 		}
@@ -101,7 +103,7 @@ export function OtpVerification({
 			setSeconds(60);
 		} catch (err: unknown) {
 			if (err instanceof AxiosError)
-				toast.error(err.response?.data?.error || "Please wait before resending");
+				toast.error(err.response?.data?.error || t("authPleaseWaitResend"));
 		} finally {
 			setIsResending(false);
 		}
@@ -114,16 +116,16 @@ export function OtpVerification({
 					<form onSubmit={handleVerify}>
 						<FieldGroup>
 							<div className="flex flex-col items-center gap-2 text-center">
-								<h1 className="text-3xl font-bold">Enter verification code</h1>
+								<h1 className="text-3xl font-bold">{t("authOtpTitle")}</h1>
 								<FieldDescription className="text-base">
-									We sent a 6-digit code to <b className="text-primary">{email}</b>
+									{t("authOtpSentTo")} <b className="text-primary">{email}</b>
 								</FieldDescription>
 							</div>
 
 							<Field>
-								<FieldLabel htmlFor="otp" className="sr-only">
-									Verification code
-								</FieldLabel>
+							<FieldLabel htmlFor="otp" className="sr-only">
+								{t("authVerificationCodeLabel")}
+							</FieldLabel>
 
 								<InputOTP
 									maxLength={6}
@@ -149,7 +151,7 @@ export function OtpVerification({
 
 								<FieldDescription className="text-center text-base">
 									{seconds > 0 ? (
-										<>Resend OTP in {seconds}s</>
+										<>{t("authResendOtpIn", { seconds })}</>
 									) : (
 										<Button
 											variant="link"
@@ -158,7 +160,7 @@ export function OtpVerification({
 											disabled={isResending}
 											className="text-emerald-500 font-semibold"
 										>
-											Resend OTP
+											{t("authResendOtp")}
 										</Button>
 									)}
 								</FieldDescription>
@@ -170,7 +172,7 @@ export function OtpVerification({
 									className="h-10 w-full bg-emerald-500 hover:bg-emerald-600 text-white text-base"
 									disabled={isVerifying}
 								>
-									{isVerifying ? "Verifying" : "Verify"}
+									{isVerifying ? t("authVerifying") : t("authVerify")}
 									{isVerifying && <Loader className="animate-spin" />}
 								</Button>
 							</Field>
@@ -178,9 +180,11 @@ export function OtpVerification({
 					</form>
 
 					<FieldDescription className="px-6 text-center text-base">
-						By clicking continue, you agree to our{" "}
-						<Link to="#" className="underline hover:text-[#129141]">Terms of Service</Link> and{" "}
-						<Link to="#" className="underline hover:text-[#129141]">Privacy Policy</Link>.
+						{t("authAgreeTermsPrefix")}{" "}
+						<Link to="#" className="underline hover:text-[#129141]">{t("authTerms")}</Link>{" "}
+						{t("authAnd")}{" "}
+						<Link to="#" className="underline hover:text-[#129141]">{t("authPrivacy")}</Link>
+						{t("authAgreeTermsSuffix")}
 					</FieldDescription>
 				</div>
 			</div>
