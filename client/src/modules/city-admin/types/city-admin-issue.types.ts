@@ -14,6 +14,8 @@ export interface CityAdminIssueFilters {
   category?: "all" | string;
   minVotes?: number;
   maxVotes?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CityAdminStatusUpdatePayload {

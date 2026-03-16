@@ -192,7 +192,7 @@ function AddressMapHelper({
         type="button"
         variant="secondary"
         size="sm"
-        className="absolute top-2 right-2 z-400 bg-background/90 hover:bg-background shadow-sm"
+        className="absolute top-2 right-2 z-[400] border border-border bg-background/95 backdrop-blur-sm shadow-sm hover:bg-background"
         onClick={locateUser}
       >
         <LocateFixed className="w-4 h-4 mr-2" />
@@ -283,30 +283,6 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             {errors.email && <span className="text-xs text-red-500">{errors.email.message}</span>}
           </Field>
 
-          {/* District Selection (Shadcn) */}
-          <Field>
-            <FieldLabel className="text-base">District</FieldLabel>
-            <Controller
-              control={control}
-              name="district"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value || ""}>
-                  <SelectTrigger className={cn("h-10 text-base", errors.district ? "border-red-500" : "")}>
-                    <SelectValue placeholder="Select your district" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {TAMIL_NADU_DISTRICTS.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.district && <span className="text-xs text-red-500">{errors.district.message}</span>}
-          </Field>
-
           {/* Address with Map Integration */}
           <Field>
             <div className="flex items-center justify-between">
@@ -353,6 +329,30 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
               className={cn("h-10 text-base", errors.address ? "border-red-500" : "")}
             />
             {errors.address && <span className="text-xs text-red-500">{errors.address.message}</span>}
+          </Field>
+
+          {/* District Selection (Shadcn) */}
+          <Field>
+            <FieldLabel className="text-base">District</FieldLabel>
+            <Controller
+              control={control}
+              name="district"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <SelectTrigger className={cn("h-10 text-base", errors.district ? "border-red-500" : "")}>
+                    <SelectValue placeholder="Select your district" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {TAMIL_NADU_DISTRICTS.map((district) => (
+                      <SelectItem key={district} value={district}>
+                        {district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.district && <span className="text-xs text-red-500">{errors.district.message}</span>}
           </Field>
 
           <div className="grid grid-cols-2 gap-4">

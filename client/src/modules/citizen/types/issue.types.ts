@@ -37,6 +37,7 @@ export interface IIssue {
   downVotes: number;
   distanceMeters?: number;
   statusLogs?: IssueStatusLog[];
+  latestOptionalNote?: string;
   review?: IssueReview | null;
   createdAt: string;
   updatedAt: string;

@@ -11,8 +11,11 @@ export const buildCityAdminIssuesCacheKey = (
   status: string,
   category: string,
   minVotes: number | undefined,
-  maxVotes: number | undefined
-) => `${status}__${category}__${minVotes ?? ""}__${maxVotes ?? ""}`;
+  maxVotes: number | undefined,
+  startDate?: string,
+  endDate?: string
+) =>
+  `${status}__${category}__${minVotes ?? ""}__${maxVotes ?? ""}__${startDate ?? ""}__${endDate ?? ""}`;
 
 export const readCityAdminIssuesCache = (filterKey: string): CityAdminIssuesCacheEntry | null => {
   if (typeof window === "undefined") return null;

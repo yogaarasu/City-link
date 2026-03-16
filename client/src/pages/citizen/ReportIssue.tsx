@@ -120,10 +120,18 @@ const ReportIssue = () => {
     [location.lat, location.lng]
   );
 
+  const normalizeDistrictValue = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/\bdistrict\b/g, "")
+      .replace(/[^a-z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&zoom=18&lat=${lat}&lon=${lng}&accept-language=en`
       );
       const data = (await response.json()) as {
         display_name?: string;
@@ -131,6 +139,13 @@ const ReportIssue = () => {
           state_district?: string;
           county?: string;
           city?: string;
+          city_district?: string;
+          district?: string;
+          municipality?: string;
+          suburb?: string;
+          town?: string;
+          village?: string;
+          state?: string;
         };
       };
 
@@ -138,20 +153,37 @@ const ReportIssue = () => {
         setValue("address", data.display_name, { shouldValidate: true });
       }
 
-      const districtCandidate =
-        data.address?.state_district || data.address?.county || data.address?.city || "";
+      const districtCandidates = [
+        data.address?.district,
+        data.address?.state_district,
+        data.address?.county,
+        data.address?.city_district,
+        data.address?.city,
+        data.address?.municipality,
+        data.address?.town,
+        data.address?.village,
+        data.address?.suburb,
+        data.address?.state,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value));
 
-      if (districtCandidate) {
-        const normalized = districtCandidate.replace(" District", "").toLowerCase();
-        const matched = TAMIL_NADU_DISTRICTS.find(
-          (district) =>
-            district.toLowerCase() === normalized ||
-            district.toLowerCase().includes(normalized) ||
-            normalized.includes(district.toLowerCase())
+      const normalizedCandidates = districtCandidates
+        .map((candidate) => normalizeDistrictValue(candidate))
+        .filter(Boolean);
+
+      const matched = TAMIL_NADU_DISTRICTS.find((district) => {
+        const normalizedDistrict = normalizeDistrictValue(district);
+        return normalizedCandidates.some(
+          (candidate) =>
+            candidate === normalizedDistrict ||
+            candidate.includes(normalizedDistrict) ||
+            normalizedDistrict.includes(candidate)
         );
-        if (matched) {
-          setValue("district", matched, { shouldValidate: true });
-        }
+      });
+
+      if (matched) {
+        setValue("district", matched, { shouldValidate: true });
       }
     } catch {
       toast.error("Unable to fetch address from map location.");
@@ -524,6 +556,7 @@ const ReportIssue = () => {
                       <MapPin className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
                       <Input
                         id="address"
+                        placeholder="Auto-filled from pinned location"
                         className={cn("pl-11", errors.address ? "border-red-500" : "")}
                         {...register("address")}
                       />

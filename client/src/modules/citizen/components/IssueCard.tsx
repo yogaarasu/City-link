@@ -90,6 +90,13 @@ export const IssueCard = ({
               {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
             </p>
 
+            {issue.latestOptionalNote ? (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Admin note:</span>{" "}
+                <span className="line-clamp-2">{issue.latestOptionalNote}</span>
+              </div>
+            ) : null}
+
             <div className="flex items-end justify-between gap-3 border-t pt-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <button

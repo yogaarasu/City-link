@@ -27,12 +27,13 @@ import SuperAdminProfilePage from "./pages/super-admin/SuperAdminProfile";
 import CityAdminLayout from "./modules/city-admin/layout/CityAdminLayout";
 import CityAdminDashboard from "./pages/city-admin/CityAdminDashboard";
 import CityAdminManageIssues from "./pages/city-admin/CityAdminManageIssues";
+import ErrorPage from "./pages/ErrorPage";
 
 const Router = () => {
   const router = createBrowserRouter([
-    { path: "/", element: <Home /> },
+    { path: "/", element: <Home />, errorElement: <ErrorPage /> },
     {
-      path: "/auth", element: <AuthLayout />, children: [
+      path: "/auth", element: <AuthLayout />, errorElement: <ErrorPage />, children: [
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
         { path: "otp", element: <OtpVerification /> },
@@ -48,6 +49,7 @@ const Router = () => {
           <CitizenLayout />
         </ProtectedRoute>
       ),
+      errorElement: <ErrorPage />,
       children: [
         { path: "dashboard", element: <CitizenDashboard /> },
         { path: "report-issue", element: <ReportIssue /> },
@@ -63,6 +65,7 @@ const Router = () => {
           <CityAdminLayout />
         </ProtectedRoute>
       ),
+      errorElement: <ErrorPage />,
       children: [
         { path: "dashboard", element: <CityAdminDashboard /> },
         { path: "manage-issues", element: <CityAdminManageIssues /> },
@@ -77,6 +80,7 @@ const Router = () => {
           <SuperAdminLayout />
         </ProtectedRoute>
       ),
+      errorElement: <ErrorPage />,
       children: [
         { path: "dashboard", element: <SystemOverviewPage /> },
         { path: "city-admins", element: <ManageCityAdminsPage /> },

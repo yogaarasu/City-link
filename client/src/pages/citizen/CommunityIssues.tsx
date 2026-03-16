@@ -407,11 +407,11 @@ const CommunityIssues = () => {
             </SelectContent>
           </Select>
 
-          <div className="inline-flex w-full items-center gap-2 rounded-lg border p-1 sm:w-auto">
+          <div className="inline-flex h-9 w-full items-center gap-1 rounded-md border bg-background p-0.5 sm:w-auto">
             <Button
               size="sm"
               variant={viewMode === "list" ? "secondary" : "ghost"}
-              className="flex-1 sm:flex-none"
+              className="h-8 flex-1 px-3 sm:flex-none"
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
@@ -420,7 +420,7 @@ const CommunityIssues = () => {
             <Button
               size="sm"
               variant={viewMode === "map" ? "secondary" : "ghost"}
-              className="flex-1 sm:flex-none"
+              className="h-8 flex-1 px-3 sm:flex-none"
               onClick={() => setViewMode("map")}
             >
               <MapIcon className="h-4 w-4" />

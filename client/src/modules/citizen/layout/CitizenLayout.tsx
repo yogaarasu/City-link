@@ -117,63 +117,65 @@ export const CitizenLayout = () => {
       <div className="mt-auto px-3 pb-4">
         <Separator className="my-4" />
 
-        <Button
-          variant="ghost"
-          className="mb-1 w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
-          onClick={() => {
-            toggleLanguage();
-            setIsMobileMenuOpen(false);
-          }}
-        >
-          <Globe className="h-5 w-5" />
-          {language === "en" ? t("tamil") : t("english")}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
+            onClick={() => {
+              toggleLanguage();
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            <Globe className="h-5 w-5" />
+            {language === "en" ? t("tamil") : t("english")}
+          </Button>
 
-        <Button
-          variant="ghost"
-          className="mb-1 w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
-          onClick={() => {
-            setTheme(theme === "dark" ? "light" : "dark");
-            setIsMobileMenuOpen(false);
-          }}
-        >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          {t("theme")}
-        </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
+            onClick={() => {
+              setTheme(theme === "dark" ? "light" : "dark");
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {t("theme")}
+          </Button>
 
-        <Button
-          variant="ghost"
-          className="mb-2 w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
-          onClick={() => {
-            navigate("/citizen/settings");
-            setIsMobileMenuOpen(false);
-          }}
-        >
-          <Settings className="h-5 w-5" />
-          {t("settings")}
-        </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 py-3 text-lg hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800 dark:hover:text-foreground"
+            onClick={() => {
+              navigate("/citizen/settings");
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            <Settings className="h-5 w-5" />
+            {t("settings")}
+          </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="mb-2 h-auto w-full justify-start gap-3 py-3">
-              <UserAvatar name={user?.name} avatar={user?.avatar} className="h-9 w-9 text-sm" />
-              <div className="flex min-w-0 flex-col items-start text-left">
-                <span className="truncate text-sm font-semibold">{user?.name ?? "User"}</span>
-                <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="start">
-            <DropdownMenuItem className="py-2.5 text-base" onClick={() => navigate("/citizen/profile")}>
-              <CircleUser className="mr-2 h-4 w-4" />
-              {t("myProfile")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={requestLogout} className="py-2.5 text-base text-red-600 focus:text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              {t("logout")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-auto w-full justify-start gap-3 py-3">
+                <UserAvatar name={user?.name} avatar={user?.avatar} className="h-9 w-9 text-sm" />
+                <div className="flex min-w-0 flex-col items-start text-left">
+                  <span className="truncate text-sm font-semibold">{user?.name ?? "User"}</span>
+                  <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+              <DropdownMenuItem className="py-2.5 text-base" onClick={() => navigate("/citizen/profile")}>
+                <CircleUser className="mr-2 h-4 w-4" />
+                {t("myProfile")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={requestLogout} className="py-2.5 text-base text-red-600 focus:text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                {t("logout")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

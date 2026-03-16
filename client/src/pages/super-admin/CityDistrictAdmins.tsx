@@ -42,7 +42,7 @@ const CityDistrictAdminsPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-black/80 motion-safe:animate-spin motion-reduce:animate-none" />
+        <Loader2 className="h-12 w-12 animate-spin text-foreground/80 motion-safe:animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

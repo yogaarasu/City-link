@@ -62,6 +62,11 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
                 <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md px-2.5 py-1 text-xs">
                   {statusToLabel(issue.status)}
                 </Badge>
+                {issue.assignedTo === "super_admin" ? (
+                  <Badge variant="secondary" className="rounded-md px-2.5 py-1 text-xs">
+                    Escalated
+                  </Badge>
+                ) : null}
               </div>
             </div>
 

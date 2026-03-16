@@ -174,6 +174,9 @@ export const CityAdminIssueDetailsDialog = ({
           <DialogDescription className="mt-1 flex flex-wrap items-center gap-2">
             <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md">{statusToLabel(issue.status)}</Badge>
             <Badge variant="outline" className="rounded-md">{issue.category}</Badge>
+            {issue.assignedTo === "super_admin" ? (
+              <Badge variant="secondary" className="rounded-md">Escalated</Badge>
+            ) : null}
             <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
               <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
               {issue.upVotes}
@@ -193,6 +196,21 @@ export const CityAdminIssueDetailsDialog = ({
               {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
             </p>
           </div>
+
+          {issue.assignedTo === "super_admin" || issue.escalatedAt ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+              <h3 className="mb-1 text-sm font-semibold">Escalation Details</h3>
+              <p>
+                This issue was escalated to super admin{" "}
+                {issue.escalatedAt ? `on ${new Date(issue.escalatedAt).toLocaleString()}.` : "."}
+              </p>
+              {issue.escalationReason ? (
+                <p className="mt-1 text-sm">
+                  <span className="font-medium">Reason:</span> {issue.escalationReason}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="rounded-lg border p-3">
             <h3 className="mb-1 text-sm font-semibold">{t("description")}</h3>

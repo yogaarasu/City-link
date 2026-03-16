@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DateRange } from "react-day-picker";
+import { endOfDay, startOfDay } from "date-fns";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Filter, Layers3, List, Map as MapIcon } from "lucide-react";
@@ -17,6 +19,8 @@ import {
 import { getCityAdminDistrictIssues } from "@/modules/city-admin/api/city-admin-issues.api";
 import { CityAdminIssueCard } from "@/modules/city-admin/components/CityAdminIssueCard";
 import { CityAdminIssueDetailsDialog } from "@/modules/city-admin/components/CityAdminIssueDetailsDialog";
+import { CityAdminIssueExportButton } from "@/modules/city-admin/components/CityAdminIssueExportButton";
+import { IssueDateRangeFilter } from "@/modules/city-admin/components/IssueDateRangeFilter";
 import type { CityAdminIssue } from "@/modules/city-admin/types/city-admin-issue.types";
 import {
   statusToBadgeVariant,
@@ -49,9 +53,10 @@ const CityAdminManageIssues = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [minVotes, setMinVotes] = useState("");
   const [maxVotes, setMaxVotes] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [initialCache] = useState(() =>
     readCityAdminIssuesCache(
-      buildCityAdminIssuesCacheKey("all", "all", undefined, undefined)
+      buildCityAdminIssuesCacheKey("all", "all", undefined, undefined, undefined, undefined)
     )
   );
   const [issues, setIssues] = useState<CityAdminIssue[]>(initialCache?.issues || []);
@@ -63,15 +68,25 @@ const CityAdminManageIssues = () => {
 
   const parsedMinVotes = useMemo(() => toVoteNumber(minVotes), [minVotes]);
   const parsedMaxVotes = useMemo(() => toVoteNumber(maxVotes), [maxVotes]);
+  const startDate = useMemo(
+    () => (dateRange?.from ? startOfDay(dateRange.from).toISOString() : undefined),
+    [dateRange?.from]
+  );
+  const endDate = useMemo(
+    () => (dateRange?.to ? endOfDay(dateRange.to).toISOString() : undefined),
+    [dateRange?.to]
+  );
   const filterKey = useMemo(
     () =>
       buildCityAdminIssuesCacheKey(
         statusFilter,
         categoryFilter,
         parsedMinVotes,
-        parsedMaxVotes
+        parsedMaxVotes,
+        startDate,
+        endDate
       ),
-    [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter]
+    [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter, startDate, endDate]
   );
 
   const fetchIssues = useCallback(async (blocking: boolean) => {
@@ -98,6 +113,8 @@ const CityAdminManageIssues = () => {
         category: categoryFilter,
         minVotes: parsedMinVotes,
         maxVotes: parsedMaxVotes,
+        startDate,
+        endDate,
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -116,7 +133,7 @@ const CityAdminManageIssues = () => {
         else setIsRefreshing(false);
       }
     }
-  }, [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter, t, filterKey]);
+  }, [categoryFilter, parsedMaxVotes, parsedMinVotes, statusFilter, startDate, endDate, t, filterKey]);
 
   useEffect(() => {
     const cached = readCityAdminIssuesCache(filterKey);
@@ -189,6 +206,13 @@ const CityAdminManageIssues = () => {
             </Button>
           </div>
 
+          <CityAdminIssueExportButton
+            issues={sortedIssues}
+            district={user?.district}
+            startDate={startDate}
+            endDate={endDate}
+            disabled={loading || isRefreshing}
+          />
           <Button
             variant="outline"
             onClick={() => void fetchIssues(false)}
@@ -200,71 +224,84 @@ const CityAdminManageIssues = () => {
       </div>
 
       <Card className="border bg-muted/30">
-        <CardContent className="flex flex-col gap-2 pt-4 lg:flex-row lg:items-center">
+        <CardContent className="flex flex-col gap-2 pt-4 lg:flex-row lg:flex-wrap lg:items-center">
           {loading ? (
             <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center">
               <Skeleton className="h-11 w-full rounded-lg lg:w-140" />
               <Skeleton className="h-11 w-full rounded-lg lg:w-65" />
               <Skeleton className="h-11 w-full rounded-lg lg:w-80" />
+              <Skeleton className="h-11 w-full rounded-lg lg:w-80" />
             </div>
           ) : (
             <>
-              <div className="min-w-0 rounded-lg border bg-background/80 p-1.5 lg:h-12 lg:flex-1">
-                <div className="flex h-full items-center gap-1 overflow-x-auto whitespace-nowrap pb-0.5 lg:overflow-visible">
-                  {CITY_ADMIN_STATUS_FILTERS.map((item) => (
-                    <Button
-                      key={item.value}
-                      size="sm"
-                      variant={statusFilter === item.value ? "default" : "outline"}
-                      className={
-                        statusFilter === item.value
-                          ? "h-8 shrink-0 rounded-md px-3 text-xs leading-tight bg-emerald-500 text-white hover:bg-emerald-600 lg:h-9 lg:min-w-0 lg:flex-1 lg:px-2"
-                          : "h-8 shrink-0 rounded-md border-transparent bg-transparent px-3 text-xs leading-tight lg:h-9 lg:min-w-0 lg:flex-1 lg:px-2"
-                      }
-                      onClick={() => setStatusFilter(item.value)}
-                    >
-                      {item.value === "all" ? t("all") : item.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex h-12 w-full items-center rounded-lg border bg-background/80 px-1 sm:w-auto sm:max-w-full sm:shrink-0">
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="h-10 w-full min-w-52.5 border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0">
-                    <div className="pointer-events-none inline-flex items-center gap-2">
-                      <Filter className="h-4 w-4 text-muted-foreground" />
-                      <SelectValue placeholder={t("filterByCategory")} />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("allCategories")}</SelectItem>
-                    {CITY_ADMIN_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
+              <div className="w-full space-y-2">
+                <div className="min-w-0 rounded-lg border bg-background/80 p-1.5 lg:h-12">
+                  <div className="flex h-full flex-wrap items-center gap-1 pb-0.5">
+                    {CITY_ADMIN_STATUS_FILTERS.map((item) => (
+                      <Button
+                        key={item.value}
+                        size="sm"
+                        variant={statusFilter === item.value ? "default" : "outline"}
+                        className={
+                          statusFilter === item.value
+                            ? "min-h-9 flex-1 min-w-[6.5rem] rounded-md px-3 py-1.5 text-sm leading-tight text-center whitespace-normal bg-emerald-500 text-white hover:bg-emerald-600 lg:min-w-0 lg:px-2"
+                            : "min-h-9 flex-1 min-w-[6.5rem] rounded-md border-transparent bg-transparent px-3 py-1.5 text-sm leading-tight text-center whitespace-normal lg:min-w-0 lg:px-2"
+                        }
+                        onClick={() => setStatusFilter(item.value)}
+                      >
+                        {item.value === "all" ? t("all") : item.label}
+                      </Button>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </div>
 
-              <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border bg-background/80 p-2 lg:h-12 lg:w-auto lg:flex-nowrap">
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="Min votes"
-                  value={minVotes}
-                  onChange={(event) => setMinVotes(event.target.value)}
-                  className="h-8 w-30"
-                />
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="Max votes"
-                  value={maxVotes}
-                  onChange={(event) => setMaxVotes(event.target.value)}
-                  className="h-8 w-30"
-                />
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+                  <div className="flex h-12 w-full items-center rounded-lg border bg-background/80 px-1 sm:w-auto sm:max-w-full sm:shrink-0">
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="h-10 w-full min-w-52.5 border-0 bg-transparent pl-2 pr-2 text-base focus-visible:ring-0">
+                        <div className="pointer-events-none inline-flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-muted-foreground" />
+                          <SelectValue placeholder={t("filterByCategory")} />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t("allCategories")}</SelectItem>
+                        {CITY_ADMIN_CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border bg-background/80 p-2 lg:h-12 lg:w-auto lg:flex-nowrap">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Min votes"
+                      value={minVotes}
+                      onChange={(event) => setMinVotes(event.target.value)}
+                      className="h-8 w-30"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Max votes"
+                      value={maxVotes}
+                      onChange={(event) => setMaxVotes(event.target.value)}
+                      className="h-8 w-30"
+                    />
+                  </div>
+
+                  <div className="w-full lg:min-w-96 lg:flex-1">
+                    <IssueDateRangeFilter
+                      value={dateRange}
+                      onChange={setDateRange}
+                      disabled={loading || isRefreshing}
+                    />
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -323,6 +360,9 @@ const CityAdminManageIssues = () => {
                         <Badge variant={statusToBadgeVariant(issue.status)}>
                           {statusToLabel(issue.status)}
                         </Badge>
+                        {issue.assignedTo === "super_admin" ? (
+                          <Badge variant="secondary">Escalated</Badge>
+                        ) : null}
                         <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt)}</p>
                         <Button size="sm" variant="link" className="px-0" onClick={() => onOpenIssue(issue)}>
                           View details

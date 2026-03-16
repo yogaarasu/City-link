@@ -29,6 +29,7 @@ const defaultValues: CityAdminPayload = {
   password: "",
 };
 
+const NAME_REGEX = /^[A-Za-z\s]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidIndianPhoneDigits = (digits: string) => {
   if (!/^[6-9]\d{9}$/.test(digits)) return false;
@@ -92,6 +93,9 @@ const CityAdminForm = ({
     const phoneDigits = form.phone.replace(/\D/g, "").slice(0, 10);
 
     if (name.length < 2) nextErrors.name = "Name must be at least 2 characters.";
+    if (name && !NAME_REGEX.test(name)) {
+      nextErrors.name = "Name can contain letters and spaces only.";
+    }
     if (!EMAIL_REGEX.test(email)) nextErrors.email = "Please enter a valid email address.";
     if (phoneDigits.length !== 10) {
       nextErrors.phone = "Enter a valid 10-digit mobile number.";
@@ -122,7 +126,7 @@ const CityAdminForm = ({
         <Input
           id="city-admin-name"
           value={form.name}
-          onChange={(e) => updateField("name", e.target.value)}
+          onChange={(e) => updateField("name", e.target.value.replace(/[^A-Za-z\s]/g, ""))}
           required
           className={errors.name ? "border-red-500" : ""}
         />
