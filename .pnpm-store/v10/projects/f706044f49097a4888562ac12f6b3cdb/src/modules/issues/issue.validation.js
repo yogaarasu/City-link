@@ -44,6 +44,8 @@ export const listIssueQuerySchema = z
     limit: z.coerce.number().int().min(1).max(50).optional(),
     minVotes: z.coerce.number().int().min(0).optional(),
     maxVotes: z.coerce.number().int().min(0).optional(),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
   })
   .superRefine((payload, ctx) => {
     if (
@@ -55,6 +57,14 @@ export const listIssueQuerySchema = z
         path: ["maxVotes"],
         code: z.ZodIssueCode.custom,
         message: "Max votes must be greater than or equal to min votes.",
+      });
+    }
+
+    if (payload.startDate && payload.endDate && payload.startDate > payload.endDate) {
+      ctx.addIssue({
+        path: ["endDate"],
+        code: z.ZodIssueCode.custom,
+        message: "End date must be after start date.",
       });
     }
   });

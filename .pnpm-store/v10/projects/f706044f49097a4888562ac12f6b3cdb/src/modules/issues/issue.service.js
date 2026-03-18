@@ -26,6 +26,38 @@ const ISSUE_COMPLETE_SLA_DAYS = 7;
 const PENDING_ESCALATION_REASON = "Not verified within 24 hours.";
 const COMPLETION_ESCALATION_REASON = "Not completed within 7 days.";
 
+const getDefaultStatusDescription = (status, rejectionReason) => {
+  const descriptions = {
+    pending: "Issue marked as pending for review.",
+    verified: "Issue verified by city admin.",
+    in_progress: "Issue moved to in progress.",
+    resolved: "Issue marked as resolved.",
+    rejected: rejectionReason ? `Issue rejected: ${rejectionReason}.` : "Issue rejected.",
+  };
+
+  return descriptions[status] || "";
+};
+
+const getLatestOptionalNote = (issue) => {
+  const logs = issue?.statusLogs || [];
+  if (!logs.length) return "";
+
+  const latest = logs[logs.length - 1];
+  const fallback = getDefaultStatusDescription(latest.status, issue?.rejectionReason);
+  const description = String(latest?.description || "").trim();
+
+  if (!description || description === fallback) return "";
+  return description;
+};
+
+const attachLatestOptionalNote = (issue) => {
+  const latestOptionalNote = getLatestOptionalNote(issue);
+  return {
+    ...issue,
+    latestOptionalNote,
+  };
+};
+
 const tamilNaduHolidays = new Holidays("IN", "TN");
 
 const isTamilNaduHoliday = (date) => {
@@ -33,12 +65,17 @@ const isTamilNaduHoliday = (date) => {
   return Boolean(holiday && (Array.isArray(holiday) ? holiday.length : true));
 };
 
+const isWeekend = (date) => {
+  const day = dayjs(date).day();
+  return day === 0 || day === 6;
+};
+
 const subtractWorkingHours = (startDate, hoursToSubtract) => {
   let remaining = hoursToSubtract;
   let cursor = dayjs(startDate);
 
   while (remaining > 0) {
-    if (isTamilNaduHoliday(cursor.toDate())) {
+    if (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
       cursor = cursor.startOf("day").subtract(1, "millisecond");
       continue;
     }
@@ -86,6 +123,7 @@ const sendIssueStatusChangeEmail = async (issue) => {
       `
     )
     .join("");
+  const optionalNote = getLatestOptionalNote(issue);
 
   const html = `
     <div style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,sans-serif;color:#1f2937;">
@@ -129,6 +167,17 @@ const sendIssueStatusChangeEmail = async (issue) => {
               `
           }
 
+          ${
+            optionalNote
+              ? `
+                <h3 style="margin:16px 0 8px;font-size:15px;color:#111827;">Admin Note</h3>
+                <div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;font-size:13px;color:#374151;">
+                  ${optionalNote}
+                </div>
+              `
+              : ""
+          }
+
           <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
             Thank you for helping improve your city with City-Link.
           </p>
@@ -143,8 +192,8 @@ const sendIssueStatusChangeEmail = async (issue) => {
     subject: isResolved ? "Your issue has been resolved" : "Your issue has been rejected",
     html,
     text: isResolved
-      ? `Your issue "${issue.title}" has been resolved.`
-      : `Your issue "${issue.title}" has been rejected. Reason: ${issue.rejectionReason || "Not provided"}.`,
+      ? `Your issue "${issue.title}" has been resolved.${optionalNote ? ` Note: ${optionalNote}` : ""}`
+      : `Your issue "${issue.title}" has been rejected. Reason: ${issue.rejectionReason || "Not provided"}.${optionalNote ? ` Note: ${optionalNote}` : ""}`,
   });
 };
 
@@ -157,40 +206,61 @@ const getSlaBoundaries = () => {
   };
 };
 
+const appendEscalationLogs = async (filter, reason, description, now) => {
+  const candidates = await Issue.find(filter).select("_id status").lean();
+  if (!candidates.length) return;
+
+  const operations = candidates.map((issue) => ({
+    updateOne: {
+      filter: { _id: issue._id, assignedTo: "city_admin" },
+      update: {
+        $set: {
+          assignedTo: "super_admin",
+          escalationReason: reason,
+          escalatedAt: now,
+        },
+        $push: {
+          statusLogs: {
+            status: issue.status,
+            description,
+            createdAt: now,
+          },
+        },
+      },
+    },
+  }));
+
+  if (operations.length) {
+    await Issue.bulkWrite(operations, { ordered: false });
+  }
+};
+
 export const autoEscalateOverdueIssues = async (district) => {
   const { verifyDeadline, completionDeadline, now } = getSlaBoundaries();
   const districtFilter = district ? { district } : {};
 
-  await Issue.updateMany(
+  await appendEscalationLogs(
     {
       ...districtFilter,
       assignedTo: "city_admin",
       status: "pending",
       createdAt: { $lte: verifyDeadline },
     },
-    {
-      $set: {
-        assignedTo: "super_admin",
-        escalationReason: PENDING_ESCALATION_REASON,
-        escalatedAt: now,
-      },
-    }
+    PENDING_ESCALATION_REASON,
+    "Auto escalated to super admin: not verified within 24 hours.",
+    now
   );
 
-  await Issue.updateMany(
+  await appendEscalationLogs(
     {
       ...districtFilter,
       assignedTo: "city_admin",
       status: { $in: ["verified", "in_progress"] },
       createdAt: { $lte: completionDeadline },
     },
-    {
-      $set: {
-        assignedTo: "super_admin",
-        escalationReason: COMPLETION_ESCALATION_REASON,
-        escalatedAt: now,
-      },
-    }
+    COMPLETION_ESCALATION_REASON,
+    "Auto escalated to super admin: not completed within 7 days.",
+    now
   );
 };
 
@@ -251,6 +321,16 @@ const buildFilters = (query) => {
     if (expr.length > 0) {
       filters.$expr = expr.length === 1 ? expr[0] : { $and: expr };
     }
+  }
+
+  const isValidDateValue = (value) => value instanceof Date && !Number.isNaN(value.getTime());
+  const hasStartDate = isValidDateValue(query?.startDate);
+  const hasEndDate = isValidDateValue(query?.endDate);
+
+  if (hasStartDate || hasEndDate) {
+    filters.createdAt = {};
+    if (hasStartDate) filters.createdAt.$gte = query.startDate;
+    if (hasEndDate) filters.createdAt.$lte = query.endDate;
   }
 
   return filters;
@@ -333,7 +413,7 @@ export const listCommunityIssues = async (query) => {
   ]);
 
   return {
-    issues,
+    issues: issues.map(attachLatestOptionalNote),
     total,
     page,
     limit,
@@ -344,10 +424,12 @@ export const listCommunityIssues = async (query) => {
 export const listMyIssues = async (authUser) => {
   await autoEscalateOverdueIssues(authUser.district);
 
-  return Issue.find({ reportedBy: authUser._id })
+  const issues = await Issue.find({ reportedBy: authUser._id })
     .populate({ path: "reportedBy", select: "name email district role avatar" })
     .sort({ createdAt: -1 })
     .lean();
+
+  return issues.map(attachLatestOptionalNote);
 };
 
 export const getMyIssueStats = async (authUser) => {
@@ -388,13 +470,15 @@ export const listCityAdminIssues = async (query, authUser) => {
   const filters = {
     ...buildFilters(query),
     district: authUser.district,
-    assignedTo: "city_admin",
+    assignedTo: { $in: ["city_admin", "super_admin"] },
   };
 
-  return Issue.find(filters)
+  const issues = await Issue.find(filters)
     .populate({ path: "reportedBy", select: "name email district role avatar" })
     .sort({ createdAt: -1 })
     .lean();
+
+  return issues.map(attachLatestOptionalNote);
 };
 
 export const getCityAdminIssueStats = async (authUser) => {
@@ -498,6 +582,7 @@ export const voteIssue = async (issueId, type, authUser) => {
   issue.votes = votes;
   await issue.save();
 
+  issue.latestOptionalNote = getLatestOptionalNote(issue);
   return issue;
 };
 
@@ -522,10 +607,6 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
     );
   }
 
-  if (issue.assignedTo === "super_admin") {
-    throw createHttpError(409, "This issue has been escalated to super admin.");
-  }
-
   if (issue.status === payload.status) {
     throw createHttpError(409, "Cannot update to the same status.");
   }
@@ -542,19 +623,21 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
   }
 
   const statusDescriptions = {
-    pending: "Issue marked as pending for review.",
-    verified: "Issue verified by city admin.",
-    in_progress: "Issue moved to in progress.",
-    resolved: "Issue marked as resolved.",
-    rejected: payload.rejectionReason
-      ? `Issue rejected: ${payload.rejectionReason}.`
-      : "Issue rejected.",
+    pending: getDefaultStatusDescription("pending"),
+    verified: getDefaultStatusDescription("verified"),
+    in_progress: getDefaultStatusDescription("in_progress"),
+    resolved: getDefaultStatusDescription("resolved"),
+    rejected: getDefaultStatusDescription("rejected", payload.rejectionReason),
   };
 
+  const wasEscalated = issue.assignedTo === "super_admin" || Boolean(issue.escalatedAt);
+
   issue.status = payload.status;
-  issue.escalationReason = "";
-  issue.escalatedAt = null;
-  issue.assignedTo = "city_admin";
+  if (!wasEscalated) {
+    issue.escalationReason = "";
+    issue.escalatedAt = null;
+  }
+  issue.assignedTo = wasEscalated ? "super_admin" : "city_admin";
 
   if (payload.status === "resolved") {
     issue.resolvedEvidencePhotos = await uploadResolvedIssueEvidencePhotos(
@@ -584,7 +667,8 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
     }
   }
 
-  return issue;
+  issue.latestOptionalNote = getLatestOptionalNote(issue);
+  return attachLatestOptionalNote(issue);
 };
 
 export const reviewResolvedIssue = async (issueId, payload, authUser) => {
@@ -618,6 +702,7 @@ export const reviewResolvedIssue = async (issueId, payload, authUser) => {
   };
 
   await issue.save();
+  issue.latestOptionalNote = getLatestOptionalNote(issue);
   return issue;
 };
 
@@ -641,5 +726,6 @@ export const deleteIssue = async (issueId, authUser) => {
   }
 
   await Issue.deleteOne({ _id: issue._id });
+  issue.latestOptionalNote = getLatestOptionalNote(issue);
   return issue;
 };
