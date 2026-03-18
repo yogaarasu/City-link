@@ -22,12 +22,12 @@ export const checkDailyLimit = async (email, purpose = "registration") => {
 
 export const sendOTP = async (email, otp, options = {}) => {
   const {
-    subject = "Your Verification Code | City-Link",
+    subject = "Your Verification Code | Citylink",
     text = `Your verification code is ${otp}. It is valid for 10 minutes. If you did not request this, please ignore this email.`,
   } = options;
 
   await transporter.sendMail({
-    from: `"City-Link" <${SMTP_USER}>`,
+    from: `"Citylink" <${SMTP_USER}>`,
     to: email,
     subject,
     html: otpMailTemplate(otp),

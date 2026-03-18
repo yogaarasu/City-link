@@ -39,7 +39,7 @@ export const updateMyProfile = async (authUser, payload) => {
     user.avatar = "";
   } else if (isImageDataUri(incomingAvatar)) {
     const uploadedAvatarUrl = await uploadImageToCloudinary(incomingAvatar, {
-      folder: "city-link/avatars",
+      folder: "Citylink/avatars",
     });
     if (currentAvatar && currentAvatar !== incomingAvatar) {
       await deleteCloudinaryImageByUrl(currentAvatar);

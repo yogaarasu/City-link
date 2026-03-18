@@ -2,8 +2,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const PORT = process.env.PORT || 6173;
-export const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/city-link";
-export const DB_NAME = process.env.DB_NAME || "City-Link";
+export const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Citylink";
+export const DB_NAME = process.env.DB_NAME || "Citylink";
 export const NODE_ENV = process.env.NODE_ENV || "development";
 
 export const CORS_ORIGIN =

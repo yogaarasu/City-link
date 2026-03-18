@@ -179,7 +179,7 @@ const sendIssueStatusChangeEmail = async (issue) => {
           }
 
           <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
-            Thank you for helping improve your city with City-Link.
+            Thank you for helping improve your city with Citylink.
           </p>
         </div>
       </div>
@@ -187,7 +187,7 @@ const sendIssueStatusChangeEmail = async (issue) => {
   `;
 
   await transporter.sendMail({
-    from: `"City-Link" <${SMTP_USER}>`,
+    from: `"Citylink" <${SMTP_USER}>`,
     to: recipient,
     subject: isResolved ? "Your issue has been resolved" : "Your issue has been rejected",
     html,

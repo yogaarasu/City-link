@@ -60,11 +60,11 @@ const sendCityAdminWelcomeEmail = async ({
   isUpdate = false,
 }) => {
   const subject = isUpdate
-    ? "City-Link City Admin Account Updated"
-    : "Welcome to City-Link City Administration";
+    ? "Citylink City Admin Account Updated"
+    : "Welcome to Citylink City Administration";
 
   await transporter.sendMail({
-    from: `"City-Link" <${SMTP_USER}>`,
+    from: `"Citylink" <${SMTP_USER}>`,
     to,
     subject,
     html: cityAdminWelcomeTemplate({
@@ -75,7 +75,7 @@ const sendCityAdminWelcomeEmail = async ({
       updatedBy,
       isUpdate,
     }),
-    text: `City-Link city admin access\nEmail: ${to}\nPassword: ${password}\nDistrict: ${district}`,
+    text: `Citylink city admin access\nEmail: ${to}\nPassword: ${password}\nDistrict: ${district}`,
   });
 };
 

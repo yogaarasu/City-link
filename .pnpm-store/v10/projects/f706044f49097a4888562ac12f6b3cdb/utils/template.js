@@ -15,7 +15,7 @@ export function otpMailTemplate(otp) {
           <tr>
             <td align="center" style="padding: 0 0 40px 0;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.5px;">
-                City-Link
+                Citylink
               </h1>
             </td>
           </tr>
@@ -25,7 +25,7 @@ export function otpMailTemplate(otp) {
                 Verify your email address
               </h2>
               <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #666666;">
-                To continue setting up your City-Link account, please verify your email address by entering the code below.
+                To continue setting up your Citylink account, please verify your email address by entering the code below.
               </p>
             </td>
           </tr>
@@ -71,7 +71,7 @@ export function otpMailTemplate(otp) {
                 <a href="mailto:citylinkfyp@gmail.com" style="color: #000000; text-decoration: none;">citylinkfyp@gmail.com</a>
               </p>
               <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #999999;">
-                © ${new Date().getFullYear()} City-Link. All rights reserved.
+                © ${new Date().getFullYear()} Citylink. All rights reserved.
               </p>
             </td>
           </tr>

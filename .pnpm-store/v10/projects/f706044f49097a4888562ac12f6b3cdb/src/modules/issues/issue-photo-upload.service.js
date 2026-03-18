@@ -6,14 +6,14 @@ import {
 
 export const uploadReportedIssuePhotos = async (photos = []) =>
   uploadManyImagesToCloudinary(photos, {
-    folder: "city-link/issues/reported",
+    folder: "Citylink/issues/reported",
     maxCount: MAX_ISSUE_PHOTOS,
     transformation: ISSUE_IMAGE_UPLOAD_TRANSFORMATION,
   });
 
 export const uploadResolvedIssueEvidencePhotos = async (photos = []) =>
   uploadManyImagesToCloudinary(photos, {
-    folder: "city-link/issues/resolved",
+    folder: "Citylink/issues/resolved",
     maxCount: MAX_ISSUE_PHOTOS,
     transformation: ISSUE_IMAGE_UPLOAD_TRANSFORMATION,
   });

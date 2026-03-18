@@ -44,7 +44,7 @@ export const loginUser = async (email, password) => {
         name: SUPER_ADMIN_NAME,
         email: configuredSuperEmail,
         district: "State Admin",
-        address: "City-Link Control Center",
+        address: "Citylink Control Center",
         password: await hash(SUPER_ADMIN_PASSWORD),
         role: "super_admin",
         isVerified: true,
@@ -73,7 +73,7 @@ export const loginUser = async (email, password) => {
     superAdmin.name = SUPER_ADMIN_NAME;
     superAdmin.email = configuredSuperEmail;
     superAdmin.district = "State Admin";
-    superAdmin.address = "City-Link Control Center";
+    superAdmin.address = "Citylink Control Center";
     superAdmin.role = "super_admin";
     superAdmin.isDeleted = false;
     superAdmin.isVerified = true;

@@ -6,7 +6,7 @@ export const cityAdminWelcomeTemplate = ({
   updatedBy,
   isUpdate,
 }) => {
-  const heading = isUpdate ? "Your City Admin Account Was Updated" : "Welcome to City-Link";
+  const heading = isUpdate ? "Your City Admin Account Was Updated" : "Welcome to Citylink";
   const intro = isUpdate
     ? "Your city administrator account details were updated by the super admin team."
     : "Your city administrator account has been created successfully.";
@@ -26,7 +26,7 @@ export const cityAdminWelcomeTemplate = ({
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 640px; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
           <tr>
             <td style="padding: 24px 28px; background: #059669; color: #ffffff;">
-              <h1 style="margin: 0; font-size: 24px;">City-Link</h1>
+              <h1 style="margin: 0; font-size: 24px;">Citylink</h1>
               <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.95;">City Administration Access</p>
             </td>
           </tr>
@@ -41,7 +41,7 @@ export const cityAdminWelcomeTemplate = ({
                     <strong>Assigned District:</strong> ${district}<br />
                     <strong>Login Email:</strong> ${email}<br />
                     <strong>Temporary Password:</strong> ${password}<br />
-                    <strong>Portal:</strong> <a href="https://city-link-portal.vercel.app" style="text-decoration: none;">City-Link Admin Login</a>
+                    <strong>Portal:</strong> <a href="https://citylink-tn.vercel.app/auth/login" style="text-decoration: none;">Citylink Admin Login</a>
                   </td>
                 </tr>
               </table>
@@ -56,7 +56,7 @@ export const cityAdminWelcomeTemplate = ({
           </tr>
           <tr>
             <td style="padding: 18px 28px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-              This is an official City-Link service message.
+              This is an official Citylink service message.
             </td>
           </tr>
         </table>

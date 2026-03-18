@@ -38,7 +38,7 @@ export const requestPasswordResetOTP = async (email) => {
   const otp = generateOTP();
   await storeOTP(email, otp, OTP_PURPOSE);
   await sendOTP(email, otp, {
-    subject: "Password Reset Code | City-Link",
+    subject: "Password Reset Code | Citylink",
     text: `Your password reset code is ${otp}. It is valid for 10 minutes. If you did not request this, please ignore this email.`,
   });
 
