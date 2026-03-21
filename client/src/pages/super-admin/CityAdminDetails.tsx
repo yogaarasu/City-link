@@ -26,10 +26,13 @@ import {
 } from "@/modules/super-admin/api/super-admin.api";
 import CityAdminForm from "@/modules/super-admin/components/CityAdminForm";
 import type { CityAdminDetailsResponse, CityAdminPayload } from "@/modules/super-admin/types/super-admin.types";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const CityAdminDetailsPage = () => {
   const navigate = useNavigate();
   const { adminId = "" } = useParams();
+  const { t } = useI18n();
   const [details, setDetails] = useState<CityAdminDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,7 +54,7 @@ const CityAdminDetailsPage = () => {
       const response = await getCityAdminDetails(adminId);
       setDetails(response);
     } catch (error: unknown) {
-      handleApiError(error, "Failed to load admin details.");
+      handleApiError(error, t("errorLoadAdminDetails"));
     } finally {
       setLoading(false);
     }
@@ -73,7 +76,7 @@ const CityAdminDetailsPage = () => {
       const availability = await checkCityAdminEmailAvailability(payload.email, adminId);
       if (!availability.available) {
         const roleLabel = availability.existingRole ? availability.existingRole.replace("_", " ") : "user";
-        toast.error(`This email is already used by another ${roleLabel}.`);
+        toast.error(t("errorEmailInUse", { role: roleLabel }));
         return;
       }
       const response = await updateCityAdmin(adminId, payload);
@@ -83,7 +86,7 @@ const CityAdminDetailsPage = () => {
       setIsEditing(false);
       await load();
     } catch (error: unknown) {
-      handleApiError(error, "Failed to update admin details.");
+      handleApiError(error, t("errorUpdateAdminDetails"));
     } finally {
       setIsSubmittingEdit(false);
     }
@@ -97,7 +100,7 @@ const CityAdminDetailsPage = () => {
       toast.success(response.message);
       await load();
     } catch (error: unknown) {
-      handleApiError(error, "Failed to update admin state.");
+      handleApiError(error, t("errorUpdateAdminState"));
     }
   };
 
@@ -107,7 +110,7 @@ const CityAdminDetailsPage = () => {
       toast.success(response.message);
       navigate("/super-admin/city-admins", { replace: true });
     } catch (error: unknown) {
-      handleApiError(error, "Failed to delete city admin.");
+      handleApiError(error, t("errorDeleteCityAdmin"));
     }
   };
 
@@ -147,7 +150,7 @@ const CityAdminDetailsPage = () => {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          City admin not found.
+          {t("cityAdminNotFound")}
         </CardContent>
       </Card>
     );
@@ -161,60 +164,60 @@ const CityAdminDetailsPage = () => {
             <Button variant="outline" size="sm" asChild>
               <Link to="/super-admin/city-admins">
                 <ArrowLeft className="h-4 w-4" />
-                Back
+                {t("back")}
               </Link>
             </Button>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => setIsEditing((prev) => !prev)}>
                 <Pencil className="h-4 w-4" />
-                {isEditing ? "Close Edit" : "Edit"}
+                {isEditing ? t("closeEdit") : t("edit")}
               </Button>
               <Button size="sm" variant="outline" onClick={onToggleState}>
                 <Power className="h-4 w-4" />
-                {details.admin.adminAccess === "active" ? "Set Inactive" : "Set Active"}
+                {details.admin.adminAccess === "active" ? t("setInactive") : t("setActive")}
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive">
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {t("delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete admin permanently?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("deleteAdminTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action will permanently delete this city admin account.
+                      {t("deleteAdminDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>{t("delete")}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </div>
           </div>
-          <CardTitle className="text-lg">City Admin Details</CardTitle>
+          <CardTitle className="text-lg">{t("cityAdminDetails")}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            View current admin values and edit to resend updated welcome email.
+            {t("cityAdminDetailsSubtitle")}
           </p>
         </CardHeader>
         <CardContent className="space-y-4 pt-1">
           <div className="grid gap-2 text-sm md:grid-cols-2">
-            <div className="rounded-lg border p-3"><span className="font-medium">Name:</span> {details.admin.name}</div>
-            <div className="rounded-lg border p-3"><span className="font-medium">Email:</span> {details.admin.email}</div>
-            <div className="rounded-lg border p-3"><span className="font-medium">Phone:</span> {details.admin.phone || "-"}</div>
-            <div className="rounded-lg border p-3"><span className="font-medium">District:</span> {details.admin.district}</div>
+            <div className="rounded-lg border p-3"><span className="font-medium">{t("name")}:</span> {details.admin.name}</div>
+            <div className="rounded-lg border p-3"><span className="font-medium">{t("email")}:</span> {details.admin.email}</div>
+            <div className="rounded-lg border p-3"><span className="font-medium">{t("phone")}:</span> {details.admin.phone || "-"}</div>
+            <div className="rounded-lg border p-3"><span className="font-medium">{t("district")}:</span> {getDistrictLabel(details.admin.district, t)}</div>
             <div className="rounded-lg border p-3">
-              <span className="font-medium">State:</span> {details.admin.adminAccess === "active" ? "Active" : "Inactive"}
+              <span className="font-medium">{t("status")}:</span> {details.admin.adminAccess === "active" ? t("active") : t("inactive")}
             </div>
             <div className="rounded-lg border p-3">
-              <span className="font-medium">Admin ID:</span> {details.admin.adminId || "N/A"}
+              <span className="font-medium">{t("adminId")}:</span> {details.admin.adminId || t("notAvailable")}
             </div>
             <div className="rounded-lg border p-3 md:col-span-2">
-              <span className="font-medium">Initial Password:</span>{" "}
-              {knownPassword || "Not available. Set a new password in Edit."}
+              <span className="font-medium">{t("initialPassword")}:</span>{" "}
+              {knownPassword || t("passwordNotAvailable")}
             </div>
           </div>
         </CardContent>
@@ -223,7 +226,7 @@ const CityAdminDetailsPage = () => {
       {isEditing ? (
         <Card>
           <CardHeader>
-            <CardTitle>Edit Admin Details</CardTitle>
+            <CardTitle>{t("editAdminDetails")}</CardTitle>
           </CardHeader>
           <CardContent>
             <CityAdminForm
@@ -234,7 +237,7 @@ const CityAdminDetailsPage = () => {
                 district: details.admin.district,
                 password: knownPassword,
               }}
-              submitLabel="Save + Resend Welcome Email"
+              submitLabel={t("saveResendWelcome")}
               isSubmitting={isSubmittingEdit}
               onSubmit={onSaveEdit}
               onCancel={() => setIsEditing(false)}

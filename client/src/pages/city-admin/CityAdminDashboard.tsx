@@ -8,6 +8,7 @@ import { getCityAdminIssueStats } from "@/modules/city-admin/api/city-admin-issu
 import type { CityAdminIssueStats } from "@/modules/city-admin/types/city-admin-issue.types";
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const defaultStats: CityAdminIssueStats = {
   total: 0,
@@ -104,7 +105,7 @@ const CityAdminDashboard = () => {
     },
     {
       key: "verified",
-      label: "Verified",
+      label: t("verified"),
       value: stats.verified ?? 0,
       icon: ShieldCheck,
       textClass: "text-yellow-600",
@@ -143,7 +144,7 @@ const CityAdminDashboard = () => {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl leading-tight font-bold md:text-3xl md:leading-tight">
-        {t("dashboardTitle", { district: user?.district || "" })}
+        {t("dashboardTitle", { district: user?.district ? getDistrictLabel(user.district, t) : t("districtUnknown") })}
           </h1>
         </div>
       </div>

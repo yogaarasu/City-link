@@ -20,10 +20,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import "leaflet/dist/leaflet.css";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getCategoryLabel, getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const CityIssueDetailsPage = () => {
   const navigate = useNavigate();
   const { district = "" } = useParams();
+  const { t } = useI18n();
   const [details, setDetails] = useState<CityIssueDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [escalatedFilter, setEscalatedFilter] = useState<"all" | "unverified" | "unresolved">("all");
@@ -36,6 +39,7 @@ const CityIssueDetailsPage = () => {
     resolvedEvidencePhotos?: string[];
     upVotes?: number;
     downVotes?: number;
+    latestOptionalNote?: string;
     location?: {
       lat: number;
       lng: number;
@@ -72,10 +76,8 @@ const CityIssueDetailsPage = () => {
   };
 
   const escalatedBaseIssues = useMemo(() => {
-    const fromIssues = (details?.issues || []).filter((issue) => issue.assignedTo === "super_admin");
-    if (fromIssues.length > 0) return fromIssues;
     return details?.escalatedIssues || [];
-  }, [details?.issues, details?.escalatedIssues]);
+  }, [details?.escalatedIssues]);
 
   const filteredEscalatedIssues = useMemo(() => {
     const list = escalatedBaseIssues;
@@ -150,15 +152,15 @@ const CityIssueDetailsPage = () => {
     } catch (error: unknown) {
       if (showLoading) {
         if (error instanceof AxiosError) {
-          toast.error(error.response?.data?.error || "Failed to load district issue details.");
+          toast.error(error.response?.data?.error || t("errorLoadDistrictIssueDetails"));
         } else {
-          toast.error("Failed to load district issue details.");
+          toast.error(t("errorLoadDistrictIssueDetails"));
         }
       }
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [district]);
+  }, [district, t]);
 
   useEffect(() => {
     if (!district) return;
@@ -184,7 +186,7 @@ const CityIssueDetailsPage = () => {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          District details not found.
+          {t("districtDetailsNotFound")}
         </CardContent>
       </Card>
     );
@@ -196,18 +198,20 @@ const CityIssueDetailsPage = () => {
         <div className="space-y-2">
           <Button variant="outline" onClick={() => navigate("/super-admin/dashboard")}>
             <ArrowLeft className="h-4 w-4" />
-            Back to System Overview
+            {t("backToSystemOverview")}
           </Button>
-          <h1 className="text-2xl font-bold md:text-3xl">{details.district} Issue Full Details</h1>
+          <h1 className="text-2xl font-bold md:text-3xl">
+            {t("districtIssueDetailsTitle", { district: getDistrictLabel(details.district, t) })}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Issue summary with category totals and district status insights.
+            {t("districtIssueDetailsSubtitle")}
           </p>
         </div>
         <Button
           variant="outline"
           onClick={() => navigate(`/super-admin/cities/${encodeURIComponent(details.district)}/admins`)}
         >
-          Admin Details
+          {t("adminDetails")}
         </Button>
       </div>
 
@@ -216,42 +220,42 @@ const CityIssueDetailsPage = () => {
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Total Reports</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("totalReports")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.total}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Clock3 className="h-8 w-8 rounded-full bg-red-100 p-1.5 text-red-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Pending</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("pending")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.pending}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 rounded-full bg-yellow-100 p-1.5 text-yellow-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Verified</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("verified")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.verified}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Timer className="h-8 w-8 rounded-full bg-blue-100 p-1.5 text-blue-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">In Progress</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("inProgress")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.in_progress}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Resolved</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("resolved")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.resolved}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Ban className="h-8 w-8 rounded-full bg-slate-100 p-1.5 text-slate-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Rejected</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("rejected")}</p>
               <p className="text-2xl font-bold">{details.statusBreakdown.rejected}</p>
             </div>
           </div>
@@ -260,39 +264,55 @@ const CityIssueDetailsPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Issue Categories</CardTitle>
+          <CardTitle>{t("issueCategories")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {details.categoryBreakdown.length ? (
             details.categoryBreakdown.map((item) => (
               <div key={item.category} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                <span>{item.category}</span>
+                <span>{getCategoryLabel(item.category, t)}</span>
                 <span className="rounded-md border px-2 py-1 text-xs font-medium">{item.count}</span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No category records found.</p>
+            <p className="text-sm text-muted-foreground">{t("noCategoryRecords")}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Escalated to Super Admin</CardTitle>
-          <Select value={escalatedFilter} onValueChange={(value) => setEscalatedFilter(value as "all" | "unverified" | "unresolved")}>
-            <SelectTrigger className="w-full sm:w-56">
-              <SelectValue placeholder="Filter escalated issues" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All escalated issues</SelectItem>
-              <SelectItem value="unverified">Unverified only</SelectItem>
-              <SelectItem value="unresolved">Unresolved only</SelectItem>
-            </SelectContent>
-          </Select>
+          <CardTitle>{t("escalatedToSuperAdmin")}</CardTitle>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                navigate(
+                  `/super-admin/cities/${encodeURIComponent(details.district)}/escalated-history`
+                )
+              }
+            >
+              {t("viewEscalatedHistory")}
+            </Button>
+            <Select
+              value={escalatedFilter}
+              onValueChange={(value) => setEscalatedFilter(value as "all" | "unverified" | "unresolved")}
+            >
+              <SelectTrigger className="w-full sm:w-56">
+                <SelectValue placeholder={t("filterEscalatedIssues")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allEscalatedIssues")}</SelectItem>
+                <SelectItem value="unverified">{t("unverifiedOnly")}</SelectItem>
+                <SelectItem value="unresolved">{t("unresolvedOnly")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="space-y-2">
           {resolvedEscalatedIssues.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No escalated issues for the selected filter.</p>
+            <p className="text-sm text-muted-foreground">{t("noEscalatedIssues")}</p>
           ) : (
             <>
               {resolvedEscalatedIssues.slice(0, visibleEscalatedCount).map((issue) => (
@@ -300,7 +320,7 @@ const CityIssueDetailsPage = () => {
                   key={issue._id}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Open escalated issue details for ${issue.title}`}
+                  aria-label={t("openEscalatedIssueDetailsAria", { title: issue.title })}
                   className="cursor-pointer rounded-xl border bg-card shadow-sm transition hover:shadow-md"
                   onClick={() => setSelectedEscalatedIssueId(issue._id)}
                   onKeyDown={(event) => {
@@ -330,43 +350,50 @@ const CityIssueDetailsPage = () => {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <h3 className="line-clamp-1 text-xl font-semibold">{issue.title}</h3>
                           <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md px-2.5 py-1 text-xs">
-                            {statusToLabel(issue.status)}
+                            {statusToLabel(issue.status, t)}
                           </Badge>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                           {issue.category ? (
                             <Badge variant="outline" className="rounded-md px-2.5 py-1 text-xs">
-                              {issue.category}
+                              {getCategoryLabel(issue.category, t)}
                             </Badge>
                           ) : null}
                           {issue.status === "pending" ? (
                             <Badge variant="secondary" className="rounded-md px-2.5 py-1 text-xs">
-                              Unverified
+                              {t("unverified")}
                             </Badge>
                           ) : null}
                           {["verified", "in_progress"].includes(issue.status) ? (
                             <Badge variant="outline" className="rounded-md px-2.5 py-1 text-xs">
-                              Unresolved
+                              {t("unresolved")}
                             </Badge>
                           ) : null}
                         </div>
 
                         {issue.escalationReason ? (
                           <p className="text-sm">
-                            <span className="font-medium">Escalation reason:</span> {issue.escalationReason}
+                            <span className="font-medium">{t("escalationReason")}:</span> {issue.escalationReason}
                           </p>
                         ) : null}
+                        {issue.latestOptionalNote ? (
+                          <p className="text-sm">
+                            <span className="font-medium">{t("delayReason")}:</span> {issue.latestOptionalNote}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">{t("noDelayReason")}</p>
+                        )}
 
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
                             <CalendarDays className="h-3.5 w-3.5" />
-                            Reported: {new Date(issue.createdAt).toLocaleString()}
+                            {t("reportedAt")}: {new Date(issue.createdAt).toLocaleString()}
                           </span>
                           {issue.escalatedAt ? (
                             <span className="inline-flex items-center gap-1">
                               <AlertTriangle className="h-3.5 w-3.5" />
-                              Escalated: {new Date(issue.escalatedAt).toLocaleString()}
+                              {t("escalatedAt")}: {new Date(issue.escalatedAt).toLocaleString()}
                             </span>
                           ) : null}
                         </div>
@@ -389,7 +416,7 @@ const CityIssueDetailsPage = () => {
                               setSelectedEscalatedIssueId(issue._id);
                             }}
                           >
-                            View Full Details
+                            {t("viewFullDetails")}
                           </Button>
                         </div>
                       </div>
@@ -403,7 +430,7 @@ const CityIssueDetailsPage = () => {
                     variant="outline"
                     onClick={() => setVisibleEscalatedCount((prev) => prev + 10)}
                   >
-                    Show More
+                    {t("showMore")}
                   </Button>
                 </div>
               ) : null}
@@ -425,23 +452,23 @@ const CityIssueDetailsPage = () => {
                 <DialogTitle className="flex flex-wrap items-center gap-2">
                   {selectedEscalatedIssue.title}
                   <Badge variant={statusToBadgeVariant(selectedEscalatedIssue.status)} className="rounded-md px-2 py-1 text-xs">
-                    {statusToLabel(selectedEscalatedIssue.status)}
+                    {statusToLabel(selectedEscalatedIssue.status, t)}
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className="flex flex-wrap items-center gap-2 text-xs">
                   {selectedEscalatedIssue.category ? (
                     <Badge variant="outline" className="rounded-md px-2 py-1 text-xs">
-                      {selectedEscalatedIssue.category}
+                      {getCategoryLabel(selectedEscalatedIssue.category, t)}
                     </Badge>
                   ) : null}
                   {selectedEscalatedIssue.status === "pending" ? (
                     <Badge variant="secondary" className="rounded-md px-2 py-1 text-xs">
-                      Unverified
+                      {t("unverified")}
                     </Badge>
                   ) : null}
                   {["verified", "in_progress"].includes(selectedEscalatedIssue.status) ? (
                     <Badge variant="outline" className="rounded-md px-2 py-1 text-xs">
-                      Unresolved
+                      {t("unresolved")}
                     </Badge>
                   ) : null}
                   <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
@@ -457,8 +484,7 @@ const CityIssueDetailsPage = () => {
 
               <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto px-5 py-4">
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                  Auto escalation rules: pending issues move to super admin after 24 hours without verification.
-                  Verified or in-progress issues escalate after 7 days without resolution.
+                  {t("autoEscalationRules")}
                 </div>
                 {selectedEscalatedIssue.photos && selectedEscalatedIssue.photos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -482,26 +508,26 @@ const CityIssueDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    No evidence images available.
+                    {t("noEvidenceImages")}
                   </div>
                 )}
 
                 {selectedEscalatedIssue.description ? (
                   <div className="rounded-lg border p-3">
-                    <h3 className="mb-1 font-semibold">Description</h3>
+                    <h3 className="mb-1 font-semibold">{t("description")}</h3>
                     <p className="text-sm leading-relaxed">{selectedEscalatedIssue.description}</p>
                   </div>
                 ) : null}
 
                 {selectedEscalatedIssue.statusLogs && selectedEscalatedIssue.statusLogs.length > 0 ? (
                   <div className="rounded-lg border p-3">
-                    <h3 className="mb-2 font-semibold">Status Update Logs</h3>
+                    <h3 className="mb-2 font-semibold">{t("statusLogs")}</h3>
                     <div className="space-y-2">
                       {selectedEscalatedIssue.statusLogs.map((log, index) => (
                         <div key={`${log.createdAt}-${index}`} className="rounded-md border p-2.5">
                           <div className="mb-1 flex items-center gap-2">
                             <Badge variant={statusToBadgeVariant(log.status)} className="rounded-[5px]">
-                              {statusToLabel(log.status)}
+                              {statusToLabel(log.status, t)}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
                               {new Date(log.createdAt).toLocaleString()}
@@ -516,7 +542,7 @@ const CityIssueDetailsPage = () => {
 
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-lg border p-3">
-                    <h3 className="mb-2 font-semibold">Reported Info</h3>
+                    <h3 className="mb-2 font-semibold">{t("reportedInfo")}</h3>
                     <p className="text-sm text-muted-foreground">{selectedEscalatedIssue.address}</p>
                     <p className="mt-2 text-xs text-muted-foreground inline-flex items-center gap-1">
                       <CalendarDays className="h-3.5 w-3.5" />
@@ -525,13 +551,21 @@ const CityIssueDetailsPage = () => {
                   </div>
 
                   <div className="rounded-lg border p-3">
-                    <h3 className="mb-2 font-semibold">Escalation Details</h3>
+                    <h3 className="mb-2 font-semibold">{t("escalationDetails")}</h3>
                     {selectedEscalatedIssue.escalationReason ? (
                       <p className="text-sm">
-                        <span className="font-medium">Reason:</span> {selectedEscalatedIssue.escalationReason}
+                        <span className="font-medium">{t("reason")}:</span> {selectedEscalatedIssue.escalationReason}
                       </p>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No escalation reason provided.</p>
+                      <p className="text-sm text-muted-foreground">{t("noEscalationReason")}</p>
+                    )}
+                    {selectedEscalatedIssue.latestOptionalNote ? (
+                      <p className="mt-2 text-sm">
+                        <span className="font-medium">{t("delayReason")}:</span>{" "}
+                        {selectedEscalatedIssue.latestOptionalNote}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">{t("noDelayReason")}</p>
                     )}
                     {selectedEscalatedIssue.escalatedAt ? (
                       <p className="mt-2 text-xs text-muted-foreground inline-flex items-center gap-1">
@@ -543,7 +577,7 @@ const CityIssueDetailsPage = () => {
                 </div>
 
                 <div className="rounded-lg border p-3">
-                  <h3 className="mb-2 font-semibold">Location</h3>
+                  <h3 className="mb-2 font-semibold">{t("location")}</h3>
                   {selectedEscalatedIssue.location ? (
                     <div className="relative z-0 h-72 overflow-hidden rounded-lg border md:h-96">
                       <MapContainer
@@ -574,7 +608,7 @@ const CityIssueDetailsPage = () => {
                       </MapContainer>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Location unavailable for this issue.</p>
+                    <p className="text-sm text-muted-foreground">{t("locationUnavailable")}</p>
                   )}
                 </div>
               </div>

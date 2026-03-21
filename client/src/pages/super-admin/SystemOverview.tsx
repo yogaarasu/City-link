@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/select";
 import { getSystemOverview } from "@/modules/super-admin/api/super-admin.api";
 import type { SystemOverview } from "@/modules/super-admin/types/super-admin.types";
-import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import { TAMIL_NADU_DISTRICTS, getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const SystemOverviewPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [data, setData] = useState<SystemOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,9 +62,9 @@ const SystemOverviewPage = () => {
     } catch (error: unknown) {
       if (showLoading) {
         if (error instanceof AxiosError) {
-          toast.error(error.response?.data?.error || "Failed to load system overview.");
+          toast.error(error.response?.data?.error || t("errorLoadSystemOverview"));
         } else {
-          toast.error("Failed to load system overview.");
+          toast.error(t("errorLoadSystemOverview"));
         }
       }
     } finally {
@@ -72,7 +74,7 @@ const SystemOverviewPage = () => {
         setIsRefreshing(false);
       }
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const cached = readOverviewCache();
@@ -158,7 +160,7 @@ const SystemOverviewPage = () => {
   return (
     <div className="space-y-4 overflow-x-hidden">
       <div>
-        <h1 className="text-2xl font-bold">System Overview</h1>
+        <h1 className="text-2xl font-bold">{t("systemOverview")}</h1>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -168,7 +170,7 @@ const SystemOverviewPage = () => {
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                 <Building2 className="h-5 w-5" />
               </span>
-              Total City Admins
+              {t("totalCityAdmins")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
@@ -185,7 +187,7 @@ const SystemOverviewPage = () => {
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700">
                 <MapPinned className="h-5 w-5" />
               </span>
-              Total Districts (Tamil Nadu)
+              {t("totalDistrictsTamilNadu")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
@@ -202,7 +204,7 @@ const SystemOverviewPage = () => {
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-700">
                 <MapPinCheck className="h-5 w-5" />
               </span>
-              Active Districts
+              {t("activeDistricts")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-2.5">
@@ -216,19 +218,19 @@ const SystemOverviewPage = () => {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">All District Issue Status</CardTitle>
+          <CardTitle className="text-base">{t("allDistrictIssueStatus")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <Select value={districtFilter} onValueChange={setDistrictFilter}>
               <SelectTrigger className="h-8 w-full text-xs sm:text-sm">
-                <SelectValue placeholder="Filter district" />
+                <SelectValue placeholder={t("filterDistrict")} />
               </SelectTrigger>
               <SelectContent className="max-h-64">
-                <SelectItem value="all">All Districts</SelectItem>
+                <SelectItem value="all">{t("allDistricts")}</SelectItem>
                 {TAMIL_NADU_DISTRICTS.map((district) => (
                   <SelectItem key={district} value={district}>
-                    {district}
+                    {getDistrictLabel(district, t)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -238,18 +240,18 @@ const SystemOverviewPage = () => {
 
           {!sortedCities.length ? (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-              No districts found for selected filters.
+              {t("noDistrictsFound")}
             </div>
           ) : (
             <>
               <div className="overflow-hidden rounded-lg border">
                 <div className="grid grid-cols-12 bg-muted/40 text-center text-sm font-semibold">
-                  <div className="col-span-5 min-w-0 border-r px-2 py-2 sm:col-span-7 sm:px-3">District Name</div>
+                  <div className="col-span-5 min-w-0 border-r px-2 py-2 sm:col-span-7 sm:px-3">{t("districtName")}</div>
                   <div className="col-span-2 border-r px-2 py-2 text-[11px] sm:col-span-2 sm:px-3 sm:text-sm">
-                    <span className="block leading-tight sm:hidden">Pending<br />Issues</span>
-                    <span className="hidden sm:inline">Pending Issues</span>
+                    <span className="block whitespace-pre-line leading-tight sm:hidden">{t("pendingIssuesShort")}</span>
+                    <span className="hidden sm:inline">{t("pendingIssues")}</span>
                   </div>
-                  <div className="col-span-5 min-w-0 px-2 py-2 sm:col-span-3 sm:px-3">Action</div>
+                  <div className="col-span-5 min-w-0 px-2 py-2 sm:col-span-3 sm:px-3">{t("action")}</div>
                 </div>
                 {visibleCities.map((city, index) => (
                   <div
@@ -260,7 +262,7 @@ const SystemOverviewPage = () => {
                   >
                     <div className="col-span-5 min-w-0 border-r px-2 py-2.5 font-medium sm:col-span-7 sm:px-3">
                       <span className="block truncate text-center" title={city.district}>
-                        {city.district}
+                        {getDistrictLabel(city.district, t)}
                       </span>
                     </div>
                     <div className="col-span-2 border-r px-2 py-2.5 font-semibold sm:col-span-2 sm:px-3">
@@ -276,7 +278,7 @@ const SystemOverviewPage = () => {
                         className="h-8 w-full min-w-0 gap-1 px-1.5 text-[10px] sm:px-2 sm:text-xs"
                         onClick={() => navigate(`/super-admin/cities/${encodeURIComponent(city.district)}`)}
                       >
-                        View Full Details
+                        {t("viewFullDetails")}
                         <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
                       </Button>
                     </div>
@@ -287,7 +289,7 @@ const SystemOverviewPage = () => {
               {sortedCities.length > halfCount ? (
                 <div className="flex justify-center pt-2">
                   <Button size="sm" variant="outline" onClick={() => setShowAllDistricts((prev) => !prev)}>
-                    {showAllDistricts ? "Show Less Districts" : "Show More Districts"}
+                    {showAllDistricts ? t("showLessDistricts") : t("showMoreDistricts")}
                   </Button>
                 </div>
               ) : null}

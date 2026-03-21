@@ -8,7 +8,7 @@ import { cityAdminWelcomeTemplate } from "./super-admin.mail-template.js";
 import { appendUserActivityLog } from "./shared/activity-log.js";
 import { TAMIL_NADU_DISTRICTS } from "../issues/issue.constants.js";
 import { DISTRICT_RTO_CODES, getNormalizedAdminAccess } from "./super-admin.constants.js";
-import { autoEscalateOverdueIssues } from "../issues/issue.service.js";
+import { attachLatestOptionalNote, autoEscalateOverdueIssues } from "../issues/issue.service.js";
 
 const createHttpError = (statusCode, message) => {
   const error = new Error(message);
@@ -251,6 +251,11 @@ export const getCityIssueDetails = async (district) => {
     }
   }
 
+  const issuesWithNotes = issues.map(attachLatestOptionalNote);
+  const escalatedIssues = issuesWithNotes.filter(
+    (item) => item.assignedTo === "super_admin" && !["verified", "resolved"].includes(item.status)
+  );
+
   return {
     district,
     statusBreakdown: statusMap,
@@ -268,8 +273,8 @@ export const getCityIssueDetails = async (district) => {
       ...getSafeAdmin(admin),
       activityLogs: Array.isArray(admin.activityLogs) ? admin.activityLogs.slice(0, 20) : [],
     })),
-    issues,
-    escalatedIssues: issues.filter((item) => item.assignedTo === "super_admin"),
+    issues: issuesWithNotes,
+    escalatedIssues,
   };
 };
 

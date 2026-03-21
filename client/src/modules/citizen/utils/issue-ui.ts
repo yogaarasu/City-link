@@ -1,4 +1,6 @@
 import type { IIssue } from "../types/issue.types";
+import type { I18nTranslator } from "../constants/issue.constants";
+import { ISSUE_STATUS_LABEL_KEYS } from "../constants/issue.constants";
 
 export type IssueBadgeVariant = "warning" | "info" | "success" | "destructive" | "secondary";
 
@@ -10,7 +12,8 @@ export const statusToBadgeVariant = (status: IIssue["status"]): IssueBadgeVarian
   return "secondary";
 };
 
-export const statusToLabel = (status: IIssue["status"]) => {
+export const statusToLabel = (status: IIssue["status"], t?: I18nTranslator) => {
+  if (t) return t(ISSUE_STATUS_LABEL_KEYS[status]);
   if (status === "verified") return "Verified";
   if (status === "in_progress") return "In Progress";
   return status.charAt(0).toUpperCase() + status.slice(1);

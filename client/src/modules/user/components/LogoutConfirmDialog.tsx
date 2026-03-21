@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 interface LogoutConfirmDialogProps {
   open: boolean;
@@ -20,19 +21,20 @@ export const LogoutConfirmDialog = ({
   onOpenChange,
   onConfirm,
 }: LogoutConfirmDialogProps) => {
+  const { t } = useI18n();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+          <AlertDialogTitle>{t("confirmLogoutTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to logout from your account?
+            {t("confirmLogoutDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            Logout
+            {t("logout")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

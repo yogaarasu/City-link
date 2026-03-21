@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCityIssueDetails } from "@/modules/super-admin/api/super-admin.api";
 import type { CityIssueDetail } from "@/modules/super-admin/types/super-admin.types";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const CityDistrictAdminsPage = () => {
   const navigate = useNavigate();
   const { district = "" } = useParams();
+  const { t } = useI18n();
   const [details, setDetails] = useState<CityIssueDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,9 +30,9 @@ const CityDistrictAdminsPage = () => {
         setDetails(response);
       } catch (error: unknown) {
         if (error instanceof AxiosError) {
-          toast.error(error.response?.data?.error || "Failed to load district admin information.");
+          toast.error(error.response?.data?.error || t("errorLoadDistrictAdminInfo"));
         } else {
-          toast.error("Failed to load district admin information.");
+          toast.error(t("errorLoadDistrictAdminInfo"));
         }
       } finally {
         setLoading(false);
@@ -51,7 +54,7 @@ const CityDistrictAdminsPage = () => {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          District admin information not found.
+          {t("districtAdminInfoNotFound")}
         </CardContent>
       </Card>
     );
@@ -63,11 +66,13 @@ const CityDistrictAdminsPage = () => {
         <div className="space-y-1">
           <Button variant="outline" size="sm" onClick={() => navigate(`/super-admin/cities/${encodeURIComponent(details.district)}`)}>
             <ArrowLeft className="h-4 w-4" />
-            Back to Issue Details
+            {t("backToIssueDetails")}
           </Button>
-          <h1 className="text-2xl font-bold">{details.district} Admin Information</h1>
+          <h1 className="text-2xl font-bold">
+            {t("districtAdminInformationTitle", { district: getDistrictLabel(details.district, t) })}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            City administrator contact and access details.
+            {t("districtAdminInformationSubtitle")}
           </p>
         </div>
       </div>
@@ -77,20 +82,20 @@ const CityDistrictAdminsPage = () => {
           {details.cityAdmins.map((admin) => (
             <Card key={admin._id}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Administrator</CardTitle>
+                <CardTitle className="text-base">{t("administrator")}</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-2 text-sm md:grid-cols-2">
-                <div className="rounded-md border p-2.5"><span className="font-medium">Admin ID:</span> {admin.adminId || "N/A"}</div>
-                <div className="rounded-md border p-2.5"><span className="font-medium">Name:</span> {admin.name}</div>
-                <div className="rounded-md border p-2.5"><span className="font-medium">Email:</span> {admin.email}</div>
-                <div className="rounded-md border p-2.5"><span className="font-medium">Phone:</span> {admin.phone || "-"}</div>
-                <div className="rounded-md border p-2.5"><span className="font-medium">District:</span> {admin.district}</div>
+                <div className="rounded-md border p-2.5"><span className="font-medium">{t("adminId")}:</span> {admin.adminId || t("notAvailable")}</div>
+                <div className="rounded-md border p-2.5"><span className="font-medium">{t("name")}:</span> {admin.name}</div>
+                <div className="rounded-md border p-2.5"><span className="font-medium">{t("email")}:</span> {admin.email}</div>
+                <div className="rounded-md border p-2.5"><span className="font-medium">{t("phone")}:</span> {admin.phone || "-"}</div>
+                <div className="rounded-md border p-2.5"><span className="font-medium">{t("district")}:</span> {getDistrictLabel(admin.district, t)}</div>
                 <div className="rounded-md border p-2.5">
-                  <span className="font-medium">Status:</span> {admin.adminAccess === "active" ? "Active" : "Inactive"}
+                  <span className="font-medium">{t("status")}:</span> {admin.adminAccess === "active" ? t("active") : t("inactive")}
                 </div>
                 <div className="rounded-md border p-2.5 md:col-span-2">
-                  <span className="font-medium">Last Login:</span>{" "}
-                  {admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString() : "No login yet"}
+                  <span className="font-medium">{t("lastLogin")}:</span>{" "}
+                  {admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString() : t("noLoginYet")}
                 </div>
               </CardContent>
             </Card>
@@ -99,7 +104,7 @@ const CityDistrictAdminsPage = () => {
       ) : (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No city admin assigned for this district.
+            {t("noCityAdminAssigned")}
           </CardContent>
         </Card>
       )}

@@ -7,6 +7,7 @@ import { statusToBadgeVariant, statusToLabel } from "../utils/issue-ui";
 import { formatIssueTime } from "../utils/time";
 import { shareIssue } from "../utils/share";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { getCategoryLabel } from "../constants/issue.constants";
 
 interface IssueCardProps {
   issue: IIssue;
@@ -38,7 +39,7 @@ export const IssueCard = ({
       className="cursor-pointer rounded-xl border bg-card shadow-sm transition hover:shadow-md"
       role="button"
       tabIndex={0}
-      aria-label={`Open full details for ${issue.title}`}
+      aria-label={t("openIssueDetailsAria", { title: issue.title })}
       onClick={() => onViewDetails(issue)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -77,22 +78,22 @@ export const IssueCard = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="rounded-md px-2.5 py-1 text-xs">
-                  {issue.category}
+                  {getCategoryLabel(issue.category, t)}
                 </Badge>
                 <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md px-2.5 py-1 text-xs">
-                  {statusToLabel(issue.status)}
+                  {statusToLabel(issue.status, t)}
                 </Badge>
               </div>
             </div>
 
             <p className="text-muted-foreground inline-flex items-center text-sm">
               <CalendarDays className="mr-1.5 h-4 w-4" />
-              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
+              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt, t)})
             </p>
 
             {issue.latestOptionalNote ? (
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Admin note:</span>{" "}
+                <span className="font-medium text-foreground">{t("adminNote")}:</span>{" "}
                 <span className="line-clamp-2">{issue.latestOptionalNote}</span>
               </div>
             ) : null}
@@ -149,7 +150,7 @@ export const IssueCard = ({
                     onViewDetails(issue);
                   }}
                 >
-                  View Full Details
+                  {t("viewFullDetails")}
                 </Button>
               </div>
             </div>

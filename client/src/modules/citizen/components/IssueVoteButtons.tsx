@@ -1,5 +1,6 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 interface IssueVoteButtonsProps {
   upVotes: number;
@@ -18,6 +19,7 @@ export const IssueVoteButtons = ({
   onBlockedVote,
   mode = "compact",
 }: IssueVoteButtonsProps) => {
+  const { t } = useI18n();
   const onClickVote = (type: "up" | "down") => {
     if (!canVote) {
       onBlockedVote?.();
@@ -32,18 +34,18 @@ export const IssueVoteButtons = ({
         <Button
           variant="outline"
           onClick={() => onClickVote("up")}
-          className="h-9 justify-center gap-1.5 whitespace-nowrap rounded-[7px] border-gray-400 bg-muted px-2 text-xs text-foreground hover:bg-muted/80 sm:text-sm"
+          className="h-9 justify-center gap-1.5 whitespace-normal text-center leading-tight rounded-[7px] border-gray-400 bg-muted px-2 text-xs text-foreground hover:bg-muted/80 sm:text-sm"
         >
           <ThumbsUp className="h-4 w-4 shrink-0 text-emerald-600" />
-          Up Vote ({upVotes})
+          {t("upVote")} ({upVotes})
         </Button>
         <Button
           variant="outline"
           onClick={() => onClickVote("down")}
-          className="h-9 justify-center gap-1.5 whitespace-nowrap rounded-[7px] border-gray-400 bg-muted px-2 text-xs text-foreground hover:bg-muted/80 sm:text-sm"
+          className="h-9 justify-center gap-1.5 whitespace-normal text-center leading-tight rounded-[7px] border-gray-400 bg-muted px-2 text-xs text-foreground hover:bg-muted/80 sm:text-sm"
         >
           <ThumbsDown className="h-4 w-4 shrink-0 text-red-600" />
-          Down Vote ({downVotes})
+          {t("downVote")} ({downVotes})
         </Button>
       </div>
     );

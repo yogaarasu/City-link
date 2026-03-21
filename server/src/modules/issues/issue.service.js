@@ -22,9 +22,12 @@ const createHttpError = (statusCode, message) => {
 
 const ISSUE_VERIFY_SLA_HOURS = 24;
 const ISSUE_COMPLETE_SLA_DAYS = 7;
+const BUSINESS_HOURS_START = 9;
+const BUSINESS_HOURS_END = 18;
+const BUSINESS_HOURS_PER_DAY = BUSINESS_HOURS_END - BUSINESS_HOURS_START;
 
-const PENDING_ESCALATION_REASON = "Not verified within 24 hours.";
-const COMPLETION_ESCALATION_REASON = "Not completed within 7 days.";
+const PENDING_ESCALATION_REASON = "Not verified within 24 business hours.";
+const COMPLETION_ESCALATION_REASON = "Not completed within 7 business days.";
 
 const getDefaultStatusDescription = (status, rejectionReason) => {
   const descriptions = {
@@ -50,11 +53,14 @@ const getLatestOptionalNote = (issue) => {
   return description;
 };
 
-const attachLatestOptionalNote = (issue) => {
+export const attachLatestOptionalNote = (issue) => {
   const latestOptionalNote = getLatestOptionalNote(issue);
+  const { verifyBy, resolveBy } = getIssueSlaDeadlines(issue);
   return {
     ...issue,
     latestOptionalNote,
+    verifyBy,
+    resolveBy,
   };
 };
 
@@ -70,21 +76,82 @@ const isWeekend = (date) => {
   return day === 0 || day === 6;
 };
 
-const subtractWorkingHours = (startDate, hoursToSubtract) => {
+const getBusinessDayEnd = (date) => {
+  return dayjs(date)
+    .hour(BUSINESS_HOURS_END)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+};
+
+const getBusinessDayStart = (date) => {
+  return dayjs(date)
+    .hour(BUSINESS_HOURS_START)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+};
+
+const moveToPreviousBusinessDayEnd = (date) => {
+  let cursor = dayjs(date).subtract(1, "day");
+  while (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
+    cursor = cursor.subtract(1, "day");
+  }
+  return getBusinessDayEnd(cursor);
+};
+
+const normalizeToBusinessHours = (date) => {
+  let cursor = dayjs(date);
+
+  if (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
+    return moveToPreviousBusinessDayEnd(cursor);
+  }
+
+  const dayStart = getBusinessDayStart(cursor);
+  const dayEnd = getBusinessDayEnd(cursor);
+
+  if (cursor.isAfter(dayEnd)) return dayEnd;
+  if (cursor.isBefore(dayStart)) return moveToPreviousBusinessDayEnd(cursor);
+
+  return cursor;
+};
+
+const moveToNextBusinessDayStart = (date) => {
+  let cursor = dayjs(date).add(1, "day");
+  while (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
+    cursor = cursor.add(1, "day");
+  }
+  return getBusinessDayStart(cursor);
+};
+
+const normalizeToBusinessHoursForward = (date) => {
+  let cursor = dayjs(date);
+
+  if (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
+    return moveToNextBusinessDayStart(cursor);
+  }
+
+  const dayStart = getBusinessDayStart(cursor);
+  const dayEnd = getBusinessDayEnd(cursor);
+
+  if (cursor.isBefore(dayStart)) return dayStart;
+  if (cursor.isAfter(dayEnd)) return moveToNextBusinessDayStart(cursor);
+
+  return cursor;
+};
+
+const subtractBusinessHours = (startDate, hoursToSubtract) => {
   let remaining = hoursToSubtract;
   let cursor = dayjs(startDate);
 
   while (remaining > 0) {
-    if (isTamilNaduHoliday(cursor.toDate()) || isWeekend(cursor.toDate())) {
-      cursor = cursor.startOf("day").subtract(1, "millisecond");
-      continue;
-    }
+    cursor = normalizeToBusinessHours(cursor);
 
-    const dayStart = cursor.startOf("day");
+    const dayStart = getBusinessDayStart(cursor);
     const availableHours = cursor.diff(dayStart, "hour", true);
 
     if (availableHours <= 0) {
-      cursor = dayStart.subtract(1, "millisecond");
+      cursor = moveToPreviousBusinessDayEnd(cursor);
       continue;
     }
 
@@ -93,11 +160,53 @@ const subtractWorkingHours = (startDate, hoursToSubtract) => {
     remaining -= consume;
 
     if (remaining > 0 && cursor.isSame(dayStart)) {
-      cursor = dayStart.subtract(1, "millisecond");
+      cursor = moveToPreviousBusinessDayEnd(cursor);
     }
   }
 
   return cursor.toDate();
+};
+
+const addBusinessHours = (startDate, hoursToAdd) => {
+  let remaining = hoursToAdd;
+  let cursor = dayjs(startDate);
+
+  while (remaining > 0) {
+    cursor = normalizeToBusinessHoursForward(cursor);
+
+    const dayEnd = getBusinessDayEnd(cursor);
+    const availableHours = dayEnd.diff(cursor, "hour", true);
+
+    if (availableHours <= 0) {
+      cursor = moveToNextBusinessDayStart(cursor);
+      continue;
+    }
+
+    const consume = Math.min(remaining, availableHours);
+    cursor = cursor.add(consume, "hour");
+    remaining -= consume;
+
+    if (remaining > 0 && cursor.isSame(dayEnd)) {
+      cursor = moveToNextBusinessDayStart(cursor);
+    }
+  }
+
+  return cursor.toDate();
+};
+
+const getIssueSlaDeadlines = (issue) => {
+  const createdAt = issue?.createdAt ? new Date(issue.createdAt) : null;
+  if (!createdAt || Number.isNaN(createdAt.getTime())) {
+    return { verifyBy: null, resolveBy: null };
+  }
+
+  return {
+    verifyBy: addBusinessHours(createdAt, ISSUE_VERIFY_SLA_HOURS),
+    resolveBy: addBusinessHours(
+      createdAt,
+      ISSUE_COMPLETE_SLA_DAYS * BUSINESS_HOURS_PER_DAY
+    ),
+  };
 };
 
 const sendIssueStatusChangeEmail = async (issue) => {
@@ -200,8 +309,11 @@ const sendIssueStatusChangeEmail = async (issue) => {
 const getSlaBoundaries = () => {
   const now = new Date();
   return {
-    verifyDeadline: subtractWorkingHours(now, ISSUE_VERIFY_SLA_HOURS),
-    completionDeadline: subtractWorkingHours(now, ISSUE_COMPLETE_SLA_DAYS * 24),
+    verifyDeadline: subtractBusinessHours(now, ISSUE_VERIFY_SLA_HOURS),
+    completionDeadline: subtractBusinessHours(
+      now,
+      ISSUE_COMPLETE_SLA_DAYS * BUSINESS_HOURS_PER_DAY
+    ),
     now,
   };
 };
@@ -247,7 +359,7 @@ export const autoEscalateOverdueIssues = async (district) => {
       createdAt: { $lte: verifyDeadline },
     },
     PENDING_ESCALATION_REASON,
-    "Auto escalated to super admin: not verified within 24 hours.",
+    "Auto escalated to super admin: not verified within 24 business hours.",
     now
   );
 
@@ -259,7 +371,7 @@ export const autoEscalateOverdueIssues = async (district) => {
       createdAt: { $lte: completionDeadline },
     },
     COMPLETION_ESCALATION_REASON,
-    "Auto escalated to super admin: not completed within 7 days.",
+    "Auto escalated to super admin: not completed within 7 business days.",
     now
   );
 };
@@ -533,7 +645,7 @@ export const getIssueById = async (issueId) => {
     throw createHttpError(404, "Issue not found.");
   }
 
-  return issue;
+  return attachLatestOptionalNote(issue);
 };
 
 export const voteIssue = async (issueId, type, authUser) => {
@@ -631,6 +743,12 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
   };
 
   const wasEscalated = issue.assignedTo === "super_admin" || Boolean(issue.escalatedAt);
+  const requiresDelayReason =
+    wasEscalated && ["verified", "resolved"].includes(payload.status);
+
+  if (requiresDelayReason && !String(payload.description || "").trim()) {
+    throw createHttpError(400, "Reason for delay is required for escalated issues.");
+  }
 
   issue.status = payload.status;
   if (!wasEscalated) {

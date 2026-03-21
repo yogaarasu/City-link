@@ -12,6 +12,8 @@ import { IssueCard } from "@/modules/citizen/components/IssueCard";
 import { IssueCardSkeletonList } from "@/modules/citizen/components/IssueCardSkeleton";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const defaultStats: IssueStats = {
   total: 0,
@@ -122,6 +124,7 @@ const CitizenDashboard = () => {
   const hasCachedPayload = Boolean(cachedPayload);
   const queryClient = useQueryClient();
   const user = useUserState((state) => state.user);
+  const { t } = useI18n();
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedIssue, setSelectedIssue] = useState<IIssue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -159,7 +162,7 @@ const CitizenDashboard = () => {
   const handleVote = async (issueId: string, type: "up" | "down") => {
     const targetIssue = issues.find((item) => item._id === issueId);
     if (targetIssue && targetIssue.reportedBy?._id === user?._id) {
-      toast.error("You cannot vote your own report.");
+      toast.error(t("errorVoteOwnReport"));
       return;
     }
 
@@ -171,10 +174,10 @@ const CitizenDashboard = () => {
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to vote");
+        toast.error(error.response?.data?.error ?? t("errorFailedToVote"));
         return;
       }
-      toast.error("Failed to vote");
+      toast.error(t("errorFailedToVote"));
     }
   };
 
@@ -191,10 +194,10 @@ const CitizenDashboard = () => {
       setSelectedIssue(details);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to load issue details");
+        toast.error(error.response?.data?.error ?? t("errorFailedToLoadIssueDetails"));
         return;
       }
-      toast.error("Failed to load issue details");
+      toast.error(t("errorFailedToLoadIssueDetails"));
     } finally {
       setIsFetchingDetails(false);
     }
@@ -211,19 +214,19 @@ const CitizenDashboard = () => {
         prev.map((item) => (item._id === issueId ? updated : item))
       );
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
-      toast.success(response.message || "Review saved successfully.");
+      toast.success(response.message || t("successReviewSaved"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to submit review");
+        toast.error(error.response?.data?.error ?? t("errorFailedToSubmitReview"));
         return;
       }
-      toast.error("Failed to submit review");
+      toast.error(t("errorFailedToSubmitReview"));
     }
   };
 
   const handleDeleteIssue = async (issue: IIssue) => {
     if (issue.status !== "pending") {
-      toast.error("Only pending issues can be deleted after verification is started.");
+      toast.error(t("errorDeleteOnlyPendingAfterVerification"));
       return;
     }
 
@@ -245,13 +248,13 @@ const CitizenDashboard = () => {
       if (selectedIssue?._id === issue._id) {
         setIsModalOpen(false);
       }
-      toast.success("Issue deleted successfully.");
+      toast.success(t("successIssueDeleted"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to delete issue");
+        toast.error(error.response?.data?.error ?? t("errorFailedToDeleteIssue"));
         return;
       }
-      toast.error("Failed to delete issue");
+      toast.error(t("errorFailedToDeleteIssue"));
     } finally {
       setDeletingIssueId(null);
     }
@@ -261,10 +264,13 @@ const CitizenDashboard = () => {
     <div className="space-y-6">
       <Card className="border-0 bg-linear-to-r from-emerald-600 to-teal-600 text-white">
         <CardContent className="space-y-1.5 px-6 py-4 md:px-6 md:py-5">
-          <h1 className="text-2xl font-bold md:text-3xl">Welcome, {user?.name ?? "Citizen"} !</h1>
-          <p className="text-base text-white/90 md:text-lg">
-            Connected to <span className="font-semibold underline">{user?.district}</span>. Report
-            local issues and help build a cleaner, safer community together.
+          <h1 className="text-2xl font-bold md:text-3xl">
+            {t("welcomeCitizen", { name: user?.name ?? t("citizen") })}
+          </h1>
+          <p className="text-base text-white/90 md:text-lg text-balance">
+            {t("welcomeCitizenSubtitle", {
+              district: user?.district ? getDistrictLabel(user.district, t) : t("districtUnknown"),
+            })}
           </p>
         </CardContent>
       </Card>
@@ -274,7 +280,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Total Reports</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("totalReports")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.total}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -284,7 +290,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <Clock3 className="h-8 w-8 rounded-full bg-red-100 p-1.5 text-red-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Pending</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("pending")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.pending}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -294,7 +300,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 rounded-full bg-yellow-100 p-1.5 text-yellow-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Verified</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("verified")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.verified ?? 0}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -304,7 +310,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <Timer className="h-8 w-8 rounded-full bg-blue-100 p-1.5 text-blue-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">In Progress</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("inProgress")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.in_progress}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -314,7 +320,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 rounded-full bg-emerald-100 p-1.5 text-emerald-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Resolved</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("resolved")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.resolved}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -324,7 +330,7 @@ const CitizenDashboard = () => {
           <div className="flex items-center gap-3">
             <Ban className="h-8 w-8 rounded-full bg-slate-100 p-1.5 text-slate-700" />
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Rejected</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("rejected")}</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold">{stats.rejected}</p>
                 {showStatsSpinner ? <span className={shimmerClass} /> : null}
@@ -336,16 +342,16 @@ const CitizenDashboard = () => {
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold">My Recent Reports</h2>
+          <h2 className="text-2xl font-bold">{t("myRecentReports")}</h2>
         </div>
         {isLoading ? (
           <IssueCardSkeletonList count={5} />
         ) : issues.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
-              You haven&apos;t reported any issues yet.{" "}
+              {t("noReportsYet")}{" "}
               <Link className="font-semibold text-emerald-600 hover:underline" to="/citizen/report-issue">
-                Report an issue now
+                {t("reportIssueNow")}
               </Link>
               .
             </CardContent>
@@ -365,7 +371,7 @@ const CitizenDashboard = () => {
             {visibleCount < issues.length ? (
               <div className="flex justify-center">
                 <Button variant="outline" onClick={() => setVisibleCount((prev) => prev + 5)}>
-                  Show More
+                  {t("showMore")}
                 </Button>
               </div>
             ) : null}
@@ -384,13 +390,13 @@ const CitizenDashboard = () => {
         onReview={handleReviewIssue}
         currentUserId={user?._id}
         canVote={false}
-        onBlockedVote={() => toast.error("You cannot vote your own report.")}
+        onBlockedVote={() => toast.error(t("errorVoteOwnReport"))}
         isFetchingDetails={isFetchingDetails}
         onDelete={handleDeleteIssue}
         canDelete={selectedIssue?.status === "pending"}
         isDeleting={Boolean(selectedIssue?._id && deletingIssueId === selectedIssue._id)}
         onBlockedDelete={() =>
-          toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.")
+          toast.error(t("deleteOnlyPendingLong"))
         }
       />
     </div>

@@ -52,6 +52,20 @@ export interface CityIssueDetail {
     assignedTo?: "city_admin" | "super_admin";
     escalationReason?: string;
     escalatedAt?: string | null;
+    latestOptionalNote?: string;
+    photos?: string[];
+    resolvedEvidencePhotos?: string[];
+    upVotes?: number;
+    downVotes?: number;
+    location?: {
+      lat: number;
+      lng: number;
+    };
+    statusLogs?: Array<{
+      status: "pending" | "verified" | "in_progress" | "resolved" | "rejected";
+      description: string;
+      createdAt: string;
+    }>;
     reportedBy?: {
       _id: string;
       name: string;
@@ -67,6 +81,20 @@ export interface CityIssueDetail {
     escalatedAt?: string | null;
     createdAt: string;
     address: string;
+    latestOptionalNote?: string;
+    photos?: string[];
+    resolvedEvidencePhotos?: string[];
+    upVotes?: number;
+    downVotes?: number;
+    location?: {
+      lat: number;
+      lng: number;
+    };
+    statusLogs?: Array<{
+      status: "pending" | "verified" | "in_progress" | "resolved" | "rejected";
+      description: string;
+      createdAt: string;
+    }>;
   }>;
 }
 

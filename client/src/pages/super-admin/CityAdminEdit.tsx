@@ -9,10 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { checkCityAdminEmailAvailability, getCityAdminDetails, updateCityAdmin } from "@/modules/super-admin/api/super-admin.api";
 import CityAdminForm from "@/modules/super-admin/components/CityAdminForm";
 import type { CityAdminDetailsResponse, CityAdminPayload } from "@/modules/super-admin/types/super-admin.types";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const CityAdminEditPage = () => {
   const navigate = useNavigate();
   const { adminId = "" } = useParams();
+  const { t } = useI18n();
   const [details, setDetails] = useState<CityAdminDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +35,7 @@ const CityAdminEditPage = () => {
       const response = await getCityAdminDetails(adminId);
       setDetails(response);
     } catch (error: unknown) {
-      handleApiError(error, "Failed to load city admin.");
+      handleApiError(error, t("errorLoadCityAdmin"));
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ const CityAdminEditPage = () => {
       const availability = await checkCityAdminEmailAvailability(payload.email, adminId);
       if (!availability.available) {
         const roleLabel = availability.existingRole ? availability.existingRole.replace("_", " ") : "user";
-        toast.error(`This email is already used by another ${roleLabel}.`);
+        toast.error(t("errorEmailInUse", { role: roleLabel }));
         return;
       }
       const response = await updateCityAdmin(adminId, payload);
@@ -64,7 +66,7 @@ const CityAdminEditPage = () => {
       toast.success(response.message);
       navigate("/super-admin/city-admins", { replace: true });
     } catch (error: unknown) {
-      handleApiError(error, "Failed to update city admin.");
+      handleApiError(error, t("errorUpdateCityAdmin"));
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +104,7 @@ const CityAdminEditPage = () => {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          City admin not found.
+          {t("cityAdminNotFound")}
         </CardContent>
       </Card>
     );
@@ -115,19 +117,19 @@ const CityAdminEditPage = () => {
           <Button variant="outline" size="sm" asChild>
             <Link to="/super-admin/city-admins">
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t("back")}
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Edit City Admin</h1>
+          <h1 className="text-2xl font-bold">{t("editCityAdminTitle")}</h1>
           <p className="text-sm text-muted-foreground">
-            Update details and resend welcome email with new credentials.
+            {t("editCityAdminSubtitle")}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Edit City Admin</CardTitle>
+          <CardTitle className="text-base">{t("editCityAdminTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <CityAdminForm
@@ -138,7 +140,7 @@ const CityAdminEditPage = () => {
               district: details.admin.district,
               password: knownPassword,
             }}
-            submitLabel="Save + Resend Welcome Email"
+            submitLabel={t("saveResendWelcome")}
             isSubmitting={isSubmitting}
             onSubmit={onSave}
             onCancel={() => navigate("/super-admin/city-admins")}

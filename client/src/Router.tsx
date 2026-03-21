@@ -19,6 +19,7 @@ import SuperAdminLayout from "./modules/super-admin/layout/SuperAdminLayout";
 import SystemOverviewPage from "./pages/super-admin/SystemOverview";
 import ManageCityAdminsPage from "./pages/super-admin/ManageCityAdmins";
 import CityIssueDetailsPage from "./pages/super-admin/CityIssueDetails";
+import CityEscalatedHistoryPage from "./pages/super-admin/CityEscalatedHistory";
 import CityAdminDetailsPage from "./pages/super-admin/CityAdminDetails";
 import CityAdminEditPage from "./pages/super-admin/CityAdminEdit";
 import CityDistrictAdminsPage from "./pages/super-admin/CityDistrictAdmins";
@@ -87,6 +88,7 @@ const Router = () => {
         { path: "city-admins/:adminId", element: <CityAdminDetailsPage /> },
         { path: "city-admins/:adminId/edit", element: <CityAdminEditPage /> },
         { path: "cities/:district", element: <CityIssueDetailsPage /> },
+        { path: "cities/:district/escalated-history", element: <CityEscalatedHistoryPage /> },
         { path: "cities/:district/admins", element: <CityDistrictAdminsPage /> },
         { path: "settings", element: <SuperAdminSettingsPage /> },
         { path: "profile", element: <SuperAdminProfilePage /> },

@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ThemeToggler } from "@/components/ThemeToggler";
 import { LanguageToggler } from "@/components/LanguageToggler";
-import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import { TAMIL_NADU_DISTRICTS, getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 import { useLanguageState } from "@/store/language.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 import {
@@ -56,6 +56,7 @@ const Home = () => {
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const isTamil = language === "ta";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -175,7 +176,7 @@ const Home = () => {
 
             <motion.h1
               variants={fadeUp}
-              className="max-w-5xl text-6xl font-extrabold tracking-tighter sm:text-7xl md:text-8xl lg:text-9xl"
+              className={`max-w-5xl font-extrabold tracking-tighter text-balance break-words ${isTamil ? "text-4xl leading-tight sm:text-5xl md:text-6xl lg:text-7xl" : "text-6xl sm:text-7xl md:text-8xl lg:text-9xl"}`}
             >
               {t("homeHeroTitleLine1")} <br />
               <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
@@ -185,18 +186,18 @@ const Home = () => {
 
             <motion.p
               variants={fadeUp}
-              className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-500 dark:text-slate-400 md:text-xl"
+              className={`mt-6 max-w-2xl text-balance leading-relaxed text-slate-500 dark:text-slate-400 ${isTamil ? "text-sm sm:text-base md:text-lg" : "text-base sm:text-lg md:text-xl"}`}
             >
               {t("homeHeroSubtitle")}
             </motion.p>
 
             <motion.div
               variants={fadeUp}
-              className="mt-10 flex flex-col gap-4 sm:flex-row"
+              className="mt-8 flex w-full max-w-md flex-col gap-4 sm:mt-10 sm:max-w-2xl sm:flex-row sm:flex-wrap sm:justify-center md:max-w-3xl"
             >
-              <Link to="/auth/signup">
+              <Link to="/auth/signup" className="w-full sm:w-auto">
                 {/* UPGRADED BUTTON TRANSITIONS */}
-                <Button className="group h-14 rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95">
+                <Button className="group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 sm:w-auto">
                   {t("homeGetStarted")}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
@@ -221,7 +222,7 @@ const Home = () => {
                     });
                   }
                 }}
-                className="h-14 rounded-full border-slate-200 px-8 text-lg transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900"
+                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-8 text-lg leading-snug whitespace-normal text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:w-auto"
               >
                 {t("homeSeeHowItWorks")}
               </Button>
@@ -230,7 +231,7 @@ const Home = () => {
                 <Button
                   variant="outline"
                   onClick={handleInstallClick}
-                  className="group h-14 rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20"
+                  className="group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 sm:w-auto"
                   title={t("homeInstallApp")}
                 >
                   <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
@@ -526,7 +527,7 @@ const Home = () => {
                 key={i}
                 className="mx-8 text-3xl font-black text-slate-300 dark:text-slate-800/80 transition-colors hover:text-emerald-500/30"
               >
-                {district}
+                {getDistrictLabel(district, t)}
               </span>
             ))}
           </div>

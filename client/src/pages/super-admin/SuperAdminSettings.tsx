@@ -44,18 +44,18 @@ const SuperAdminSettingsPage = () => {
     const selected = files[0];
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(selected.type)) {
-      toast.error("Only JPG, PNG, GIF or WEBP files are allowed.");
+      toast.error(t("errorImageTypeNotAllowed"));
       return;
     }
     if (selected.size > 3 * 1024 * 1024) {
-      toast.error("Profile image max size is 3MB.");
+      toast.error(t("errorProfileImageMaxSize"));
       return;
     }
     try {
       const encoded = await toBase64(selected);
       setAvatar(encoded);
     } catch {
-      toast.error("Failed to process selected image.");
+      toast.error(t("errorProcessSelectedImage"));
     }
   };
 
@@ -67,10 +67,10 @@ const SuperAdminSettingsPage = () => {
       toast.success(response.message);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to update profile");
+        toast.error(error.response?.data?.error ?? t("errorUpdateProfile"));
         return;
       }
-      toast.error("Failed to update profile");
+      toast.error(t("errorUpdateProfile"));
     } finally {
       setIsSaving(false);
     }
@@ -92,10 +92,10 @@ const SuperAdminSettingsPage = () => {
       toast.success(t("removeAvatar"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to remove profile picture");
+        toast.error(error.response?.data?.error ?? t("errorRemoveProfilePicture"));
         return;
       }
-      toast.error("Failed to remove profile picture");
+      toast.error(t("errorRemoveProfilePicture"));
     } finally {
       setIsRemovingAvatar(false);
     }

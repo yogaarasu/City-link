@@ -10,6 +10,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { JSX } from "react";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 interface AlertDialogProps {
   trigger: JSX.Element;
@@ -18,9 +19,14 @@ interface AlertDialogProps {
   onContinue: () => void;
   loading?: boolean;
   variant?: "default" | "destructive"
+  cancelLabel?: string;
+  continueLabel?: string;
 }
 
-export function Alert({ trigger, title, description, onContinue, loading, variant }: AlertDialogProps) {
+export function Alert({ trigger, title, description, onContinue, loading, variant, cancelLabel, continueLabel }: AlertDialogProps) {
+  const { t } = useI18n();
+  const resolvedCancelLabel = cancelLabel ?? t("cancel");
+  const resolvedContinueLabel = continueLabel ?? t("continue");
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -32,10 +38,10 @@ export function Alert({ trigger, title, description, onContinue, loading, varian
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-row justify-end">
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{resolvedCancelLabel}</AlertDialogCancel>
           <AlertDialogAction onClick={() => {
             onContinue();
-          }} disabled={loading} className={`${variant === "destructive" ? "bg-red-500 hover:bg-red-600" : ""}`}>Continue</AlertDialogAction>
+          }} disabled={loading} className={`${variant === "destructive" ? "bg-red-500 hover:bg-red-600" : ""}`}>{resolvedContinueLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

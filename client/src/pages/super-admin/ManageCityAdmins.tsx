@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import { TAMIL_NADU_DISTRICTS, getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 import CityAdminForm from "@/modules/super-admin/components/CityAdminForm";
 import {
   checkCityAdminEmailAvailability,
@@ -41,9 +41,11 @@ import {
   listCityAdmins,
 } from "@/modules/super-admin/api/super-admin.api";
 import type { CityAdmin, CityAdminPayload } from "@/modules/super-admin/types/super-admin.types";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const ManageCityAdminsPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [admins, setAdmins] = useState<CityAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +74,7 @@ const ManageCityAdminsPage = () => {
       toast.success(response.message);
       await loadAdmins();
     } catch (error: unknown) {
-      handleApiError(error, "Failed to delete city admin.");
+      handleApiError(error, t("errorDeleteCityAdmin"));
     } finally {
       setDeletingAdminId(null);
     }
@@ -87,7 +89,7 @@ const ManageCityAdminsPage = () => {
       });
       setAdmins(data);
     } catch (error: unknown) {
-      handleApiError(error, "Failed to load city admins.");
+      handleApiError(error, t("errorLoadCityAdmins"));
     } finally {
       setLoading(false);
     }
@@ -103,7 +105,7 @@ const ManageCityAdminsPage = () => {
       const availability = await checkCityAdminEmailAvailability(payload.email);
       if (!availability.available) {
         const roleLabel = availability.existingRole ? availability.existingRole.replace("_", " ") : "user";
-        toast.error(`This email is already used by another ${roleLabel}.`);
+        toast.error(t("errorEmailInUse", { role: roleLabel }));
         return;
       }
 
@@ -113,7 +115,7 @@ const ManageCityAdminsPage = () => {
       setIsCreateDialogOpen(false);
       await loadAdmins();
     } catch (error: unknown) {
-      handleApiError(error, "Unable to create city admin.");
+      handleApiError(error, t("errorCreateCityAdmin"));
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +125,7 @@ const ManageCityAdminsPage = () => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Manage City Administrators</h1>
+          <h1 className="text-2xl font-bold">{t("manageCityAdminsTitle")}</h1>
         </div>
         <Button
           size="sm"
@@ -131,7 +133,7 @@ const ManageCityAdminsPage = () => {
           onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="h-4 w-4" />
-          Add City Admin
+          {t("addCityAdmin")}
         </Button>
       </div>
 
@@ -142,13 +144,13 @@ const ManageCityAdminsPage = () => {
           onEscapeKeyDown={(event) => event.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Add Administrator</DialogTitle>
+            <DialogTitle>{t("addAdministrator")}</DialogTitle>
             <DialogDescription>
-              Create a new city admin and send welcome email with login credentials.
+              {t("addAdministratorDescription")}
             </DialogDescription>
           </DialogHeader>
           <CityAdminForm
-            submitLabel="Save"
+            submitLabel={t("save")}
             isSubmitting={submitting}
             onSubmit={onCreate}
           />
@@ -162,7 +164,7 @@ const ManageCityAdminsPage = () => {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-9 w-full pl-9 text-sm"
-                placeholder="Search by ID, Name, or Email..."
+                placeholder={t("searchByIdNameEmail")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -172,13 +174,13 @@ const ManageCityAdminsPage = () => {
           <div className="w-full">
             <Select value={district} onValueChange={setDistrict}>
               <SelectTrigger className="h-9 w-full text-sm">
-                <SelectValue placeholder="All Districts" />
+                <SelectValue placeholder={t("allDistricts")} />
               </SelectTrigger>
               <SelectContent className="max-h-64">
-                <SelectItem value="all">All Districts</SelectItem>
+                <SelectItem value="all">{t("allDistricts")}</SelectItem>
                 {TAMIL_NADU_DISTRICTS.map((city) => (
                   <SelectItem key={city} value={city}>
-                    {city}
+                    {getDistrictLabel(city, t)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -189,7 +191,7 @@ const ManageCityAdminsPage = () => {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {sortedAdmins.length} of {sortedAdmins.length} administrators
+          {t("showingAdmins", { count: sortedAdmins.length })}
         </p>
       </div>
 
@@ -209,25 +211,25 @@ const ManageCityAdminsPage = () => {
       ) : sortedAdmins.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No city admins found for the current filters.
+            {t("noCityAdminsFound")}
           </CardContent>
         </Card>
       ) : (
         <Card className="overflow-hidden rounded-xl">
           <CardHeader className="bg-muted/30 py-3">
-            <CardTitle className="text-xl">Administrator List</CardTitle>
+            <CardTitle className="text-xl">{t("administratorList")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-205 border-collapse text-sm">
                 <thead className="bg-muted/40">
                   <tr className="text-left">
-                    <th className="px-4 py-3 font-semibold">Admin ID</th>
-                    <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Email</th>
-                    <th className="px-4 py-3 font-semibold">District</th>
-                    <th className="px-4 py-3 font-semibold">Modify</th>
-                    <th className="px-4 py-3 font-semibold">Remove</th>
+                    <th className="px-4 py-3 font-semibold">{t("adminId")}</th>
+                    <th className="px-4 py-3 font-semibold">{t("name")}</th>
+                    <th className="px-4 py-3 font-semibold">{t("email")}</th>
+                    <th className="px-4 py-3 font-semibold">{t("district")}</th>
+                    <th className="px-4 py-3 font-semibold">{t("modify")}</th>
+                    <th className="px-4 py-3 font-semibold">{t("remove")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,14 +237,14 @@ const ManageCityAdminsPage = () => {
                     <tr key={admin._id} className="border-t">
                       <td className="align-middle px-4 py-3">
                         <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium">
-                          {admin.adminId || "N/A"}
+                          {admin.adminId || t("notAvailable")}
                         </span>
                       </td>
                       <td className="align-middle px-4 py-3 font-medium">{admin.name}</td>
                       <td className="align-middle px-4 py-3">{admin.email}</td>
                       <td className="align-middle px-4 py-3">
                         <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium">
-                          {admin.district}
+                          {getDistrictLabel(admin.district, t)}
                         </span>
                       </td>
                       <td className="align-middle px-4 py-3">
@@ -252,7 +254,7 @@ const ManageCityAdminsPage = () => {
                           onClick={() => navigate(`/super-admin/city-admins/${admin._id}/edit`)}
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                          Edit
+                          {t("edit")}
                         </Button>
                       </td>
                       <td className="align-middle px-4 py-3">
@@ -260,23 +262,23 @@ const ManageCityAdminsPage = () => {
                           <AlertDialogTrigger asChild>
                             <Button size="sm" variant="destructive">
                               <Trash2 className="h-3.5 w-3.5" />
-                              Delete
+                              {t("delete")}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this city admin?</AlertDialogTitle>
+                              <AlertDialogTitle>{t("deleteCityAdminTitle")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action permanently removes the city admin account.
+                                {t("deleteCityAdminDescription")}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => onDeleteAdmin(admin._id)}
                                 disabled={deletingAdminId === admin._id}
                               >
-                                {deletingAdminId === admin._id ? "Deleting..." : "Delete"}
+                                {deletingAdminId === admin._id ? t("deleting") : t("delete")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

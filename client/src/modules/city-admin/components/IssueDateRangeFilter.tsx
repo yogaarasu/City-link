@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 interface IssueDateRangeFilterProps {
   value?: DateRange;
@@ -24,8 +25,9 @@ export const IssueDateRangeFilter = ({
   disabled = false,
   className,
 }: IssueDateRangeFilterProps) => {
-  const startLabel = formatDateLabel(value?.from, "Start date");
-  const endLabel = formatDateLabel(value?.to, "End date");
+  const { t } = useI18n();
+  const startLabel = formatDateLabel(value?.from, t("startDate"));
+  const endLabel = formatDateLabel(value?.to, t("endDate"));
 
   return (
     <div className={cn("grid w-full gap-2 sm:grid-cols-2", className)}>
@@ -68,7 +70,7 @@ export const IssueDateRangeFilter = ({
             size="icon"
             className="h-9 w-9 shrink-0"
             onClick={() => onChange({ from: undefined, to: value?.to })}
-            aria-label="Clear start date"
+            aria-label={t("clearStartDate")}
             disabled={disabled}
           >
             <X className="h-4 w-4" />
@@ -119,7 +121,7 @@ export const IssueDateRangeFilter = ({
             size="icon"
             className="h-9 w-9 shrink-0"
             onClick={() => onChange({ from: value?.from, to: undefined })}
-            aria-label="Clear end date"
+            aria-label={t("clearEndDate")}
             disabled={disabled}
           >
             <X className="h-4 w-4" />

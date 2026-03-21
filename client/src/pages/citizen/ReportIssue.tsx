@@ -16,7 +16,12 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModal";
 import { checkDuplicateIssues, createIssue, getIssueById, voteIssue } from "@/modules/citizen/api/issue.api";
-import { ISSUE_CATEGORIES, TAMIL_NADU_DISTRICTS } from "@/modules/citizen/constants/issue.constants";
+import {
+  ISSUE_CATEGORIES,
+  TAMIL_NADU_DISTRICTS,
+  getCategoryLabel,
+  getDistrictLabel,
+} from "@/modules/citizen/constants/issue.constants";
 import { MAX_REPORT_ISSUE_PHOTOS } from "@/modules/citizen/constants/report-issue-upload.constants";
 import type { IIssue } from "@/modules/citizen/types/issue.types";
 import { statusToLabel } from "@/modules/citizen/utils/issue-ui";
@@ -24,14 +29,11 @@ import { compressIssuePhotoFiles } from "@/modules/citizen/utils/report-issue-im
 import { reportIssueSchema, type ReportIssueFormValues } from "@/modules/citizen/validation/report-issue.schema";
 import { useUserState } from "@/store/user.store";
 import { cleanProfanity } from "@/lib/profanity";
+import { useI18n } from "@/modules/i18n/useI18n";
 import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [11.0168, 76.9558];
 const DUPLICATE_RADIUS_METERS = 500;
-const STEP_HELPER_TEXT: Record<1 | 2, string> = {
-  1: "Step 1: Fill details and pin location.",
-  2: "Step 2: Open nearby reports and decide.",
-};
 
 const markerIcon = new L.Icon({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -79,6 +81,7 @@ const StepCircle = ({
 
 const ReportIssue = () => {
   const user = useUserState((state) => state.user);
+  const { t } = useI18n();
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
@@ -186,7 +189,7 @@ const ReportIssue = () => {
         setValue("district", matched, { shouldValidate: true });
       }
     } catch {
-      toast.error("Unable to fetch address from map location.");
+      toast.error(t("errorFetchAddress"));
     }
   };
 
@@ -198,7 +201,7 @@ const ReportIssue = () => {
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported on this device.");
+      toast.error(t("authGeolocationUnsupported"));
       return;
     }
 
@@ -212,7 +215,7 @@ const ReportIssue = () => {
         setIsLocating(false);
       },
       () => {
-        toast.error("Unable to access your location. Please pin manually.");
+        toast.error(t("authLocationAccessFailed"));
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10_000 }
@@ -228,7 +231,7 @@ const ReportIssue = () => {
     const remainingSlots = Math.max(0, MAX_REPORT_ISSUE_PHOTOS - photoPreviews.length);
 
     if (remainingSlots === 0) {
-      toast.error(`You can upload a maximum of ${MAX_REPORT_ISSUE_PHOTOS} photos.`);
+      toast.error(t("errorMaxPhotos", { count: MAX_REPORT_ISSUE_PHOTOS }));
       return;
     }
 
@@ -237,7 +240,7 @@ const ReportIssue = () => {
 
     if (ignoredCount > 0) {
       toast.warning(
-        `Maximum ${MAX_REPORT_ISSUE_PHOTOS} photos allowed. ${ignoredCount} extra image(s) were skipped.`
+        t("warningExtraPhotosSkipped", { count: MAX_REPORT_ISSUE_PHOTOS, extra: ignoredCount })
       );
     }
 
@@ -247,7 +250,7 @@ const ReportIssue = () => {
       setPhotoPreviews(merged);
       setValue("photos", merged, { shouldValidate: true });
     } catch {
-      toast.error("Failed to process one or more files.");
+      toast.error(t("imageProcessFailed"));
     }
   };
 
@@ -275,10 +278,10 @@ const ReportIssue = () => {
       mapRef.current?.setView(DEFAULT_CENTER, 13);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to submit issue");
+        toast.error(error.response?.data?.error ?? t("errorSubmitIssueFailed"));
         return;
       }
-      toast.error("Failed to submit issue");
+      toast.error(t("errorSubmitIssueFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -286,7 +289,7 @@ const ReportIssue = () => {
 
   const onCheckDuplicates = async (values: ReportIssueFormValues) => {
     if (!isLocationPinned) {
-      toast.error("Pin your issue location on the map before continuing.");
+      toast.error(t("errorPinLocationFirst"));
       return;
     }
 
@@ -303,10 +306,10 @@ const ReportIssue = () => {
       setStep(2);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to check nearby issues");
+        toast.error(error.response?.data?.error ?? t("errorCheckNearbyIssuesFailed"));
         return;
       }
-      toast.error("Failed to check nearby issues");
+      toast.error(t("errorCheckNearbyIssuesFailed"));
     } finally {
       setIsCheckingDuplicates(false);
     }
@@ -314,7 +317,7 @@ const ReportIssue = () => {
 
   const handleUpvoteDuplicateIssue = async (issue: IIssue) => {
     if (issue.reportedBy?._id === user?._id) {
-      toast.error("You cannot upvote your own report.");
+      toast.error(t("errorVoteOwnReport"));
       return;
     }
 
@@ -331,19 +334,19 @@ const ReportIssue = () => {
             : item
         )
       );
-      toast.success("Upvoted existing issue. Thank you for supporting this report.");
+      toast.success(t("successUpvotedExistingIssue"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to upvote issue");
+        toast.error(error.response?.data?.error ?? t("errorUpvoteFailed"));
         return;
       }
-      toast.error("Failed to upvote issue");
+      toast.error(t("errorUpvoteFailed"));
     }
   };
 
   const handleReportAsNew = async () => {
     if (!pendingReportValues) {
-      toast.error("Please complete Step 1 first.");
+      toast.error(t("errorCompleteStep1First"));
       setStep(1);
       return;
     }
@@ -369,10 +372,10 @@ const ReportIssue = () => {
       );
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to load issue details");
+        toast.error(error.response?.data?.error ?? t("errorFailedToLoadIssueDetails"));
         return;
       }
-      toast.error("Failed to load issue details");
+      toast.error(t("errorFailedToLoadIssueDetails"));
     } finally {
       setIsFetchingIssueDetails(false);
     }
@@ -403,16 +406,16 @@ const ReportIssue = () => {
       );
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to vote issue");
+        toast.error(error.response?.data?.error ?? t("errorFailedToVote"));
         return;
       }
-      toast.error("Failed to vote issue");
+      toast.error(t("errorFailedToVote"));
     }
   };
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 overflow-x-hidden pb-4">
-      <h1 className="text-2xl font-bold md:text-3xl">Report New Issue</h1>
+      <h1 className="text-2xl font-bold md:text-3xl">{t("reportNewIssueTitle")}</h1>
 
       <div className="mx-auto flex max-w-sm items-center justify-center gap-4">
         <div className="w-full max-w-[220px] sm:max-w-xs">
@@ -434,7 +437,7 @@ const ReportIssue = () => {
                 step === 1 ? "font-medium text-foreground" : "text-muted-foreground"
               )}
             >
-              {STEP_HELPER_TEXT[1]}
+              {t("reportIssueStep1")}
             </p>
             <p
               className={cn(
@@ -442,8 +445,8 @@ const ReportIssue = () => {
                 step === 2 ? "font-medium text-foreground" : "text-muted-foreground"
               )}
             >
-              <span className="block whitespace-nowrap">Step 2: Open nearby reports.</span>
-              <span className="block whitespace-nowrap">Upvote same issue or report new.</span>
+              <span className="block text-balance">{t("reportIssueStep2Line1")}</span>
+              <span className="block text-balance">{t("reportIssueStep2Line2")}</span>
             </p>
           </div>
         </div>
@@ -455,10 +458,10 @@ const ReportIssue = () => {
             <form onSubmit={handleSubmit(onCheckDuplicates)} className="touch-pan-y">
               <FieldGroup>
                 <Field>
-                  <FieldLabel htmlFor="title">Title</FieldLabel>
+                  <FieldLabel htmlFor="title">{t("title")}</FieldLabel>
                   <Input
                     id="title"
-                    placeholder="Enter issue title"
+                    placeholder={t("reportIssueTitlePlaceholder")}
                     className={errors.title ? "border-red-500" : ""}
                     {...register("title")}
                   />
@@ -468,19 +471,19 @@ const ReportIssue = () => {
                 </Field>
 
                 <Field>
-                  <FieldLabel>Category</FieldLabel>
+                  <FieldLabel>{t("category")}</FieldLabel>
                   <Controller
                     control={control}
                     name="category"
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger className={errors.category ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder={t("selectCategory")} />
                         </SelectTrigger>
                         <SelectContent>
                           {ISSUE_CATEGORIES.map((category) => (
                             <SelectItem key={category} value={category}>
-                              {category}
+                              {getCategoryLabel(category, t)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -490,14 +493,14 @@ const ReportIssue = () => {
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="description">Description</FieldLabel>
+                  <FieldLabel htmlFor="description">{t("description")}</FieldLabel>
                   <Controller
                     control={control}
                     name="description"
                     render={({ field }) => (
                       <Textarea
                         id="description"
-                        placeholder="Describe the issue in detail..."
+                        placeholder={t("reportIssueDescriptionPlaceholder")}
                         className={errors.description ? "border-red-500" : ""}
                         value={field.value}
                         onChange={(event) =>
@@ -512,7 +515,7 @@ const ReportIssue = () => {
                 </Field>
 
                 <Field>
-                  <FieldLabel>Pin Location on Map</FieldLabel>
+                  <FieldLabel>{t("pinLocation")}</FieldLabel>
                   <div className="relative z-0 h-64 overflow-hidden rounded-xl border touch-pan-y md:h-72">
                     <MapContainer
                       center={currentPosition}
@@ -539,24 +542,24 @@ const ReportIssue = () => {
                       disabled={isLocating}
                     >
                       <LocateFixed className={cn("h-3.5 w-3.5", isLocating && "animate-spin")} />
-                      {isLocating ? "Locating..." : "Locate Me"}
+                      {isLocating ? t("locating") : t("locateMe")}
                     </button>
                   </div>
                   {!isLocationPinned ? (
                     <FieldDescription className="text-muted-foreground">
-                      Pin your exact issue location to continue to Step 2.
+                      {t("pinLocationHint")}
                     </FieldDescription>
                   ) : null}
                 </Field>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor="address">Address</FieldLabel>
+                    <FieldLabel htmlFor="address">{t("address")}</FieldLabel>
                     <div className="relative">
                       <MapPin className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
                       <Input
                         id="address"
-                        placeholder="Auto-filled from pinned location"
+                        placeholder={t("addressAutofill")}
                         className={cn("pl-11", errors.address ? "border-red-500" : "")}
                         {...register("address")}
                       />
@@ -567,19 +570,19 @@ const ReportIssue = () => {
                   </Field>
 
                   <Field>
-                    <FieldLabel>District</FieldLabel>
+                    <FieldLabel>{t("district")}</FieldLabel>
                     <Controller
                       control={control}
                       name="district"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger className={errors.district ? "border-red-500" : ""}>
-                            <SelectValue placeholder="Select district" />
+                            <SelectValue placeholder={t("selectDistrict")} />
                           </SelectTrigger>
                           <SelectContent>
                             {TAMIL_NADU_DISTRICTS.map((district) => (
                               <SelectItem key={district} value={district}>
-                                {district}
+                                {getDistrictLabel(district, t)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -593,7 +596,7 @@ const ReportIssue = () => {
                 </div>
 
                 <Field>
-                <FieldLabel>Photos (Required, Max {MAX_REPORT_ISSUE_PHOTOS})</FieldLabel>
+                <FieldLabel>{t("reportIssuePhotosLabel", { count: MAX_REPORT_ISSUE_PHOTOS })}</FieldLabel>
                   <div className="flex flex-wrap gap-3">
                     <input
                       ref={galleryInputRef}
@@ -624,7 +627,7 @@ const ReportIssue = () => {
                       className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
                     >
                       <ImagePlus className="mb-2 h-6 w-6" />
-                      Gallery
+                      {t("gallery")}
                     </button>
                     <button
                       type="button"
@@ -632,7 +635,7 @@ const ReportIssue = () => {
                       className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
                     >
                       <Camera className="mb-2 h-6 w-6 text-emerald-600" />
-                      Camera
+                      {t("camera")}
                     </button>
 
                     {photoPreviews.map((photo, index) => (
@@ -649,8 +652,7 @@ const ReportIssue = () => {
                     ))}
                   </div>
                   <FieldDescription className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                    Please upload original evidence that includes a geo‑location, date, and time watermark.
-                    Submissions without this may be rejected.
+                    {t("reportEvidenceWarning")}
                   </FieldDescription>
                   {errors.photos ? (
                     <FieldDescription className="text-red-500">{errors.photos.message}</FieldDescription>
@@ -662,7 +664,7 @@ const ReportIssue = () => {
                   className="mt-2 w-full bg-emerald-500 text-white hover:bg-emerald-600"
                   disabled={isCheckingDuplicates}
                 >
-                  {isCheckingDuplicates ? "Checking Nearby Issues..." : "Continue to Step 2"}
+                  {isCheckingDuplicates ? t("checkingNearbyIssues") : t("continueToStep2")}
                   {isCheckingDuplicates ? <Loader className="animate-spin" /> : null}
                 </Button>
               </FieldGroup>
@@ -670,16 +672,16 @@ const ReportIssue = () => {
           ) : (
             <div className="space-y-4">
               <div className="rounded-lg border bg-muted/25 p-3">
-                <h2 className="font-semibold">Nearby Reports in {DUPLICATE_RADIUS_METERS}m (Same Category)</h2>
+                <h2 className="font-semibold">{t("nearbyReportsTitle", { radius: DUPLICATE_RADIUS_METERS })}</h2>
                 <p className="text-sm text-muted-foreground">
-                  If your issue is already reported nearby, upvote it instead of creating a duplicate report.
+                  {t("nearbyReportsHint")}
                 </p>
               </div>
 
               {duplicateIssues.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                    No nearby issue found for this category. You can report this as a new issue.
+                    {t("noNearbyIssues")}
                   </CardContent>
                 </Card>
               ) : (
@@ -695,17 +697,17 @@ const ReportIssue = () => {
                         <h3 className="text-base font-semibold">{issue.title}</h3>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline" className="rounded-md border px-2 py-1">
-                            {issue.category}
+                            {getCategoryLabel(issue.category, t)}
                           </Badge>
                           <Badge variant="outline" className="rounded-md border px-2 py-1">
-                            {statusToLabel(issue.status)}
+                            {statusToLabel(issue.status, t)}
                           </Badge>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">{issue.address}</p>
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="text-muted-foreground">
-                          Distance: {issue.distanceMeters ?? "-"}m | Votes: {issue.upVotes}
+                          {t("distanceLabel")}: {issue.distanceMeters ?? "-"}m | {t("votesLabel")}: {issue.upVotes}
                         </span>
                         <Button
                           variant="outline"
@@ -715,7 +717,7 @@ const ReportIssue = () => {
                           }}
                         >
                           <ThumbsUp className="h-4 w-4" />
-                          +1 Upvote This Report
+                          {t("upvoteExistingReport")}
                         </Button>
                       </div>
                     </button>
@@ -724,19 +726,19 @@ const ReportIssue = () => {
               )}
 
               <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                If you report an already reported issue, your issue can be rejected.
+                {t("duplicateReportWarning")}
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Button variant="outline" onClick={() => setStep(1)} disabled={isSubmitting}>
-                  Back
+                  {t("back")}
                 </Button>
                 <Button
                   className="bg-emerald-500 text-white hover:bg-emerald-600"
                   onClick={handleReportAsNew}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Submitting..." : "Report as New"}
+                  {isSubmitting ? t("submitting") : t("reportAsNew")}
                   {isSubmitting ? <Loader className="animate-spin" /> : null}
                 </Button>
               </div>
@@ -752,7 +754,7 @@ const ReportIssue = () => {
         onVote={handleVoteFromDetails}
         currentUserId={user?._id}
         canVote={selectedIssue?.reportedBy?._id !== user?._id}
-        onBlockedVote={() => toast.error("You cannot vote your own report.")}
+        onBlockedVote={() => toast.error(t("errorVoteOwnReport"))}
         isFetchingDetails={isFetchingIssueDetails}
       />
     </div>

@@ -35,6 +35,7 @@ import {
 import { useUserState } from "@/store/user.store";
 import { useI18n } from "@/modules/i18n/useI18n";
 import { formatIssueTime } from "@/modules/citizen/utils/time";
+import { getCategoryLabel, getStatusFilterLabel, getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 import "leaflet/dist/leaflet.css";
 
 const toVoteNumber = (value: string): number | undefined => {
@@ -95,7 +96,7 @@ const CityAdminManageIssues = () => {
       typeof parsedMaxVotes === "number" &&
       parsedMinVotes > parsedMaxVotes
     ) {
-      toast.error("Min votes cannot be greater than max votes.");
+      toast.error(t("errorMinVotesGreater"));
       setLoading(false);
       setIsRefreshing(false);
       return;
@@ -123,7 +124,7 @@ const CityAdminManageIssues = () => {
     } catch (error: unknown) {
       if (requestId !== requestIdRef.current) return;
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error || "Failed to load district issues.");
+        toast.error(error.response?.data?.error || t("errorLoadDistrictIssues"));
         return;
       }
       toast.error(t("loading"));
@@ -181,7 +182,7 @@ const CityAdminManageIssues = () => {
         <div>
           <h1 className="text-2xl font-bold md:text-3xl">{t("manageIssuesTitle")}</h1>
           <p className="text-muted-foreground text-sm">
-            {t("manageIssuesSubtitle", { district: user?.district || "" })}
+            {t("manageIssuesSubtitle", { district: user?.district ? getDistrictLabel(user.district, t) : t("districtUnknown") })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -193,7 +194,7 @@ const CityAdminManageIssues = () => {
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
-              <span className="hidden sm:inline">List View</span>
+              <span className="hidden sm:inline">{t("listView")}</span>
             </Button>
             <Button
               size="sm"
@@ -239,17 +240,17 @@ const CityAdminManageIssues = () => {
                   <div className="flex h-full flex-wrap items-center gap-1 pb-0.5">
                     {CITY_ADMIN_STATUS_FILTERS.map((item) => (
                       <Button
-                        key={item.value}
+                        key={item}
                         size="sm"
-                        variant={statusFilter === item.value ? "default" : "outline"}
+                        variant={statusFilter === item ? "default" : "outline"}
                         className={
-                          statusFilter === item.value
+                          statusFilter === item
                             ? "min-h-9 flex-1 min-w-[6.5rem] rounded-md px-3 py-1.5 text-sm leading-tight text-center whitespace-normal bg-emerald-500 text-white hover:bg-emerald-600 lg:min-w-0 lg:px-2"
                             : "min-h-9 flex-1 min-w-[6.5rem] rounded-md border-transparent bg-transparent px-3 py-1.5 text-sm leading-tight text-center whitespace-normal lg:min-w-0 lg:px-2"
                         }
-                        onClick={() => setStatusFilter(item.value)}
+                        onClick={() => setStatusFilter(item)}
                       >
-                        {item.value === "all" ? t("all") : item.label}
+                        {getStatusFilterLabel(item, t)}
                       </Button>
                     ))}
                   </div>
@@ -264,14 +265,14 @@ const CityAdminManageIssues = () => {
                           <SelectValue placeholder={t("filterByCategory")} />
                         </div>
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t("allCategories")}</SelectItem>
-                        {CITY_ADMIN_CATEGORIES.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                        <SelectContent>
+                          <SelectItem value="all">{t("allCategories")}</SelectItem>
+                          {CITY_ADMIN_CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {getCategoryLabel(category, t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                     </Select>
                   </div>
 
@@ -279,7 +280,7 @@ const CityAdminManageIssues = () => {
                     <Input
                       type="number"
                       min={0}
-                      placeholder="Min votes"
+                      placeholder={t("minVotes")}
                       value={minVotes}
                       onChange={(event) => setMinVotes(event.target.value)}
                       className="h-8 w-30"
@@ -287,7 +288,7 @@ const CityAdminManageIssues = () => {
                     <Input
                       type="number"
                       min={0}
-                      placeholder="Max votes"
+                      placeholder={t("maxVotes")}
                       value={maxVotes}
                       onChange={(event) => setMaxVotes(event.target.value)}
                       className="h-8 w-30"
@@ -355,17 +356,17 @@ const CityAdminManageIssues = () => {
                     <Popup>
                       <div className="space-y-1">
                         <h3 className="font-semibold">{issue.title}</h3>
-                        <p className="text-xs">{issue.category}</p>
+                        <p className="text-xs">{getCategoryLabel(issue.category, t)}</p>
                         <p className="text-xs text-muted-foreground">{issue.address}</p>
                         <Badge variant={statusToBadgeVariant(issue.status)}>
-                          {statusToLabel(issue.status)}
+                          {statusToLabel(issue.status, t)}
                         </Badge>
                         {issue.assignedTo === "super_admin" ? (
-                          <Badge variant="secondary">Escalated</Badge>
+                          <Badge variant="secondary">{t("escalated")}</Badge>
                         ) : null}
-                        <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt, t)}</p>
                         <Button size="sm" variant="link" className="px-0" onClick={() => onOpenIssue(issue)}>
-                          View details
+                          {t("viewDetails")}
                         </Button>
                       </div>
                     </Popup>

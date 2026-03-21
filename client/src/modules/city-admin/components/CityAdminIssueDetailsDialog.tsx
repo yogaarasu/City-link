@@ -21,6 +21,7 @@ import { formatIssueTime } from "@/modules/citizen/utils/time";
 import { shareIssue } from "@/modules/citizen/utils/share";
 import {
   CITY_ADMIN_REJECTION_REASONS,
+  CITY_ADMIN_REJECTION_REASON_LABEL_KEYS,
   CITY_ADMIN_STATUSES,
   type CityAdminRejectionReason,
   type CityAdminStatus,
@@ -31,6 +32,7 @@ import { useI18n } from "@/modules/i18n/useI18n";
 import "leaflet/dist/leaflet.css";
 import { cleanProfanity } from "@/lib/profanity";
 import { compressIssuePhotoFiles } from "@/modules/citizen/utils/report-issue-image.utils";
+import { getCategoryLabel } from "@/modules/citizen/constants/issue.constants";
 
 interface CityAdminIssueDetailsDialogProps {
   open: boolean;
@@ -88,11 +90,17 @@ export const CityAdminIssueDetailsDialog = ({
     return [issue.location.lat, issue.location.lng];
   }, [issue]);
   const isStatusLocked = issue?.status === "resolved" || issue?.status === "rejected";
+  const isEscalated = issue?.assignedTo === "super_admin" || Boolean(issue?.escalatedAt);
+  const requiresDelayReason =
+    Boolean(isEscalated) && ["verified", "resolved"].includes(selectedStatus);
   const displayStatuses = useMemo(() => CITY_ADMIN_STATUSES, []);
   const allowedNextStatuses = useMemo(() => {
     if (!issue) return [];
     return ALLOWED_STATUS_TRANSITIONS[issue.status] || [];
   }, [issue]);
+  const escalatedAtLabel = issue?.escalatedAt
+    ? t("issueEscalatedAt", { date: new Date(issue.escalatedAt).toLocaleString() })
+    : t("issueEscalated");
 
   const onUploadResolvedEvidence = async (files: FileList | null) => {
     if (!files) return;
@@ -120,7 +128,7 @@ export const CityAdminIssueDetailsDialog = ({
     if (!issue) return;
     const allowedNextStatuses = ALLOWED_STATUS_TRANSITIONS[issue.status] || [];
     if (!allowedNextStatuses.includes(selectedStatus)) {
-      toast.error("Please select a valid next status.");
+      toast.error(t("errorSelectValidStatus"));
       return;
     }
     if (selectedStatus === "resolved" && resolvedEvidencePhotos.length === 0) {
@@ -129,6 +137,10 @@ export const CityAdminIssueDetailsDialog = ({
     }
     if (selectedStatus === "rejected" && !rejectionReason) {
       toast.error(t("selectRejectionReasonError"));
+      return;
+    }
+    if (requiresDelayReason && !description.trim()) {
+      toast.error(t("delayReasonRequired"));
       return;
     }
 
@@ -172,10 +184,10 @@ export const CityAdminIssueDetailsDialog = ({
             </Button>
           </div>
           <DialogDescription className="mt-1 flex flex-wrap items-center gap-2">
-            <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md">{statusToLabel(issue.status)}</Badge>
-            <Badge variant="outline" className="rounded-md">{issue.category}</Badge>
+            <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md">{statusToLabel(issue.status, t)}</Badge>
+            <Badge variant="outline" className="rounded-md">{getCategoryLabel(issue.category, t)}</Badge>
             {issue.assignedTo === "super_admin" ? (
-              <Badge variant="secondary" className="rounded-md">Escalated</Badge>
+              <Badge variant="secondary" className="rounded-md">{t("escalated")}</Badge>
             ) : null}
             <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
               <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
@@ -193,20 +205,17 @@ export const CityAdminIssueDetailsDialog = ({
             <h3 className="mb-1 text-sm font-semibold">{t("reportedDateTime")}</h3>
             <p className="text-muted-foreground inline-flex items-center text-sm">
               <CalendarDays className="mr-1 h-4 w-4" />
-              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
+              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt, t)})
             </p>
           </div>
 
           {issue.assignedTo === "super_admin" || issue.escalatedAt ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-              <h3 className="mb-1 text-sm font-semibold">Escalation Details</h3>
-              <p>
-                This issue was escalated to super admin{" "}
-                {issue.escalatedAt ? `on ${new Date(issue.escalatedAt).toLocaleString()}.` : "."}
-              </p>
+              <h3 className="mb-1 text-sm font-semibold">{t("escalationDetails")}</h3>
+              <p>{escalatedAtLabel}</p>
               {issue.escalationReason ? (
                 <p className="mt-1 text-sm">
-                  <span className="font-medium">Reason:</span> {issue.escalationReason}
+                  <span className="font-medium">{t("reason")}:</span> {issue.escalationReason}
                 </p>
               ) : null}
             </div>
@@ -224,7 +233,7 @@ export const CityAdminIssueDetailsDialog = ({
                 <div key={`${log.createdAt}-${index}`} className="rounded-md border p-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant={statusToBadgeVariant(log.status)} className="rounded-md">
-                      {statusToLabel(log.status)}
+                      {statusToLabel(log.status, t)}
                     </Badge>
                     <p className="text-xs text-muted-foreground">
                       {new Date(log.createdAt).toLocaleString()}
@@ -267,13 +276,13 @@ export const CityAdminIssueDetailsDialog = ({
                 }}
               >
                 <Share2 className="h-4 w-4" />
-                Share Report
+                {t("shareReport")}
               </Button>
             </div>
           </div>
 
           <div className="rounded-lg border p-3">
-            <h3 className="mb-2 text-sm font-semibold">Reported Evidence</h3>
+            <h3 className="mb-2 text-sm font-semibold">{t("reportedEvidence")}</h3>
             {(issue.photos || []).length === 0 ? (
               <p className="text-muted-foreground text-sm">{t("noEvidence")}</p>
             ) : (
@@ -289,7 +298,7 @@ export const CityAdminIssueDetailsDialog = ({
                     <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
                       <img
                         src={photo}
-                        alt={`Reported evidence ${index + 1}`}
+                        alt={`${t("reportedEvidenceAlt")} ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                     </div>
@@ -301,7 +310,7 @@ export const CityAdminIssueDetailsDialog = ({
 
           {(issue.resolvedEvidencePhotos || []).length > 0 ? (
             <div className="rounded-lg border p-3">
-              <h3 className="mb-2 text-sm font-semibold">Resolved Evidence</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t("resolvedEvidence")}</h3>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {(issue.resolvedEvidencePhotos || []).map((photo, index) => (
                   <a
@@ -314,7 +323,7 @@ export const CityAdminIssueDetailsDialog = ({
                     <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
                       <img
                         src={photo}
-                        alt={`Resolved evidence ${index + 1}`}
+                        alt={`${t("resolvedEvidenceAlt")} ${index + 1}`}
                         className="h-full w-full object-cover"
                       />
                     </div>
@@ -361,14 +370,14 @@ export const CityAdminIssueDetailsDialog = ({
                       setSelectedStatus(status);
                     }}
                   >
-                    {statusToLabel(status)}
+                    {statusToLabel(status, t)}
                   </Button>
                 );
               })}
             </div>
             {isStatusLocked ? (
               <p className="mb-3 text-sm text-muted-foreground">
-                This issue is closed. Resolved or rejected issues cannot be updated further.
+                {t("issueClosedStatusUpdate")}
               </p>
             ) : null}
 
@@ -398,7 +407,7 @@ export const CityAdminIssueDetailsDialog = ({
                     className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
                   >
                     <ImagePlus className="mb-2 h-6 w-6" />
-                    Gallery
+                    {t("gallery")}
                   </button>
                   <button
                     type="button"
@@ -406,11 +415,11 @@ export const CityAdminIssueDetailsDialog = ({
                     className="text-muted-foreground hover:border-emerald-400 flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-dashed"
                   >
                     <Camera className="mb-2 h-6 w-6 text-emerald-600" />
-                    Camera
+                    {t("camera")}
                   </button>
                   {resolvedEvidencePhotos.map((photo, index) => (
                     <div key={`${photo}-${index}`} className="relative h-24 w-24 overflow-hidden rounded-lg border">
-                      <img src={photo} alt={`Resolved evidence ${index + 1}`} className="h-full w-full object-cover" />
+                      <img src={photo} alt={`${t("resolvedEvidenceAlt")} ${index + 1}`} className="h-full w-full object-cover" />
                       <button
                         type="button"
                         className="absolute top-1 right-1 rounded-full bg-red-500 p-0.5 text-white"
@@ -437,7 +446,7 @@ export const CityAdminIssueDetailsDialog = ({
                   <SelectContent>
                     {CITY_ADMIN_REJECTION_REASONS.map((reason) => (
                       <SelectItem key={reason} value={reason}>
-                        {reason}
+                        {t(CITY_ADMIN_REJECTION_REASON_LABEL_KEYS[reason])}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -446,11 +455,16 @@ export const CityAdminIssueDetailsDialog = ({
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">{t("optionalNote")}</Label>
+              <Label className="text-sm font-medium">
+                {requiresDelayReason ? t("delayReason") : t("optionalNote")}
+                {requiresDelayReason ? <span className="text-red-500"> *</span> : null}
+              </Label>
               <Textarea
                 value={description}
                 onChange={(event) => setDescription(cleanProfanity(event.target.value))}
-                placeholder={t("optionalNotePlaceholder")}
+                placeholder={
+                  requiresDelayReason ? t("delayReasonPlaceholder") : t("optionalNotePlaceholder")
+                }
                 className="min-h-20"
               />
             </div>

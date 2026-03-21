@@ -159,7 +159,7 @@ export const CitizenLayout = () => {
               <Button variant="outline" className="h-auto w-full justify-start gap-3 py-3">
                 <UserAvatar name={user?.name} avatar={user?.avatar} className="h-9 w-9 text-sm" />
                 <div className="flex min-w-0 flex-col items-start text-left">
-                  <span className="truncate text-sm font-semibold">{user?.name ?? "User"}</span>
+                  <span className="truncate text-sm font-semibold">{user?.name ?? t("user")}</span>
                   <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
                 </div>
               </Button>
@@ -221,7 +221,7 @@ export const CitizenLayout = () => {
 
               <div className="flex flex-col items-center gap-2 pt-1 pb-0.5">
                 <UserAvatar name={user?.name} avatar={user?.avatar} className="h-14 w-14 text-base" />
-                <p className="max-w-full truncate text-sm font-semibold">{user?.name ?? "User"}</p>
+                <p className="max-w-full truncate text-sm font-semibold">{user?.name ?? t("user")}</p>
                 <p className="max-w-full truncate text-xs leading-5 text-muted-foreground">{user?.email ?? "-"}</p>
               </div>
 
@@ -271,7 +271,7 @@ export const CitizenLayout = () => {
         <aside className="hidden h-svh w-72 shrink-0 border-r bg-sidebar md:block">{sidebar}</aside>
 
         <button
-          aria-label="Close sidebar overlay"
+          aria-label={t("closeSidebarOverlay")}
           className={cn(
             "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-out md:hidden",
             isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"

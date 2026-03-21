@@ -7,6 +7,7 @@ import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/iss
 import { formatIssueTime } from "@/modules/citizen/utils/time";
 import { shareIssue } from "@/modules/citizen/utils/share";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { getCategoryLabel } from "@/modules/citizen/constants/issue.constants";
 
 interface CityAdminIssueCardProps {
   issue: CityAdminIssue;
@@ -21,7 +22,7 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
       className="cursor-pointer rounded-xl border bg-card shadow-sm transition hover:shadow-md"
       role="button"
       tabIndex={0}
-      aria-label={`Open issue ${issue.title}`}
+      aria-label={t("openIssueDetailsAria", { title: issue.title })}
       onClick={() => onOpen(issue)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -57,14 +58,14 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="rounded-md px-2.5 py-1 text-xs">
-                  {issue.category}
+                  {getCategoryLabel(issue.category, t)}
                 </Badge>
                 <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-md px-2.5 py-1 text-xs">
-                  {statusToLabel(issue.status)}
+                  {statusToLabel(issue.status, t)}
                 </Badge>
                 {issue.assignedTo === "super_admin" ? (
                   <Badge variant="secondary" className="rounded-md px-2.5 py-1 text-xs">
-                    Escalated
+                    {t("escalated")}
                   </Badge>
                 ) : null}
               </div>
@@ -72,7 +73,7 @@ export const CityAdminIssueCard = ({ issue, onOpen }: CityAdminIssueCardProps) =
 
             <p className="text-muted-foreground inline-flex items-center text-sm">
               <CalendarDays className="mr-1.5 h-4 w-4" />
-              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
+              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt, t)})
             </p>
 
             <div className="flex items-end justify-between gap-3 border-t pt-3">

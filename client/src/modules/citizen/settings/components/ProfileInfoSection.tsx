@@ -9,6 +9,7 @@ import { useUserState } from "@/store/user.store";
 import { updateProfile } from "@/modules/user/api/user.api";
 import { UserAvatar } from "@/modules/user/components/UserAvatar";
 import { Alert } from "@/components/Alert";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const toBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -23,6 +24,7 @@ interface ProfileInfoSectionProps {
 }
 
 export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
+  const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const user = useUserState((state) => state.user);
   const updateUser = useUserState((state) => state.updateUser);
@@ -36,18 +38,18 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
     const selected = files[0];
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(selected.type)) {
-      toast.error("Only JPG, PNG, GIF or WEBP files are allowed.");
+      toast.error(t("errorImageTypeNotAllowed"));
       return;
     }
     if (selected.size > 3 * 1024 * 1024) {
-      toast.error("Profile image max size is 3MB.");
+      toast.error(t("errorProfileImageMaxSize"));
       return;
     }
     try {
       const encoded = await toBase64(selected);
       setAvatar(encoded);
     } catch {
-      toast.error("Failed to process selected image.");
+      toast.error(t("errorProcessSelectedImage"));
     }
   };
 
@@ -59,10 +61,10 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
       toast.success(response.message);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to update profile");
+        toast.error(error.response?.data?.error ?? t("errorUpdateProfile"));
         return;
       }
-      toast.error("Failed to update profile");
+      toast.error(t("errorUpdateProfile"));
     } finally {
       setIsSaving(false);
     }
@@ -81,13 +83,13 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      toast.success("Profile picture removed.");
+      toast.success(t("successProfilePictureRemoved"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to remove profile picture");
+        toast.error(error.response?.data?.error ?? t("errorRemoveProfilePicture"));
         return;
       }
-      toast.error("Failed to remove profile picture");
+      toast.error(t("errorRemoveProfilePicture"));
     } finally {
       setIsRemovingAvatar(false);
     }
@@ -97,20 +99,20 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle className="text-2xl">Profile Information</CardTitle>
+          <CardTitle className="text-2xl">{t("profileInformation")}</CardTitle>
           <p className="text-muted-foreground mt-1 text-sm">
-            Update your profile details and public avatar.
+            {t("profileInformationSubtitle")}
           </p>
         </div>
         <Alert
           trigger={
             <Button variant="destructive" size="sm">
               <LogOut className="mr-2 h-4 w-4" />
-              Log out
+              {t("logout")}
             </Button>
           }
-          title="Confirm Logout"
-          description="Are you sure you want to logout from your account?"
+          title={t("confirmLogoutTitle")}
+          description={t("confirmLogoutDescription")}
           onContinue={onLogout}
           variant="destructive"
         />
@@ -119,7 +121,7 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
         <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
           <UserAvatar name={name || user?.name} avatar={avatar} className="h-24 w-24 text-4xl" />
           <div className="w-full">
-            <p className="mb-2 text-sm text-muted-foreground">JPG, PNG or GIF. Max size of 3MB.</p>
+            <p className="mb-2 text-sm text-muted-foreground">{t("profileImageHint")}</p>
             <input
               type="file"
               ref={fileInputRef}
@@ -130,7 +132,7 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload New
+                {t("uploadNew")}
               </Button>
               <Button
                 variant="destructive"
@@ -138,7 +140,7 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
                 disabled={!avatar || isRemovingAvatar}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {isRemovingAvatar ? "Removing..." : "Remove Avatar"}
+                {isRemovingAvatar ? t("removing") : t("removeAvatar")}
               </Button>
             </div>
           </div>
@@ -146,21 +148,21 @@ export const ProfileInfoSection = ({ onLogout }: ProfileInfoSectionProps) => {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Full Name</label>
+            <label className="text-sm font-medium">{t("fullName")}</label>
             <Input value={name} onChange={(event) => setName(event.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Email Address</label>
+            <label className="text-sm font-medium">{t("emailAddress")}</label>
             <Input value={user?.email ?? ""} disabled />
             <p className="text-xs text-muted-foreground">
-              Email is managed by credentials and cannot be changed here.
+              {t("emailManagedByCredentials")}
             </p>
           </div>
         </div>
 
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={isSaving}>
-            Save Changes
+            {t("saveChanges")}
           </Button>
         </div>
       </CardContent>

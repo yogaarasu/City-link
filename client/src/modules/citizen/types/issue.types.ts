@@ -39,6 +39,8 @@ export interface IIssue {
   statusLogs?: IssueStatusLog[];
   latestOptionalNote?: string;
   review?: IssueReview | null;
+  verifyBy?: string | null;
+  resolveBy?: string | null;
   createdAt: string;
   updatedAt: string;
 }

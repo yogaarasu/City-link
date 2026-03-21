@@ -17,8 +17,10 @@ import { deleteIssue, getCommunityIssues, getIssueById, reviewIssue, voteIssue }
 import {
   ISSUE_CATEGORIES,
   ISSUE_STATUS,
-  STATUS_LABELS,
   TAMIL_NADU_DISTRICTS,
+  getCategoryLabel,
+  getDistrictLabel,
+  getStatusFilterLabel,
 } from "@/modules/citizen/constants/issue.constants";
 import type { IIssue } from "@/modules/citizen/types/issue.types";
 import {
@@ -33,6 +35,7 @@ import { IssueDetailsModal } from "@/modules/citizen/components/IssueDetailsModa
 import { useUserState } from "@/store/user.store";
 import "leaflet/dist/leaflet.css";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 const PAGE_SIZE = 10;
 const COMMUNITY_CACHE_KEY = "citylink:community-issues-cache:v1";
@@ -154,6 +157,7 @@ const writeCommunityCache = (filterKey: string, entry: CommunityCacheEntry) => {
 
 const CommunityIssues = () => {
   const user = useUserState((state) => state.user);
+  const { t } = useI18n();
   const [district, setDistrict] = useState(DEFAULT_DISTRICT_FILTER);
   const [category, setCategory] = useState(DEFAULT_CATEGORY_FILTER);
   const [status, setStatus] = useState(DEFAULT_STATUS_FILTER);
@@ -209,12 +213,12 @@ const CommunityIssues = () => {
   useEffect(() => {
     if (communityQuery.isError && communityQuery.error) {
       if (communityQuery.error instanceof AxiosError) {
-        toast.error(communityQuery.error.response?.data?.error ?? "Failed to load community issues");
+        toast.error(communityQuery.error.response?.data?.error ?? t("errorLoadCommunityIssues"));
       } else {
-        toast.error("Failed to load community issues");
+        toast.error(t("errorLoadCommunityIssues"));
       }
     }
-  }, [communityQuery.isError, communityQuery.error]);
+  }, [communityQuery.isError, communityQuery.error, t]);
 
   useEffect(() => {
     if (!communityQuery.data) return;
@@ -232,10 +236,10 @@ const CommunityIssues = () => {
       await communityQuery.fetchNextPage();
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to load more issues");
+        toast.error(error.response?.data?.error ?? t("errorLoadMoreIssues"));
         return;
       }
-      toast.error("Failed to load more issues");
+      toast.error(t("errorLoadMoreIssues"));
     }
   };
 
@@ -249,7 +253,7 @@ const CommunityIssues = () => {
   const handleVote = async (issueId: string, type: "up" | "down") => {
     const targetIssue = issues.find((item) => item._id === issueId) || selectedIssue;
     if (targetIssue?.reportedBy?._id === user?._id) {
-      toast.error("You cannot vote your own report.");
+      toast.error(t("errorVoteOwnReport"));
       return;
     }
 
@@ -268,10 +272,10 @@ const CommunityIssues = () => {
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to vote");
+        toast.error(error.response?.data?.error ?? t("errorFailedToVote"));
         return;
       }
-      toast.error("Failed to vote");
+      toast.error(t("errorFailedToVote"));
     }
   };
 
@@ -297,10 +301,10 @@ const CommunityIssues = () => {
       setSelectedIssue(details);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to load issue details");
+        toast.error(error.response?.data?.error ?? t("errorFailedToLoadIssueDetails"));
         return;
       }
-      toast.error("Failed to load issue details");
+      toast.error(t("errorFailedToLoadIssueDetails"));
     } finally {
       setIsFetchingDetails(false);
     }
@@ -308,11 +312,11 @@ const CommunityIssues = () => {
 
   const handleDeleteIssue = async (issue: IIssue) => {
     if (issue.reportedBy?._id !== user?._id) {
-      toast.error("You can only delete your own report.");
+      toast.error(t("errorDeleteOwnReportOnly"));
       return;
     }
     if (issue.status !== "pending") {
-      toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.");
+      toast.error(t("deleteOnlyPendingLong"));
       return;
     }
 
@@ -333,13 +337,13 @@ const CommunityIssues = () => {
         setSelectedIssue(null);
         setIsModalOpen(false);
       }
-      toast.success("Issue deleted successfully.");
+      toast.success(t("successIssueDeleted"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to delete issue");
+        toast.error(error.response?.data?.error ?? t("errorFailedToDeleteIssue"));
         return;
       }
-      toast.error("Failed to delete issue");
+      toast.error(t("errorFailedToDeleteIssue"));
     } finally {
       setDeletingIssueId(null);
     }
@@ -363,31 +367,31 @@ const CommunityIssues = () => {
         };
       });
       setSelectedIssue((prev) => (prev?._id === issueId ? updated : prev));
-      toast.success(response.message || "Review saved successfully.");
+      toast.success(response.message || t("successReviewSaved"));
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to submit review");
+        toast.error(error.response?.data?.error ?? t("errorFailedToSubmitReview"));
         return;
       }
-      toast.error("Failed to submit review");
+      toast.error(t("errorFailedToSubmitReview"));
     }
   };
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <h1 className="text-2xl font-bold md:text-3xl">Community Issues</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">{t("communityIssues")}</h1>
 
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center xl:w-auto">
           <Select value={district} onValueChange={setDistrict}>
             <SelectTrigger className="w-full sm:w-auto xl:min-w-45">
-              <SelectValue placeholder="Select District" />
+              <SelectValue placeholder={t("selectDistrict")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Districts</SelectItem>
+              <SelectItem value="all">{t("allDistricts")}</SelectItem>
               {TAMIL_NADU_DISTRICTS.map((districtName) => (
                 <SelectItem key={districtName} value={districtName}>
-                  {districtName}
+                  {getDistrictLabel(districtName, t)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -395,13 +399,13 @@ const CommunityIssues = () => {
 
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="w-full sm:w-auto xl:min-w-55">
-              <SelectValue placeholder="Select Category" />
+              <SelectValue placeholder={t("selectCategory")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">{t("allCategories")}</SelectItem>
               {ISSUE_CATEGORIES.map((categoryName) => (
                 <SelectItem key={categoryName} value={categoryName}>
-                  {categoryName}
+                  {getCategoryLabel(categoryName, t)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -415,7 +419,7 @@ const CommunityIssues = () => {
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
-              <span className="sm:hidden">List</span>
+              <span className="sm:hidden">{t("listView")}</span>
             </Button>
             <Button
               size="sm"
@@ -424,7 +428,7 @@ const CommunityIssues = () => {
               onClick={() => setViewMode("map")}
             >
               <MapIcon className="h-4 w-4" />
-              <span className="sm:hidden">Map</span>
+              <span className="sm:hidden">{t("mapView")}</span>
             </Button>
           </div>
         </div>
@@ -438,7 +442,7 @@ const CommunityIssues = () => {
             className={status === statusKey ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""}
             onClick={() => setStatus(statusKey)}
           >
-            {STATUS_LABELS[statusKey]}
+            {getStatusFilterLabel(statusKey, t)}
           </Button>
         ))}
       </div>
@@ -469,12 +473,12 @@ const CommunityIssues = () => {
                     <Popup>
                       <div className="space-y-1">
                         <h3 className="font-semibold">{issue.title}</h3>
-                        <p className="text-xs">{issue.category}</p>
+                        <p className="text-xs">{getCategoryLabel(issue.category, t)}</p>
                         <p className="text-xs text-muted-foreground">{issue.address}</p>
-                        <Badge variant={statusToBadgeVariant(issue.status)}>{statusToLabel(issue.status)}</Badge>
-                        <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt)}</p>
+                        <Badge variant={statusToBadgeVariant(issue.status)}>{statusToLabel(issue.status, t)}</Badge>
+                        <p className="text-xs text-muted-foreground">{formatIssueTime(issue.createdAt, t)}</p>
                         <Button size="sm" variant="link" className="px-0" onClick={() => handleOpenDetails(issue)}>
-                          View details
+                          {t("viewDetails")}
                         </Button>
                       </div>
                     </Popup>
@@ -487,7 +491,7 @@ const CommunityIssues = () => {
       ) : issues.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            No issues found for the selected filters.
+            {t("noIssuesFound")}
           </CardContent>
         </Card>
       ) : (
@@ -499,13 +503,13 @@ const CommunityIssues = () => {
               onVote={handleVote}
               onViewDetails={handleOpenDetails}
               canVote={issue.reportedBy?._id !== user?._id}
-              onBlockedVote={() => toast.error("You cannot vote your own report.")}
+              onBlockedVote={() => toast.error(t("errorVoteOwnReport"))}
             />
           ))}
           {hasMore ? (
             <div className="flex justify-center">
               <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
-                {isLoadingMore ? "Loading..." : "Show More"}
+                {isLoadingMore ? t("loading") : t("showMore")}
               </Button>
             </div>
           ) : null}
@@ -515,7 +519,7 @@ const CommunityIssues = () => {
       {!isLoading && viewMode === "map" && hasMore ? (
         <div className="flex justify-center">
           <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
-            {isLoadingMore ? "Loading..." : "Show More"}
+            {isLoadingMore ? t("loading") : t("showMore")}
           </Button>
         </div>
       ) : null}
@@ -531,13 +535,13 @@ const CommunityIssues = () => {
         onReview={handleReviewIssue}
         currentUserId={user?._id}
         canVote={selectedIssue?.reportedBy?._id !== user?._id}
-        onBlockedVote={() => toast.error("You cannot vote your own report.")}
+        onBlockedVote={() => toast.error(t("errorVoteOwnReport"))}
         isFetchingDetails={isFetchingDetails}
         onDelete={selectedIssue?.reportedBy?._id === user?._id ? handleDeleteIssue : undefined}
         canDelete={selectedIssue?.reportedBy?._id === user?._id && selectedIssue?.status === "pending"}
         isDeleting={Boolean(selectedIssue?._id && deletingIssueId === selectedIssue._id)}
         onBlockedDelete={() =>
-          toast.error("This report can only be deleted while it is still pending. Once it is verified, deletion is no longer allowed.")
+          toast.error(t("deleteOnlyPendingLong"))
         }
       />
     </div>

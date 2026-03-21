@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/modules/user/components/UserAvatar";
 import { useUserState } from "@/store/user.store";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 
 const SuperAdminProfilePage = () => {
   const user = useUserState((state) => state.user);
+  const { t } = useI18n();
 
   if (!user) {
     return (
@@ -25,13 +28,13 @@ const SuperAdminProfilePage = () => {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold">My Profile</h1>
-        <p className="text-sm text-muted-foreground">Super admin account details and access information.</p>
+        <h1 className="text-3xl font-bold">{t("myProfile")}</h1>
+        <p className="text-sm text-muted-foreground">{t("superAdminProfileSubtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Account Overview</CardTitle>
+          <CardTitle>{t("accountOverview")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex items-center gap-4">
@@ -42,14 +45,14 @@ const SuperAdminProfilePage = () => {
               <div className="mt-2 flex flex-wrap gap-2">
                 <div className="rounded-lg border px-3 py-2 text-sm font-semibold">{user.role}</div>
                 <div className="rounded-lg border px-3 py-2 text-sm font-semibold">
-                  {user.district || "State Admin"}
+                  {user.district ? getDistrictLabel(user.district, t) : t("stateAdmin")}
                 </div>
               </div>
             </div>
           </div>
 
           <Button asChild>
-            <Link to="/super-admin/settings">Edit Profile In Settings</Link>
+            <Link to="/super-admin/settings">{t("editProfileInSettings")}</Link>
           </Button>
         </CardContent>
       </Card>

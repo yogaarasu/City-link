@@ -12,6 +12,8 @@ import { IssueVoteButtons } from "./IssueVoteButtons";
 import "leaflet/dist/leaflet.css";
 import { cleanProfanity } from "@/lib/profanity";
 import { Alert } from "@/components/Alert";
+import { useI18n } from "@/modules/i18n/useI18n";
+import { getCategoryLabel, type I18nTranslator } from "../constants/issue.constants";
 
 interface IssueDetailsModalProps {
   open: boolean;
@@ -29,12 +31,12 @@ interface IssueDetailsModalProps {
   isDeleting?: boolean;
 }
 
-const getStatusLogs = (issue: IIssue): IssueStatusLog[] => {
+const getStatusLogs = (issue: IIssue, t?: I18nTranslator): IssueStatusLog[] => {
   if (issue.statusLogs && issue.statusLogs.length > 0) return issue.statusLogs;
   return [
     {
       status: issue.status,
-      description: "Issue reported by citizen.",
+      description: t ? t("issueReportedByCitizen") : "Issue reported by citizen.",
       createdAt: issue.createdAt,
     },
   ];
@@ -55,14 +57,21 @@ export const IssueDetailsModal = ({
   onBlockedDelete,
   isDeleting = false,
 }: IssueDetailsModalProps) => {
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const logs = useMemo(() => (issue ? getStatusLogs(issue) : []), [issue]);
+  const logs = useMemo(() => (issue ? getStatusLogs(issue, t) : []), [issue, t]);
   const mapKey = useMemo(
     () => (issue ? `${issue._id}-${issue.location.lat}-${issue.location.lng}` : "issue-map"),
     [issue]
   );
+  const verifyDeadlineLabel = issue?.verifyBy
+    ? new Date(issue.verifyBy).toLocaleString()
+    : t("deadlineUnavailable");
+  const resolveDeadlineLabel = issue?.resolveBy
+    ? new Date(issue.resolveBy).toLocaleString()
+    : t("deadlineUnavailable");
 
   useEffect(() => {
     if (!issue) return;
@@ -93,9 +102,9 @@ export const IssueDetailsModal = ({
             <h2 className="text-xl font-semibold">{issue.title}</h2>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge variant={statusToBadgeVariant(issue.status)} className="rounded-[5px]">
-                {statusToLabel(issue.status)}
+                {statusToLabel(issue.status, t)}
               </Badge>
-              <Badge variant="outline">{issue.category}</Badge>
+              <Badge variant="outline">{getCategoryLabel(issue.category, t)}</Badge>
               <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
                 <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
                 {issue.upVotes}
@@ -115,35 +124,50 @@ export const IssueDetailsModal = ({
           {isFetchingDetails ? (
             <div className="text-muted-foreground inline-flex items-center text-sm">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading latest details...
+              {t("loadingLatestDetails")}
             </div>
           ) : null}
 
           <div className="rounded-lg border p-3">
-            <h3 className="mb-1 font-semibold">Description</h3>
+            <h3 className="mb-1 font-semibold">{t("description")}</h3>
             <p className="text-sm leading-relaxed">{issue.description}</p>
           </div>
 
           <div className="rounded-lg border p-3">
-            <h3 className="font-semibold">Reported Date & Time</h3>
+            <h3 className="font-semibold">{t("reportedDateTime")}</h3>
             <p className="text-muted-foreground mt-1 inline-flex items-center text-sm">
               <CalendarDays className="mr-1 h-3.5 w-3.5" />
-              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt)})
+              {new Date(issue.createdAt).toLocaleString()} ({formatIssueTime(issue.createdAt, t)})
             </p>
           </div>
 
           <div className="rounded-lg border p-3">
-            <h3 className="mb-2 font-semibold">Issue Status Update Logs</h3>
+            <h3 className="mb-1 font-semibold">{t("trackingDeadlines")}</h3>
+            <p className="text-sm text-muted-foreground">{t("trackingDeadlinesHint")}</p>
+            <div className="mt-2 space-y-2 text-sm">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <span className="font-medium">{t("verificationDeadline")}</span>
+                <span className="text-muted-foreground sm:text-right">{verifyDeadlineLabel}</span>
+              </div>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <span className="font-medium">{t("resolutionDeadline")}</span>
+                <span className="text-muted-foreground sm:text-right">{resolveDeadlineLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-3">
+            <h3 className="mb-2 font-semibold">{t("statusLogs")}</h3>
             <div className="space-y-2">
               {logs.map((log, index) => (
                 <div key={`${log.createdAt}-${index}`} className="rounded-md border p-2.5">
                   <div className="mb-1 flex items-center gap-2">
                     <Badge variant={statusToBadgeVariant(log.status)} className="rounded-[5px]">
-                      {statusToLabel(log.status)}
+                      {statusToLabel(log.status, t)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(log.createdAt).toLocaleString()} ({formatIssueTime(log.createdAt)})
+                    {new Date(log.createdAt).toLocaleString()} ({formatIssueTime(log.createdAt, t)})
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{log.description}</p>
                 </div>
@@ -181,15 +205,15 @@ export const IssueDetailsModal = ({
                 }}
               >
                 <Share2 className="mr-2 h-4 w-4" />
-                Share Report
+                {t("shareReport")}
               </Button>
             </div>
           </div>
 
           <div className="rounded-lg border p-3">
-            <h3 className="mb-3 font-semibold">Reported Evidence</h3>
+            <h3 className="mb-3 font-semibold">{t("reportedEvidence")}</h3>
             {issue.photos.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No reported evidence images.</p>
+              <p className="text-sm text-muted-foreground">{t("noReportedEvidence")}</p>
             ) : (
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {issue.photos.map((photo, index) => (
@@ -215,7 +239,7 @@ export const IssueDetailsModal = ({
 
           {(issue.resolvedEvidencePhotos || []).length > 0 ? (
             <div className="rounded-lg border p-3">
-              <h3 className="mb-3 font-semibold">Resolved Evidence</h3>
+              <h3 className="mb-3 font-semibold">{t("resolvedEvidence")}</h3>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {issue.resolvedEvidencePhotos!.map((photo, index) => (
                   <a
@@ -239,7 +263,7 @@ export const IssueDetailsModal = ({
           ) : null}
 
           <div className="rounded-lg border p-3">
-            <h3 className="mb-2 font-semibold">Community Issue Vote</h3>
+            <h3 className="mb-2 font-semibold">{t("communityIssueVote")}</h3>
             <IssueVoteButtons
               mode="split"
               upVotes={issue.upVotes}
@@ -253,9 +277,9 @@ export const IssueDetailsModal = ({
           {(canReview || issue.review?.rating) && (
             <div className="rounded-lg border p-3">
               <div className="mb-2">
-                <h3 className="font-semibold">Resolution Review</h3>
+                <h3 className="font-semibold">{t("resolutionReview")}</h3>
                 <p className="text-xs text-muted-foreground">
-                  Rate the resolution quality. You can update your review anytime.
+                  {t("resolutionReviewHint")}
                 </p>
               </div>
               <div className="mb-2 inline-flex items-center gap-1">
@@ -278,26 +302,26 @@ export const IssueDetailsModal = ({
               {canReview ? (
                 <>
                   <Textarea
-                    placeholder="Optional: share notes about the resolution quality..."
+                    placeholder={t("resolutionReviewPlaceholder")}
                     value={comment}
                     onChange={(event) => setComment(cleanProfanity(event.target.value))}
                     className="mb-2 min-h-20"
                   />
                   <Button onClick={submitReview} disabled={isSubmittingReview || rating === 0}>
-                    {isSubmittingReview ? "Submitting..." : hasExistingReview ? "Update Review" : "Submit Review"}
+                    {isSubmittingReview ? t("submitting") : hasExistingReview ? t("updateReview") : t("submitReview")}
                   </Button>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">{issue.review?.comment || "No comment provided."}</p>
+                <p className="text-sm text-muted-foreground">{issue.review?.comment || t("noCommentProvided")}</p>
               )}
             </div>
           )}
 
           {onDelete ? (
             <div className="rounded-lg border p-3">
-              <h3 className="mb-2 font-semibold">Delete Report</h3>
+              <h3 className="mb-2 font-semibold">{t("deleteReport")}</h3>
               <p className="text-sm text-muted-foreground">
-                Deleting this report will remove it permanently.
+                {t("deleteReportWarning")}
               </p>
               <div className="mt-3">
                 {canDelete ? (
@@ -312,11 +336,11 @@ export const IssueDetailsModal = ({
                         }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Issue
+                        {t("deleteIssue")}
                       </Button>
                     }
-                    title="Delete issue report"
-                    description="Are you sure you want to delete this report? This action cannot be undone."
+                    title={t("deleteIssueTitle")}
+                    description={t("deleteIssueConfirm")}
                     onContinue={() => issue && onDelete(issue)}
                     loading={isDeleting}
                     variant="destructive"
@@ -333,12 +357,11 @@ export const IssueDetailsModal = ({
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Issue
+                    {t("deleteIssue")}
                   </Button>
                 )}
                 <p className="mt-2 text-xs text-amber-700">
-                  Note: You can delete a report only while it is still pending. Once it is verified,
-                  deletion is not allowed.
+                  {t("deleteOnlyPendingNote")}
                 </p>
               </div>
             </div>

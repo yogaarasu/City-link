@@ -11,9 +11,11 @@ import {
   verifyPasswordResetOTP,
 } from "@/modules/auth/password-reset/api/password-reset.api";
 import { useUserState } from "@/store/user.store";
+import { useI18n } from "@/modules/i18n/useI18n";
 
 export const SecuritySection = () => {
   const user = useUserState((state) => state.user);
+  const { t } = useI18n();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,10 +36,10 @@ export const SecuritySection = () => {
       setNewPassword("");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to update password");
+        toast.error(error.response?.data?.error ?? t("errorUpdatePassword"));
         return;
       }
-      toast.error("Failed to update password");
+      toast.error(t("errorUpdatePassword"));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,10 +53,10 @@ export const SecuritySection = () => {
       setForgotStep("otp");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to send OTP");
+        toast.error(error.response?.data?.error ?? t("errorSendOtp"));
         return;
       }
-      toast.error("Failed to send OTP");
+      toast.error(t("errorSendOtp"));
     } finally {
       setIsForgotLoading(false);
     }
@@ -68,10 +70,10 @@ export const SecuritySection = () => {
       setForgotStep("reset");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Invalid OTP");
+        toast.error(error.response?.data?.error ?? t("authInvalidOtp"));
         return;
       }
-      toast.error("Invalid OTP");
+      toast.error(t("authInvalidOtp"));
     } finally {
       setIsForgotLoading(false);
     }
@@ -88,10 +90,10 @@ export const SecuritySection = () => {
       setMode("change");
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        toast.error(error.response?.data?.error ?? "Failed to reset password");
+        toast.error(error.response?.data?.error ?? t("errorResetPassword"));
         return;
       }
-      toast.error("Failed to reset password");
+      toast.error(t("errorResetPassword"));
     } finally {
       setIsForgotLoading(false);
     }
@@ -100,23 +102,23 @@ export const SecuritySection = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Security</CardTitle>
-        <p className="text-muted-foreground text-sm">Manage your password and security settings.</p>
+        <CardTitle className="text-2xl">{t("security")}</CardTitle>
+        <p className="text-muted-foreground text-sm">{t("securitySubtitle")}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="inline-flex rounded-lg border p-1">
           <Button variant={mode === "change" ? "secondary" : "ghost"} onClick={() => setMode("change")}>
-            Change Password
+            {t("changePassword")}
           </Button>
           <Button variant={mode === "forgot" ? "secondary" : "ghost"} onClick={() => setMode("forgot")}>
-            Forgot Password (OTP)
+            {t("forgotPasswordOtp")}
           </Button>
         </div>
 
         {mode === "change" ? (
           <>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Current Password</label>
+              <label className="text-sm font-medium">{t("currentPassword")}</label>
               <Input
                 type="password"
                 value={currentPassword}
@@ -124,19 +126,19 @@ export const SecuritySection = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">New Password</label>
+              <label className="text-sm font-medium">{t("newPassword")}</label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Use at least 8 characters with mixed letter cases and numbers.
+                {t("passwordGuidelines")}
               </p>
             </div>
             <div className="flex justify-end">
               <Button onClick={handleUpdatePassword} disabled={isSubmitting}>
-                Update Password
+                {t("updatePassword")}
               </Button>
             </div>
           </>
@@ -145,7 +147,7 @@ export const SecuritySection = () => {
             {forgotStep === "email" && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Email</label>
+                  <label className="text-sm font-medium">{t("email")}</label>
                   <Input
                     type="email"
                     value={forgotEmail}
@@ -154,7 +156,7 @@ export const SecuritySection = () => {
                 </div>
                 <div className="flex justify-end">
                   <Button onClick={handleRequestOTP} disabled={isForgotLoading}>
-                    Send OTP
+                    {t("authSendOtp")}
                   </Button>
                 </div>
               </>
@@ -163,15 +165,15 @@ export const SecuritySection = () => {
             {forgotStep === "otp" && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Enter OTP</label>
+                  <label className="text-sm font-medium">{t("enterOtp")}</label>
                   <Input value={forgotOTP} onChange={(event) => setForgotOTP(event.target.value)} />
                 </div>
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setForgotStep("email")}>
-                    Change Email
+                    {t("changeEmail")}
                   </Button>
                   <Button onClick={handleVerifyOTP} disabled={isForgotLoading}>
-                    Verify OTP
+                    {t("authVerifyOtp")}
                   </Button>
                 </div>
               </>
@@ -180,7 +182,7 @@ export const SecuritySection = () => {
             {forgotStep === "reset" && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">New Password</label>
+                  <label className="text-sm font-medium">{t("newPassword")}</label>
                   <Input
                     type="password"
                     value={forgotNewPassword}
@@ -189,7 +191,7 @@ export const SecuritySection = () => {
                 </div>
                 <div className="flex justify-end">
                   <Button onClick={handleResetPassword} disabled={isForgotLoading}>
-                    Reset Password
+                    {t("resetPassword")}
                   </Button>
                 </div>
               </>
