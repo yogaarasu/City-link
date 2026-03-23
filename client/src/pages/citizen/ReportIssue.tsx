@@ -433,7 +433,7 @@ const ReportIssue = () => {
           <div className="relative mt-2 h-10 text-[10px] leading-snug sm:h-9 sm:text-xs">
             <p
               className={cn(
-                "absolute left-0 w-24 -translate-x-1/4 px-1 text-center sm:w-28",
+                "absolute left-[1.25rem] w-24 -translate-x-1/2 px-1 text-center sm:w-28",
                 step === 1 ? "font-medium text-foreground" : "text-muted-foreground"
               )}
             >
@@ -441,7 +441,7 @@ const ReportIssue = () => {
             </p>
             <p
               className={cn(
-                "absolute right-0 w-28 translate-x-1/4 px-1 text-center sm:w-32",
+                "absolute left-[calc(100%-1.25rem)] w-28 -translate-x-1/2 px-1 text-center sm:w-32",
                 step === 2 ? "font-medium text-foreground" : "text-muted-foreground"
               )}
             >
