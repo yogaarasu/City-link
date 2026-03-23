@@ -464,6 +464,8 @@
   "homeGetStarted": "தொடங்குங்கள்",
   "homeSeeHowItWorks": "எப்படி செயல்படுகிறது என்பதை பார்க்கவும்",
   "homeInstallApp": "நிறுவு",
+  "homeInstallUnavailable": "நிறுவல் தயாராக இல்லை. Chrome பயன்படுத்தி HTTPS உள்ளதா பார்க்கவும்.",
+  "homeInstallIosHint": "iOS இல், Share என்பதைத் தட்டி \"Add to Home Screen\" தேர்வு செய்யவும்.",
   "homeWhyTitle": "ஏன் CityLink ஐ தேர்வு செய்ய வேண்டும்?",
   "homeWhySubtitle": "வெளிப்படையான குடிமக்கள் ஆட்சிக்கான மிக முன்னேற்றமான தளம்.",
   "homeFeatureRoutingTitle": "தானியங்கி அதிகாரப்பூர்வ வழிமுறை",

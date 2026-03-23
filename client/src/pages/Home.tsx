@@ -60,10 +60,17 @@ const Home = () => {
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const [isIos, setIsIos] = useState(false);
   const isTamil = language === "ta";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isiOSDevice =
+      /iphone|ipad|ipod/.test(userAgent) ||
+      (userAgent.includes("mac") && window.navigator.maxTouchPoints > 1);
+    setIsIos(isiOSDevice);
 
     const storedInstalled = window.localStorage.getItem(INSTALL_FLAG_KEY) === "true";
     const isInstalled =
@@ -104,9 +111,13 @@ const Home = () => {
   }, []);
 
   const handleInstallClick = async () => {
+    if (isIos) {
+      toast.message(t("homeInstallIosHint"));
+      return;
+    }
     const promptEvent = installPrompt ?? deferredInstallPrompt;
     if (!promptEvent) {
-      toast.error(t("notAvailable"));
+      toast.error(t("homeInstallUnavailable"));
       return;
     }
     await promptEvent.prompt();
@@ -165,7 +176,7 @@ const Home = () => {
             >
               {t("homeNavLogin")}
             </Link>
-            <Link to="/auth/signup">
+            <Link to="/auth/login">
               <Button className="rounded-full bg-emerald-500 px-6 text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95">
                 {t("homeNavReportIssue")}
               </Button>
@@ -224,7 +235,7 @@ const Home = () => {
               }`}
             >
               <Link
-                to="/auth/signup"
+                to="/auth/login"
                 className={isTamil ? "w-full" : "w-full sm:w-auto sm:justify-self-center"}
               >
                 {/* UPGRADED BUTTON TRANSITIONS */}
@@ -262,7 +273,7 @@ const Home = () => {
                 {t("homeSeeHowItWorks")}
               </Button>
 
-              {!isPwaInstalled ? (
+              {!isPwaInstalled && (isIos || installPrompt || deferredInstallPrompt) ? (
                 <Button
                   variant="outline"
                   onClick={handleInstallClick}

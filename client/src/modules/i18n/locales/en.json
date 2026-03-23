@@ -464,6 +464,8 @@
   "homeGetStarted": "Get Started",
   "homeSeeHowItWorks": "See how it works",
   "homeInstallApp": "Install App",
+  "homeInstallUnavailable": "Install is not ready yet. Open in Chrome and make sure HTTPS is enabled.",
+  "homeInstallIosHint": "On iOS, tap Share and choose \"Add to Home Screen\".",
   "homeWhyTitle": "Why Choose CityLink?",
   "homeWhySubtitle": "The most advanced platform for transparent civic governance.",
   "homeFeatureRoutingTitle": "Automated Official Routing",
