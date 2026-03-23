@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { updatePassword } from "../api/password-reset.api";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { buildPasswordSchema } from "@/modules/auth/validation/password.schema";
 
 export function ResetPasswordForm({
   className,
@@ -35,8 +36,8 @@ export function ResetPasswordForm({
     () =>
       z
         .object({
-          newPassword: z.string().min(8, t("authPasswordMinLength")),
-          confirmPassword: z.string().min(8, t("authConfirmPasswordRequired")),
+          newPassword: buildPasswordSchema(t),
+          confirmPassword: z.string().min(1, t("authConfirmPasswordRequired")),
         })
         .refine((data) => data.newPassword === data.confirmPassword, {
           message: t("authPasswordsNoMatch"),

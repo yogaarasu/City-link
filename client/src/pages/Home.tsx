@@ -26,6 +26,7 @@ import {
   animate,
   type Variants,
 } from "framer-motion";
+import { toast } from "sonner";
 
 // --- Custom Apple-style Easing ---
 const customEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -48,6 +49,9 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+const INSTALL_FLAG_KEY = "citylink:pwa-installed";
+
 const Home = () => {
   const { t, language } = useI18n();
   const toggleLanguage = useLanguageState((state) => state.toggleLanguage);
@@ -61,20 +65,33 @@ const Home = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const storedInstalled = window.localStorage.getItem(INSTALL_FLAG_KEY) === "true";
     const isInstalled =
+      storedInstalled ||
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as { standalone?: boolean }).standalone === true;
 
     setIsPwaInstalled(isInstalled);
+    if (isInstalled) {
+      deferredInstallPrompt = null;
+      setInstallPrompt(null);
+      return;
+    }
+    if (deferredInstallPrompt) {
+      setInstallPrompt(deferredInstallPrompt);
+    }
 
     const handleBeforeInstall = (event: Event) => {
       event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
+      deferredInstallPrompt = event as BeforeInstallPromptEvent;
+      setInstallPrompt(deferredInstallPrompt);
     };
 
     const handleInstalled = () => {
+      deferredInstallPrompt = null;
       setInstallPrompt(null);
       setIsPwaInstalled(true);
+      window.localStorage.setItem(INSTALL_FLAG_KEY, "true");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
@@ -87,10 +104,19 @@ const Home = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    await installPrompt.userChoice;
+    const promptEvent = installPrompt ?? deferredInstallPrompt;
+    if (!promptEvent) {
+      toast.error(t("notAvailable"));
+      return;
+    }
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    deferredInstallPrompt = null;
     setInstallPrompt(null);
+    if (choice.outcome === "accepted") {
+      setIsPwaInstalled(true);
+      window.localStorage.setItem(INSTALL_FLAG_KEY, "true");
+    }
   };
 
   return (
@@ -186,18 +212,27 @@ const Home = () => {
 
             <motion.p
               variants={fadeUp}
-              className={`mt-6 max-w-2xl text-balance leading-relaxed text-slate-500 dark:text-slate-400 ${isTamil ? "text-sm sm:text-base md:text-lg" : "text-base sm:text-lg md:text-xl"}`}
+              className={`mt-6 max-w-4xl text-balance leading-relaxed text-slate-500 dark:text-slate-400 ${isTamil ? "text-sm sm:text-base md:text-lg" : "text-base sm:text-lg md:text-xl"}`}
             >
               {t("homeHeroSubtitle")}
             </motion.p>
 
             <motion.div
               variants={fadeUp}
-              className="mt-8 flex w-full max-w-md flex-col gap-4 sm:mt-10 sm:max-w-2xl sm:flex-row sm:flex-wrap sm:justify-center md:max-w-3xl"
+              className={`mt-8 grid w-full max-w-md grid-cols-1 gap-4 sm:mt-10 sm:max-w-2xl sm:place-items-center md:max-w-3xl ${
+                isTamil ? "md:grid-cols-2 lg:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"
+              }`}
             >
-              <Link to="/auth/signup" className="w-full sm:w-auto">
+              <Link
+                to="/auth/signup"
+                className={isTamil ? "w-full" : "w-full sm:w-auto sm:justify-self-center"}
+              >
                 {/* UPGRADED BUTTON TRANSITIONS */}
-                <Button className="group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 sm:w-auto">
+                <Button
+                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 ${
+                    isTamil ? "md:w-full" : "sm:w-auto"
+                  }`}
+                >
                   {t("homeGetStarted")}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
@@ -222,16 +257,20 @@ const Home = () => {
                     });
                   }
                 }}
-                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-8 text-lg leading-snug whitespace-normal text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:w-auto"
+                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-6 text-base leading-snug whitespace-normal break-words text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:px-8 sm:text-lg"
               >
                 {t("homeSeeHowItWorks")}
               </Button>
 
-              {!isPwaInstalled && installPrompt ? (
+              {!isPwaInstalled ? (
                 <Button
                   variant="outline"
                   onClick={handleInstallClick}
-                  className="group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 sm:w-auto"
+                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 ${
+                    isTamil
+                      ? "md:col-span-2 md:justify-self-center md:w-[60%] lg:col-span-2 lg:w-[50%]"
+                      : "sm:w-auto sm:col-span-2 sm:justify-self-center lg:col-span-1"
+                  }`}
                   title={t("homeInstallApp")}
                 >
                   <Download className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />

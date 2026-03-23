@@ -394,7 +394,7 @@ const distanceBetweenMeters = (from, to) => {
 
 const canTransitionIssueStatus = (currentStatus, nextStatus) => {
   const validTransitions = {
-    pending: ["verified"],
+    pending: ["verified", "rejected"],
     verified: ["in_progress"],
     in_progress: ["resolved", "rejected"],
     resolved: [],

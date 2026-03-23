@@ -1,17 +1,22 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosError } from "axios";
 import { Settings as SettingsIcon, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useUserState } from "@/store/user.store";
-import { updateProfile } from "@/modules/user/api/user.api";
+import { changePassword, updateProfile } from "@/modules/user/api/user.api";
 import { UserAvatar } from "@/modules/user/components/UserAvatar";
 import { AppearanceSection } from "@/modules/citizen/settings/components/AppearanceSection";
 import { SettingsTabs } from "@/modules/citizen/settings/components/SettingsTabs";
 import type { SettingsTab } from "@/modules/citizen/settings/types";
 import { useI18n } from "@/modules/i18n/useI18n";
+import { buildPasswordSchema } from "@/modules/auth/validation/password.schema";
 
 const toBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -33,11 +38,27 @@ const SuperAdminSettingsPage = () => {
   const user = useUserState((state) => state.user);
   const updateUser = useUserState((state) => state.updateUser);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [name, setName] = useState(user?.name ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const changePasswordSchema = useMemo(
+    () =>
+      z.object({
+        currentPassword: z.string().min(1, t("enterPasswordToContinue")),
+        newPassword: buildPasswordSchema(t),
+      }),
+    [t, language]
+  );
+  type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
+
+  const changePasswordForm = useForm<ChangePasswordValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { currentPassword: "", newPassword: "" },
+  });
 
   const handleFileChange = async (files: FileList | null) => {
     if (!files?.[0]) return;
@@ -98,6 +119,26 @@ const SuperAdminSettingsPage = () => {
       toast.error(t("errorRemoveProfilePicture"));
     } finally {
       setIsRemovingAvatar(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (values: ChangePasswordValues) => {
+    try {
+      setIsChangingPassword(true);
+      const response = await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      toast.success(response.message);
+      changePasswordForm.reset();
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.error ?? t("errorUpdatePassword"));
+        return;
+      }
+      toast.error(t("errorUpdatePassword"));
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -178,6 +219,55 @@ const SuperAdminSettingsPage = () => {
                   <Button onClick={handleSave} disabled={isSaving}>
                     {t("saveChanges")}
                   </Button>
+                </div>
+
+                <div className="border-t pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold">{t("changePassword")}</h3>
+                    <p className="text-sm text-muted-foreground">{t("securitySubtitle")}</p>
+                  </div>
+                  <form
+                    className="grid gap-4 md:grid-cols-2"
+                    onSubmit={changePasswordForm.handleSubmit(handlePasswordUpdate)}
+                  >
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">{t("currentPassword")}</label>
+                      <Input
+                        type="password"
+                        {...changePasswordForm.register("currentPassword")}
+                        className={cn(
+                          changePasswordForm.formState.errors.currentPassword ? "border-red-500" : ""
+                        )}
+                      />
+                      {changePasswordForm.formState.errors.currentPassword && (
+                        <p className="text-xs text-red-500">
+                          {changePasswordForm.formState.errors.currentPassword.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">{t("newPassword")}</label>
+                      <Input
+                        type="password"
+                        {...changePasswordForm.register("newPassword")}
+                        className={cn(
+                          changePasswordForm.formState.errors.newPassword ? "border-red-500" : ""
+                        )}
+                      />
+                      {changePasswordForm.formState.errors.newPassword ? (
+                        <p className="text-xs text-red-500">
+                          {changePasswordForm.formState.errors.newPassword.message}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("passwordGuidelines")}</p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2 flex justify-end">
+                      <Button type="submit" disabled={isChangingPassword}>
+                        {t("updatePassword")}
+                      </Button>
+                    </div>
+                  </form>
                 </div>
               </>
             )}

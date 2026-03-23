@@ -8,7 +8,7 @@ export const useI18n = () => {
   const { t: i18nT } = useTranslation();
 
   const t = useCallback(
-    (key: I18nKey, vars?: Record<string, string | number>) =>
+    (key: I18nKey | string, vars?: Record<string, string | number>) =>
       i18nT(key, (vars || {}) as Record<string, string>),
     [i18nT]
   );

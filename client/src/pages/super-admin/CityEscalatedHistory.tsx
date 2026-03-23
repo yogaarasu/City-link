@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, CalendarDays, ImageIcon, ThumbsDown, ThumbsUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, ImageIcon, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +112,7 @@ const CityEscalatedHistoryPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <span className="text-sm text-muted-foreground">{t("loading")}</span>
+        <Loader2 className="h-12 w-12 animate-spin text-foreground/80 motion-safe:animate-spin motion-reduce:animate-none" />
       </div>
     );
   }

@@ -169,12 +169,18 @@ const CityAdminManageIssues = () => {
     setSelectedIssue(updatedIssue);
   };
 
+  const hasIssueLocation = useCallback(
+    (issue: CityAdminIssue) =>
+      typeof issue.location?.lat === "number" && typeof issue.location?.lng === "number",
+    []
+  );
   const mapCenter = useMemo<[number, number]>(() => {
-    if (sortedIssues.length > 0) {
-      return [sortedIssues[0].location.lat, sortedIssues[0].location.lng];
+    const issueWithLocation = sortedIssues.find((issue) => hasIssueLocation(issue));
+    if (issueWithLocation) {
+      return [issueWithLocation.location.lat, issueWithLocation.location.lng];
     }
     return [11.0168, 76.9558];
-  }, [sortedIssues]);
+  }, [hasIssueLocation, sortedIssues]);
 
   return (
     <div className="space-y-4">
@@ -237,7 +243,7 @@ const CityAdminManageIssues = () => {
             <>
               <div className="w-full space-y-2">
                 <div className="min-w-0 rounded-lg border bg-background/80 p-1.5 lg:h-12">
-                  <div className="flex h-full flex-wrap items-center gap-1 pb-0.5">
+                  <div className="grid grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center">
                     {CITY_ADMIN_STATUS_FILTERS.map((item) => (
                       <Button
                         key={item}
@@ -245,8 +251,8 @@ const CityAdminManageIssues = () => {
                         variant={statusFilter === item ? "default" : "outline"}
                         className={
                           statusFilter === item
-                            ? "min-h-9 flex-1 min-w-[6.5rem] rounded-md px-3 py-1.5 text-sm leading-tight text-center whitespace-normal bg-emerald-500 text-white hover:bg-emerald-600 lg:min-w-0 lg:px-2"
-                            : "min-h-9 flex-1 min-w-[6.5rem] rounded-md border-transparent bg-transparent px-3 py-1.5 text-sm leading-tight text-center whitespace-normal lg:min-w-0 lg:px-2"
+                            ? "min-h-9 w-full rounded-md bg-emerald-500 px-3 py-1.5 text-center text-sm leading-snug whitespace-normal break-words text-white hover:bg-emerald-600 sm:min-w-[6.5rem] sm:flex-1 sm:px-2"
+                            : "min-h-9 w-full rounded-md border-transparent bg-transparent px-3 py-1.5 text-center text-sm leading-snug whitespace-normal break-words sm:min-w-[6.5rem] sm:flex-1 sm:px-2"
                         }
                         onClick={() => setStatusFilter(item)}
                       >
@@ -341,7 +347,7 @@ const CityAdminManageIssues = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {sortedIssues.map((issue) => (
+                {sortedIssues.filter(hasIssueLocation).map((issue) => (
                   <CircleMarker
                     key={issue._id}
                     center={[issue.location.lat, issue.location.lng]}

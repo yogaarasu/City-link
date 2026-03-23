@@ -29,6 +29,7 @@ import { AxiosError } from "axios"
 import { toast } from "sonner"
 import { AUTHORIZE } from "@/utils/constants"
 import { useI18n } from "@/modules/i18n/useI18n"
+import { buildPasswordSchema } from "@/modules/auth/validation/password.schema"
 
 // Fix for default Leaflet marker icons in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -236,21 +237,33 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
   const [showMap, setShowMap] = useState(false);
   const navigate = useNavigate();
   const { t, language } = useI18n();
+  const isTamil = language === "ta";
 
-  const signupSchema = useMemo(() => (
-    z.object({
-      firstName: z.string().min(2, t("authFirstNameMin")),
-      lastName: z.string().min(1, t("authLastNameRequired")),
-      email: z.string().email(t("authInvalidEmail")),
+  const signupSchema = useMemo(() => {
+    const nameRegex = /^\p{L}+$/u;
+    const passwordSchema = buildPasswordSchema(t);
+
+    return z.object({
+      firstName: z
+        .string()
+        .trim()
+        .min(2, t("authFirstNameMin"))
+        .regex(nameRegex, t("authNameLettersOnly")),
+      lastName: z
+        .string()
+        .trim()
+        .min(1, t("authLastNameRequired"))
+        .regex(nameRegex, t("authNameLettersOnly")),
+      email: z.string().trim().email(t("authInvalidEmail")),
       district: z.string().min(2, t("authDistrictRequired")),
-      address: z.string().min(5, t("authAddressRequired")),
-      password: z.string().min(8, t("authPasswordMinLength")),
-      confirmPassword: z.string(),
+      address: z.string().trim().min(5, t("authAddressRequired")),
+      password: passwordSchema,
+      confirmPassword: z.string().min(1, t("authConfirmPasswordRequired")),
     }).refine((data) => data.password === data.confirmPassword, {
       message: t("authPasswordsNoMatch"),
       path: ["confirmPassword"],
-    })
-  ), [t, language]);
+    });
+  }, [t, language]);
 
   const {
     register,
@@ -404,7 +417,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel htmlFor="password" className="text-base">{t("authPasswordLabel")}</FieldLabel>
+              <FieldLabel
+                htmlFor="password"
+                className={cn("text-base", isTamil ? "min-h-[2.75rem]" : "")}
+              >
+                {t("authPasswordLabel")}
+              </FieldLabel>
               <div className="relative">
                 <Input
                   id="password"
@@ -425,7 +443,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="confirmPassword" className="text-base">{t("authConfirmPasswordLabel")}</FieldLabel>
+              <FieldLabel
+                htmlFor="confirmPassword"
+                className={cn("text-base", isTamil ? "min-h-[2.75rem]" : "")}
+              >
+                {t("authConfirmPasswordLabel")}
+              </FieldLabel>
               <Input
                 id="confirmPassword"
                 type="password"

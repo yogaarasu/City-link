@@ -57,7 +57,7 @@ const STATUS_BUTTON_STYLES: Record<CityAdminStatus, string> = {
 const ALLOWED_STATUS_TRANSITIONS: Record<CityAdminStatus, CityAdminStatus[]> = {
   pending: ["verified", "rejected"],
   verified: ["in_progress"],
-  in_progress: ["resolved"],
+  in_progress: ["resolved", "rejected"],
   resolved: [],
   rejected: [],
 };
@@ -85,10 +85,13 @@ export const CityAdminIssueDetailsDialog = ({
     setResolvedEvidencePhotos(issue.resolvedEvidencePhotos || []);
   }, [issue]);
 
+  const hasLocation =
+    typeof issue?.location?.lat === "number" &&
+    typeof issue?.location?.lng === "number";
   const mapCenter = useMemo<[number, number]>(() => {
-    if (!issue) return [11.0168, 76.9558];
-    return [issue.location.lat, issue.location.lng];
-  }, [issue]);
+    if (!hasLocation) return [11.0168, 76.9558];
+    return [issue!.location.lat, issue!.location.lng];
+  }, [hasLocation, issue]);
   const isStatusLocked = issue?.status === "resolved" || issue?.status === "rejected";
   const isEscalated = issue?.assignedTo === "super_admin" || Boolean(issue?.escalatedAt);
   const requiresDelayReason =
@@ -247,21 +250,27 @@ export const CityAdminIssueDetailsDialog = ({
 
           <div className="space-y-3 rounded-lg border p-3">
             <div className="relative z-0 h-72 overflow-hidden rounded-lg border md:h-96">
-              <MapContainer center={mapCenter} zoom={14} className="h-full w-full">
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <CircleMarker
-                  center={mapCenter}
-                  radius={10}
-                  pathOptions={{
-                    color: statusToColor(issue.status),
-                    fillColor: statusToColor(issue.status),
-                    fillOpacity: 0.8,
-                  }}
-                />
-              </MapContainer>
+              {hasLocation ? (
+                <MapContainer center={mapCenter} zoom={14} className="h-full w-full">
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <CircleMarker
+                    center={mapCenter}
+                    radius={10}
+                    pathOptions={{
+                      color: statusToColor(issue.status),
+                      fillColor: statusToColor(issue.status),
+                      fillOpacity: 0.8,
+                    }}
+                  />
+                </MapContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  {t("locationUnavailable")}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-muted-foreground inline-flex items-start gap-2 text-sm">
