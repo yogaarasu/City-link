@@ -162,11 +162,19 @@ export const SecuritySection = () => {
         <p className="text-muted-foreground text-sm">{t("securitySubtitle")}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="inline-flex rounded-lg border p-1">
-          <Button variant={mode === "change" ? "secondary" : "ghost"} onClick={() => setMode("change")}>
+        <div className="flex flex-wrap gap-2 rounded-lg border p-1">
+          <Button
+            variant={mode === "change" ? "secondary" : "ghost"}
+            onClick={() => setMode("change")}
+            className="h-auto whitespace-normal px-3 py-2 text-xs leading-snug sm:text-sm"
+          >
             {t("changePassword")}
           </Button>
-          <Button variant={mode === "forgot" ? "secondary" : "ghost"} onClick={() => setMode("forgot")}>
+          <Button
+            variant={mode === "forgot" ? "secondary" : "ghost"}
+            onClick={() => setMode("forgot")}
+            className="h-auto whitespace-normal px-3 py-2 text-xs leading-snug sm:text-sm"
+          >
             {t("forgotPasswordOtp")}
           </Button>
         </div>

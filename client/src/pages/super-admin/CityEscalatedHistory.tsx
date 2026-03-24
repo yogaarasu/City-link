@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, CalendarDays, ImageIcon, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, ImageIcon, Loader2, MapPin, ThumbsDown, ThumbsUp } from "lucide-react";
+import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { statusToBadgeVariant, statusToLabel } from "@/modules/citizen/utils/iss
 import { getCategoryLabel, getDistrictLabel, ISSUE_CATEGORIES } from "@/modules/citizen/constants/issue.constants";
 import { useI18n } from "@/modules/i18n/useI18n";
 import type { DateRange } from "react-day-picker";
+import "leaflet/dist/leaflet.css";
 
 const CityEscalatedHistoryPage = () => {
   const navigate = useNavigate();
@@ -108,6 +110,13 @@ const CityEscalatedHistoryPage = () => {
     if (!selectedIssueId) return null;
     return filteredIssues.find((issue) => issue._id === selectedIssueId) || null;
   }, [filteredIssues, selectedIssueId]);
+  const hasLocation =
+    typeof selectedIssue?.location?.lat === "number" &&
+    typeof selectedIssue?.location?.lng === "number";
+  const mapCenter = useMemo<[number, number]>(() => {
+    if (!hasLocation || !selectedIssue?.location) return [11.0168, 76.9558];
+    return [selectedIssue.location.lat, selectedIssue.location.lng];
+  }, [hasLocation, selectedIssue?.location]);
 
   if (loading) {
     return (
@@ -320,10 +329,45 @@ const CityEscalatedHistoryPage = () => {
                       {getCategoryLabel(selectedIssue.category, t)}
                     </Badge>
                   ) : null}
+                  <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                    <ThumbsUp className="h-3.5 w-3.5" />
+                    {selectedIssue.upVotes ?? 0}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-rose-700 dark:text-rose-300">
+                    <ThumbsDown className="h-3.5 w-3.5" />
+                    {selectedIssue.downVotes ?? 0}
+                  </span>
                 </DialogDescription>
               </DialogHeader>
 
               <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                <div className="rounded-lg border p-3">
+                  <h3 className="mb-2 font-semibold">{t("reportedDateTime")}</h3>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      {new Date(selectedIssue.createdAt).toLocaleString()}
+                    </span>
+                    {selectedIssue.escalatedAt ? (
+                      <span className="inline-flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {new Date(selectedIssue.escalatedAt).toLocaleString()}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {selectedIssue.reportedBy ? (
+                  <div className="rounded-lg border p-3">
+                    <h3 className="mb-2 font-semibold">{t("reportedInfo")}</h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p className="text-foreground">{selectedIssue.reportedBy.name}</p>
+                      <p>{selectedIssue.reportedBy.email}</p>
+                      {selectedIssue.reportedBy.phone ? <p>{selectedIssue.reportedBy.phone}</p> : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 {selectedIssue.description ? (
                   <div className="rounded-lg border p-3">
                     <h3 className="mb-1 font-semibold">{t("description")}</h3>
@@ -354,6 +398,88 @@ const CityEscalatedHistoryPage = () => {
                     </p>
                   ) : null}
                 </div>
+
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="relative z-0 h-60 overflow-hidden rounded-lg border md:h-80">
+                    {hasLocation ? (
+                      <MapContainer center={mapCenter} zoom={14} className="h-full w-full">
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        />
+                        <CircleMarker
+                          center={mapCenter}
+                          radius={10}
+                          pathOptions={{
+                            color: "#0f766e",
+                            fillColor: "#0f766e",
+                            fillOpacity: 0.8,
+                          }}
+                        />
+                      </MapContainer>
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                        {t("locationUnavailable")}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground inline-flex items-start gap-2 text-sm">
+                    <MapPin className="mt-0.5 h-4 w-4" />
+                    {selectedIssue.address || t("locationUnavailable")}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <h3 className="mb-2 font-semibold">{t("reportedEvidence")}</h3>
+                  {(selectedIssue.photos || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("noEvidence")}</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                      {(selectedIssue.photos || []).map((photo, index) => (
+                        <a
+                          key={`${photo}-${index}`}
+                          href={photo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full"
+                        >
+                          <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                            <img
+                              src={photo}
+                              alt={`${t("reportedEvidenceAlt")} ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {(selectedIssue.resolvedEvidencePhotos || []).length > 0 ? (
+                  <div className="rounded-lg border p-3">
+                    <h3 className="mb-2 font-semibold">{t("resolvedEvidence")}</h3>
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                      {(selectedIssue.resolvedEvidencePhotos || []).map((photo, index) => (
+                        <a
+                          key={`${photo}-${index}`}
+                          href={photo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full"
+                        >
+                          <div className="aspect-[4/3] w-full overflow-hidden rounded-md border border-border/50">
+                            <img
+                              src={photo}
+                              alt={`${t("resolvedEvidenceAlt")} ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {selectedIssue.statusLogs && selectedIssue.statusLogs.length > 0 ? (
                   <div className="rounded-lg border p-3">

@@ -146,18 +146,18 @@ const Home = () => {
         className="fixed left-1/2 top-6 z-50 w-[95%] max-w-5xl -translate-x-1/2 rounded-full border border-white/20 bg-white/60 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-xl dark:border-white/10 dark:bg-black/60 md:w-[80%]"
       >
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 pl-2 group">
+          <Link to="/" className="flex items-center gap-2 pl-2 group shrink-0 max-[430px]:gap-1">
             <img
               src="/citylink-logo-new.png"
               alt="CityLink logo"
               className="h-9 w-9 rounded-full border border-emerald-200 bg-white/90 p-0.5 box-border object-contain transition-transform duration-300 group-hover:scale-105 dark:border-emerald-900/60 dark:bg-black/40"
             />
-            <span className="bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold tracking-tight text-transparent">
+            <span className="whitespace-nowrap bg-linear-to-r from-emerald-500 to-teal-400 bg-clip-text text-lg font-bold tracking-tight text-transparent max-[430px]:text-base max-[430px]:tracking-normal">
               CityLink
             </span>
           </Link>
 
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 max-[430px]:gap-1">
             <Button
               variant="ghost"
               size="sm"
@@ -169,7 +169,7 @@ const Home = () => {
             </Button>
             <LanguageToggler className="md:hidden" />
             <ThemeToggler />
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 max-[430px]:hidden" />
             <Link
               to="/auth/login"
               className="hidden px-2 text-sm font-medium transition-colors hover:text-emerald-500 md:block"
@@ -177,7 +177,7 @@ const Home = () => {
               {t("homeNavLogin")}
             </Link>
             <Link to="/auth/login">
-              <Button className="rounded-full bg-emerald-500 px-6 text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95">
+              <Button className="rounded-full bg-emerald-500 px-6 text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 max-[430px]:h-9 max-[430px]:px-4 max-[430px]:text-xs">
                 {t("homeNavReportIssue")}
               </Button>
             </Link>
@@ -223,26 +223,21 @@ const Home = () => {
 
             <motion.p
               variants={fadeUp}
-              className={`mt-6 max-w-4xl text-balance leading-relaxed text-slate-500 dark:text-slate-400 ${isTamil ? "text-sm sm:text-base md:text-lg" : "text-base sm:text-lg md:text-xl"}`}
+              className={`mt-10 max-w-4xl text-balance leading-relaxed text-slate-500 dark:text-slate-400 ${isTamil ? "text-sm sm:text-base md:text-lg" : "text-base sm:text-lg md:text-xl"}`}
             >
               {t("homeHeroSubtitle")}
             </motion.p>
 
             <motion.div
               variants={fadeUp}
-              className={`mt-8 grid w-full max-w-md grid-cols-1 gap-4 sm:mt-10 sm:max-w-2xl sm:place-items-center md:max-w-3xl ${
-                isTamil ? "md:grid-cols-2 lg:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"
+              className={`mt-8 grid w-full max-w-md grid-cols-1 gap-3 sm:mt-10 sm:max-w-2xl sm:place-items-center md:max-w-3xl md:gap-4 ${
+                isTamil ? "md:grid-cols-2 lg:grid-cols-2" : "sm:grid-cols-2 md:grid-cols-3"
               }`}
             >
-              <Link
-                to="/auth/login"
-                className={isTamil ? "w-full" : "w-full sm:w-auto sm:justify-self-center"}
-              >
+              <Link to="/auth/login" className="w-full">
                 {/* UPGRADED BUTTON TRANSITIONS */}
                 <Button
-                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 ${
-                    isTamil ? "md:w-full" : "sm:w-auto"
-                  }`}
+                  className="group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 md:h-16 md:px-10 md:text-xl"
                 >
                   {t("homeGetStarted")}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -268,19 +263,17 @@ const Home = () => {
                     });
                   }
                 }}
-                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-6 text-base leading-snug whitespace-normal break-words text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:px-8 sm:text-lg"
+                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-6 text-base leading-snug whitespace-normal break-words text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:px-8 sm:text-lg md:min-h-16 md:text-xl"
               >
                 {t("homeSeeHowItWorks")}
               </Button>
 
-              {!isPwaInstalled && (isIos || installPrompt || deferredInstallPrompt) ? (
+              {!isPwaInstalled ? (
                 <Button
                   variant="outline"
                   onClick={handleInstallClick}
-                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 ${
-                    isTamil
-                      ? "md:col-span-2 md:justify-self-center md:w-[60%] lg:col-span-2 lg:w-[50%]"
-                      : "sm:w-auto sm:col-span-2 sm:justify-self-center lg:col-span-1"
+                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 md:h-16 md:px-10 md:text-xl ${
+                    isTamil ? "md:col-span-2 md:justify-self-center md:w-[70%] lg:w-[60%]" : "sm:col-span-2 md:col-span-1"
                   }`}
                   title={t("homeInstallApp")}
                 >

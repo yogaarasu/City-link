@@ -117,7 +117,7 @@ export function LoginForm({
               <FieldLabel htmlFor="password" className="text-base">{t("authPasswordLabel")}</FieldLabel>
               <Link
                 to="/auth/forgot-password"
-                className="text-sm text-emerald-500 hover:underline"
+                className="ml-auto text-right text-sm text-emerald-500 hover:underline"
                 viewTransition
               >
                 {t("authForgotPassword")}
