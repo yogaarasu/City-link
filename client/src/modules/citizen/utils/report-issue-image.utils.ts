@@ -32,6 +32,7 @@ const getOutputMimeType = (originalType: string) => {
 type CompressOptions = {
   watermarkText?: string;
   watermarkLogoSrc?: string;
+  watermarkLogo?: HTMLImageElement | null;
 };
 
 const applyWatermark = (
@@ -126,9 +127,9 @@ export const compressIssuePhotoFile = async (file: File, options?: CompressOptio
 
       context.drawImage(image, 0, 0, image.width, image.height);
 
-      const watermarkLogo = options?.watermarkLogoSrc
-        ? await loadImageFromSrc(options.watermarkLogoSrc)
-        : null;
+      const watermarkLogo =
+        options?.watermarkLogo ??
+        (options?.watermarkLogoSrc ? await loadImageFromSrc(options.watermarkLogoSrc) : null);
       applyWatermark(context, image.width, image.height, options?.watermarkText, watermarkLogo);
 
       candidate = canvas.toDataURL(
@@ -149,5 +150,8 @@ export const compressIssuePhotoFile = async (file: File, options?: CompressOptio
 
 export const compressIssuePhotoFiles = async (files: File[], options?: CompressOptions) => {
   const limitedFiles = files.slice(0, MAX_REPORT_ISSUE_PHOTOS);
-  return Promise.all(limitedFiles.map((file) => compressIssuePhotoFile(file, options)));
+  const watermarkLogo =
+    options?.watermarkLogoSrc ? await loadImageFromSrc(options.watermarkLogoSrc) : null;
+  const nextOptions = watermarkLogo ? { ...options, watermarkLogo } : options;
+  return Promise.all(limitedFiles.map((file) => compressIssuePhotoFile(file, nextOptions)));
 };

@@ -93,6 +93,7 @@ const ReportIssue = () => {
   const [isFetchingIssueDetails, setIsFetchingIssueDetails] = useState(false);
   const [pendingReportValues, setPendingReportValues] = useState<ReportIssueFormValues | null>(null);
   const [isLocationPinned, setIsLocationPinned] = useState(false);
+  const [hasConfirmedReportAsNew, setHasConfirmedReportAsNew] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -303,6 +304,7 @@ const ReportIssue = () => {
         radiusMeters: DUPLICATE_RADIUS_METERS,
       });
       setDuplicateIssues(nearbyIssues);
+      setHasConfirmedReportAsNew(false);
       setStep(2);
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
@@ -725,9 +727,24 @@ const ReportIssue = () => {
                 </div>
               )}
 
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                {t("duplicateReportWarning")}
-              </div>
+              {duplicateIssues.length > 0 ? (
+                <div className="rounded-md border bg-muted/30 px-3 py-2">
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      checked={hasConfirmedReportAsNew}
+                      onChange={(event) => setHasConfirmedReportAsNew(event.target.checked)}
+                    />
+                    <span>
+                      <span className="font-medium">{t("reportAsNewConfirmLabel")}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {t("reportAsNewConfirmHelp")}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              ) : null}
 
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Button variant="outline" onClick={() => setStep(1)} disabled={isSubmitting}>
@@ -736,7 +753,7 @@ const ReportIssue = () => {
                 <Button
                   className="bg-emerald-500 text-white hover:bg-emerald-600"
                   onClick={handleReportAsNew}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || (duplicateIssues.length > 0 && !hasConfirmedReportAsNew)}
                 >
                   {isSubmitting ? t("submitting") : t("reportAsNew")}
                   {isSubmitting ? <Loader className="animate-spin" /> : null}

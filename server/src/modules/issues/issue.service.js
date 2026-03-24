@@ -20,13 +20,13 @@ const createHttpError = (statusCode, message) => {
   return error;
 };
 
-const ISSUE_VERIFY_SLA_HOURS = 24;
+const ISSUE_VERIFY_SLA_HOURS = 18;
 const ISSUE_COMPLETE_SLA_DAYS = 7;
 const BUSINESS_HOURS_START = 9;
 const BUSINESS_HOURS_END = 18;
 const BUSINESS_HOURS_PER_DAY = BUSINESS_HOURS_END - BUSINESS_HOURS_START;
 
-const PENDING_ESCALATION_REASON = "Not verified within 24 business hours.";
+const PENDING_ESCALATION_REASON = "Not verified within 2 business days.";
 const COMPLETION_ESCALATION_REASON = "Not completed within 7 business days.";
 
 const getDefaultStatusDescription = (status, rejectionReason) => {
@@ -359,7 +359,7 @@ export const autoEscalateOverdueIssues = async (district) => {
       createdAt: { $lte: verifyDeadline },
     },
     PENDING_ESCALATION_REASON,
-    "Auto escalated to super admin: not verified within 24 business hours.",
+    "Auto escalated to super admin: not verified within 2 business days.",
     now
   );
 
