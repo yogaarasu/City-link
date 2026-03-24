@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import type { UserRole } from "@/types/user";
 import { useUserState } from "@/store/user.store";
 import { getMe } from "@/modules/user/api/user.api";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -44,7 +45,11 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
   }, [clearUser, setUser]);
 
   if (!user && isHydratingUser) {
-    return <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">Loading...</div>;
+    return (
+      <div className="flex min-h-svh items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-foreground/80 motion-safe:animate-spin motion-reduce:animate-none" />
+      </div>
+    );
   }
 
   if (!user) {

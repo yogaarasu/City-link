@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ThemeToggler } from "@/components/ThemeToggler";
 import { LanguageToggler } from "@/components/LanguageToggler";
-import { useI18n } from "@/modules/i18n/useI18n";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useUserState } from "@/store/user.store";
 import type { IUser } from "@/types/user";
@@ -12,7 +11,6 @@ export const AuthLayout = () => {
   const navigate = useNavigate();
   const user = useUserState((state) => state.user);
   const [isCheckingSession, setIsCheckingSession] = useState(Boolean(user));
-  const { t } = useI18n();
 
   const navigateByRole = useCallback((role: IUser["role"]) => {
     if (role === "citizen") {
@@ -38,8 +36,8 @@ export const AuthLayout = () => {
 
   if (user || isCheckingSession) {
     return (
-      <div className="bg-background flex min-h-svh items-center justify-center text-sm text-muted-foreground">
-        {t("loading")}
+      <div className="bg-background flex min-h-svh items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-foreground/80 motion-safe:animate-spin motion-reduce:animate-none" />
       </div>
     );
   }
