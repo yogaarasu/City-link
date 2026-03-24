@@ -50,7 +50,6 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
-const INSTALL_FLAG_KEY = "citylink:pwa-installed";
 
 const Home = () => {
   const { t, language } = useI18n();
@@ -62,9 +61,22 @@ const Home = () => {
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const isTamil = language === "ta";
+  const showInstallButton = !isPwaInstalled && (isIos || installPrompt || deferredInstallPrompt);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const evaluateInstallState = () => {
+      const installed =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as { standalone?: boolean }).standalone === true;
+
+      setIsPwaInstalled(installed);
+      if (installed) {
+        deferredInstallPrompt = null;
+        setInstallPrompt(null);
+      }
+    };
 
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isiOSDevice =
@@ -72,16 +84,11 @@ const Home = () => {
       (userAgent.includes("mac") && window.navigator.maxTouchPoints > 1);
     setIsIos(isiOSDevice);
 
-    const storedInstalled = window.localStorage.getItem(INSTALL_FLAG_KEY) === "true";
-    const isInstalled =
-      storedInstalled ||
+    evaluateInstallState();
+    if (
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true;
-
-    setIsPwaInstalled(isInstalled);
-    if (isInstalled) {
-      deferredInstallPrompt = null;
-      setInstallPrompt(null);
+      (window.navigator as { standalone?: boolean }).standalone === true
+    ) {
       return;
     }
     if (deferredInstallPrompt) {
@@ -98,15 +105,31 @@ const Home = () => {
       deferredInstallPrompt = null;
       setInstallPrompt(null);
       setIsPwaInstalled(true);
-      window.localStorage.setItem(INSTALL_FLAG_KEY, "true");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
     window.addEventListener("appinstalled", handleInstalled);
+    window.addEventListener("focus", evaluateInstallState);
+    document.addEventListener("visibilitychange", evaluateInstallState);
+
+    const displayModeQuery = window.matchMedia("(display-mode: standalone)");
+    const handleDisplayModeChange = () => evaluateInstallState();
+    if (typeof displayModeQuery.addEventListener === "function") {
+      displayModeQuery.addEventListener("change", handleDisplayModeChange);
+    } else if (typeof displayModeQuery.addListener === "function") {
+      displayModeQuery.addListener(handleDisplayModeChange);
+    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       window.removeEventListener("appinstalled", handleInstalled);
+      window.removeEventListener("focus", evaluateInstallState);
+      document.removeEventListener("visibilitychange", evaluateInstallState);
+      if (typeof displayModeQuery.removeEventListener === "function") {
+        displayModeQuery.removeEventListener("change", handleDisplayModeChange);
+      } else if (typeof displayModeQuery.removeListener === "function") {
+        displayModeQuery.removeListener(handleDisplayModeChange);
+      }
     };
   }, []);
 
@@ -126,7 +149,6 @@ const Home = () => {
     setInstallPrompt(null);
     if (choice.outcome === "accepted") {
       setIsPwaInstalled(true);
-      window.localStorage.setItem(INSTALL_FLAG_KEY, "true");
     }
   };
 
@@ -231,13 +253,17 @@ const Home = () => {
             <motion.div
               variants={fadeUp}
               className={`mt-8 grid w-full max-w-md grid-cols-1 gap-3 sm:mt-10 sm:max-w-2xl sm:place-items-center md:max-w-3xl md:gap-4 ${
-                isTamil ? "md:grid-cols-2 lg:grid-cols-2" : "sm:grid-cols-2 md:grid-cols-3"
+                isTamil
+                  ? "md:grid-cols-2 lg:grid-cols-2"
+                  : showInstallButton
+                    ? "sm:grid-cols-2 md:grid-cols-3"
+                    : "sm:grid-cols-2 md:grid-cols-2"
               }`}
             >
               <Link to="/auth/login" className="w-full">
                 {/* UPGRADED BUTTON TRANSITIONS */}
                 <Button
-                  className="group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 md:h-16 md:px-10 md:text-xl"
+                  className="group h-14 w-full max-w-full whitespace-normal rounded-full bg-emerald-500 px-8 text-lg text-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:bg-emerald-600 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)] hover:ring-4 hover:ring-emerald-500/20 active:scale-95 md:h-14 md:px-8 md:text-lg"
                 >
                   {t("homeGetStarted")}
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -263,16 +289,16 @@ const Home = () => {
                     });
                   }
                 }}
-                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-6 text-base leading-snug whitespace-normal break-words text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:px-8 sm:text-lg md:min-h-16 md:text-xl"
+                className="min-h-14 w-full max-w-full rounded-full border-slate-200 px-6 text-base leading-snug whitespace-normal break-words text-center text-balance transition-all duration-300 ease-out hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:hover:bg-slate-900 sm:px-8 sm:text-lg md:min-h-14 md:text-lg"
               >
                 {t("homeSeeHowItWorks")}
               </Button>
 
-              {!isPwaInstalled ? (
+              {showInstallButton ? (
                 <Button
                   variant="outline"
                   onClick={handleInstallClick}
-                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 md:h-16 md:px-10 md:text-xl ${
+                  className={`group h-14 w-full max-w-full whitespace-normal rounded-full border-emerald-200 px-8 text-lg transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_25px_rgba(16,185,129,0.2)] active:scale-95 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20 md:h-14 md:px-8 md:text-lg ${
                     isTamil ? "md:col-span-2 md:justify-self-center md:w-[70%] lg:w-[60%]" : "sm:col-span-2 md:col-span-1"
                   }`}
                   title={t("homeInstallApp")}
