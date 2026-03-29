@@ -53,11 +53,20 @@ const getLatestOptionalNote = (issue) => {
   return description;
 };
 
+const normalizeIssueRecord = (issue) => {
+  if (!issue) return issue;
+  if (typeof issue.toObject === "function") {
+    return issue.toObject();
+  }
+  return issue;
+};
+
 export const attachLatestOptionalNote = (issue) => {
-  const latestOptionalNote = getLatestOptionalNote(issue);
-  const { verifyBy, resolveBy } = getIssueSlaDeadlines(issue);
+  const normalized = normalizeIssueRecord(issue);
+  const latestOptionalNote = getLatestOptionalNote(normalized);
+  const { verifyBy, resolveBy } = getIssueSlaDeadlines(normalized);
   return {
-    ...issue,
+    ...normalized,
     latestOptionalNote,
     verifyBy,
     resolveBy,
@@ -396,7 +405,7 @@ const canTransitionIssueStatus = (currentStatus, nextStatus) => {
   const validTransitions = {
     pending: ["verified", "rejected"],
     verified: ["in_progress"],
-    in_progress: ["resolved", "rejected"],
+    in_progress: ["resolved"],
     resolved: [],
     rejected: [],
   };
@@ -730,7 +739,7 @@ export const updateIssueStatusByCityAdmin = async (issueId, payload, authUser) =
   if (!canTransitionIssueStatus(issue.status, payload.status)) {
     throw createHttpError(
       409,
-      "Invalid status transition. Use Pending -> Verified -> In Progress -> Resolved/Rejected."
+      "Invalid status transition. Use Pending -> Verified -> In Progress -> Resolved (pending issues can be rejected)."
     );
   }
 

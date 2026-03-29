@@ -57,7 +57,7 @@ const STATUS_BUTTON_STYLES: Record<CityAdminStatus, string> = {
 const ALLOWED_STATUS_TRANSITIONS: Record<CityAdminStatus, CityAdminStatus[]> = {
   pending: ["verified", "rejected"],
   verified: ["in_progress"],
-  in_progress: ["resolved", "rejected"],
+  in_progress: ["resolved"],
   resolved: [],
   rejected: [],
 };

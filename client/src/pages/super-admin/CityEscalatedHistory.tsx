@@ -72,9 +72,9 @@ const CityEscalatedHistoryPage = () => {
   }, [refreshDetails]);
 
   const escalatedIssues = useMemo<IssueRecord[]>(() => {
-    return ((details?.issues || []) as IssueRecord[]).filter(
-      (issue) => issue.assignedTo === "super_admin"
-    );
+    return ((details?.issues || []) as IssueRecord[])
+      .filter((issue) => issue.assignedTo === "super_admin")
+      .filter((issue) => Boolean(issue.latestOptionalNote?.trim()));
   }, [details?.issues]);
 
   const filteredIssues = useMemo(() => {
@@ -249,20 +249,6 @@ const CityEscalatedHistoryPage = () => {
                           </Badge>
                         ) : null}
                       </div>
-
-                      {issue.escalationReason ? (
-                        <p className="text-sm">
-                          <span className="font-medium">{t("escalationReason")}:</span> {issue.escalationReason}
-                        </p>
-                      ) : null}
-
-                      {issue.latestOptionalNote ? (
-                        <p className="text-sm">
-                          <span className="font-medium">{t("delayReason")}:</span> {issue.latestOptionalNote}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">{t("noDelayReason")}</p>
-                      )}
 
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">

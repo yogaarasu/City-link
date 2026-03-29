@@ -165,7 +165,11 @@ const CityAdminManageIssues = () => {
   };
 
   const onUpdatedIssue = (updatedIssue: CityAdminIssue) => {
-    setIssues((prev) => prev.map((issue) => (issue._id === updatedIssue._id ? updatedIssue : issue)));
+    setIssues((prev) => {
+      const next = prev.map((issue) => (issue._id === updatedIssue._id ? updatedIssue : issue));
+      writeCityAdminIssuesCache(filterKey, next);
+      return next;
+    });
     setSelectedIssue(updatedIssue);
   };
 

@@ -253,7 +253,9 @@ export const getCityIssueDetails = async (district) => {
 
   const issuesWithNotes = issues.map(attachLatestOptionalNote);
   const escalatedIssues = issuesWithNotes.filter(
-    (item) => item.assignedTo === "super_admin" && !["verified", "resolved"].includes(item.status)
+    (item) =>
+      item.assignedTo === "super_admin" &&
+      ["pending", "verified", "in_progress"].includes(item.status)
   );
 
   return {
