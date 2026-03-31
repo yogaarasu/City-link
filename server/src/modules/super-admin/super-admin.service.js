@@ -7,7 +7,7 @@ import { SMTP_USER } from "../../../utils/constants.js";
 import { cityAdminWelcomeTemplate } from "./super-admin.mail-template.js";
 import { appendUserActivityLog } from "./shared/activity-log.js";
 import { TAMIL_NADU_DISTRICTS } from "../issues/issue.constants.js";
-import { DISTRICT_RTO_CODES, getNormalizedAdminAccess } from "./super-admin.constants.js";
+import { DISTRICT_RTO_CODES } from "./super-admin.constants.js";
 import { attachLatestOptionalNote, autoEscalateOverdueIssues } from "../issues/issue.service.js";
 
 const createHttpError = (statusCode, message) => {
@@ -17,8 +17,6 @@ const createHttpError = (statusCode, message) => {
 };
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
-const mapAdminAccessValue = (value) => getNormalizedAdminAccess(value);
-
 const generateCityAdminId = async (district) => {
   const yearCode = String(new Date().getFullYear()).slice(-2);
   const rtoCode = DISTRICT_RTO_CODES[district] || "99";
@@ -47,7 +45,6 @@ const ensureCityAdminId = async (adminDoc) => {
 const getSafeAdmin = (admin) => {
   if (!admin) return null;
   const { password, __v, ...safe } = admin.toObject ? admin.toObject() : admin;
-  safe.adminAccess = mapAdminAccessValue(safe.adminAccess);
   return safe;
 };
 
@@ -87,7 +84,6 @@ export const getSystemOverview = async () => {
         $match: {
           role: "city_admin",
           isDeleted: false,
-          adminAccess: { $in: ["active", "start"] },
         },
       },
       { $group: { _id: "$district" } },
@@ -290,14 +286,6 @@ export const listCityAdmins = async (query) => {
     filters.district = query.district;
   }
 
-  if (query?.adminAccess && query.adminAccess !== "all") {
-    if (query.adminAccess === "active") {
-      filters.adminAccess = { $in: ["active", "start"] };
-    } else if (query.adminAccess === "inactive") {
-      filters.adminAccess = { $in: ["inactive", "stop"] };
-    }
-  }
-
   if (query?.search) {
     const regex = new RegExp(query.search, "i");
     filters.$or = [{ name: regex }, { email: regex }, { phone: regex }, { adminId: regex }];
@@ -353,7 +341,6 @@ export const createCityAdmin = async (payload, authUser) => {
     password: await hash(payload.password),
     role: "city_admin",
     isVerified: true,
-    adminAccess: "active",
   });
 
   appendUserActivityLog(
@@ -437,36 +424,6 @@ export const updateCityAdmin = async (adminId, payload, authUser) => {
   appendUserActivityLog(admin, "welcome_email_sent", "Welcome email sent after profile update.", {
     updatedBy: authUser._id,
   });
-  await admin.save();
-
-  return getSafeAdmin(admin);
-};
-
-export const updateCityAdminState = async (adminId, adminAccess, authUser) => {
-  if (!mongoose.Types.ObjectId.isValid(adminId)) {
-    throw createHttpError(400, "Invalid admin id.");
-  }
-
-  const admin = await User.findOne({
-    _id: adminId,
-    role: "city_admin",
-    isDeleted: false,
-  });
-
-  if (!admin) {
-    throw createHttpError(404, "City admin not found.");
-  }
-
-  admin.adminAccess = adminAccess;
-  appendUserActivityLog(
-    admin,
-    "access_state_changed",
-    `Access state changed to ${adminAccess}.`,
-    {
-      updatedBy: authUser._id,
-      updatedByName: authUser.name,
-    }
-  );
   await admin.save();
 
   return getSafeAdmin(admin);

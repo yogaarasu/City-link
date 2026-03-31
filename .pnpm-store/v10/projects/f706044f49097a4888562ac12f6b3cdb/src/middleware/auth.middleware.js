@@ -1,6 +1,5 @@
 import { User } from "../models/user.model.js";
 import mongoose from "mongoose";
-import { getNormalizedAdminAccess } from "../modules/super-admin/super-admin.constants.js";
 import { getAuthTokenFromRequest, verifyAuthToken } from "../lib/jwt.js";
 
 const normalizeRole = (role) => {
@@ -40,12 +39,6 @@ export const requireAuth = async (req, res, next) => {
     if (user.isDeleted) {
       return res.status(401).json({ error: "Account deleted" });
     }
-    if (user.role === "city_admin" && getNormalizedAdminAccess(user.adminAccess) === "inactive") {
-      return res
-        .status(403)
-        .json({ error: "Your administrator account is currently inactive by super admin." });
-    }
-
     const userRole = normalizeRole(user.role || "citizen");
     const tokenRole = normalizeRole(payload?.role);
     if (!userRole || !tokenRole || userRole !== tokenRole) {

@@ -10,7 +10,6 @@ import {
   listCityAdminsController,
   updateCityAdminNameController,
   updateCityAdminController,
-  updateCityAdminStateController,
 } from "../modules/super-admin/super-admin.controller.js";
 
 export const superAdminRoutes = express.Router();
@@ -25,5 +24,4 @@ superAdminRoutes.get("/city-admins/:adminId", getCityAdminDetailsController);
 superAdminRoutes.post("/city-admins", createCityAdminController);
 superAdminRoutes.patch("/city-admins/:adminId", updateCityAdminController);
 superAdminRoutes.patch("/city-admins/:adminId/name", updateCityAdminNameController);
-superAdminRoutes.patch("/city-admins/:adminId/state", updateCityAdminStateController);
 superAdminRoutes.delete("/city-admins/:adminId", deleteCityAdminController);

@@ -38,8 +38,3 @@ export const DISTRICT_RTO_CODES = {
   Viluppuram: "32",
   Virudhunagar: "67",
 };
-
-export const getNormalizedAdminAccess = (value) => {
-  if (value === "start" || value === "active") return "active";
-  return "inactive";
-};

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, Power, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,6 @@ import {
   deleteCityAdmin,
   getCityAdminDetails,
   updateCityAdmin,
-  updateCityAdminState,
 } from "@/modules/super-admin/api/super-admin.api";
 import CityAdminForm from "@/modules/super-admin/components/CityAdminForm";
 import type { CityAdminDetailsResponse, CityAdminPayload } from "@/modules/super-admin/types/super-admin.types";
@@ -89,18 +88,6 @@ const CityAdminDetailsPage = () => {
       handleApiError(error, t("errorUpdateAdminDetails"));
     } finally {
       setIsSubmittingEdit(false);
-    }
-  };
-
-  const onToggleState = async () => {
-    if (!details) return;
-    const nextState = details.admin.adminAccess === "active" ? "inactive" : "active";
-    try {
-      const response = await updateCityAdminState(adminId, nextState);
-      toast.success(response.message);
-      await load();
-    } catch (error: unknown) {
-      handleApiError(error, t("errorUpdateAdminState"));
     }
   };
 
@@ -172,10 +159,6 @@ const CityAdminDetailsPage = () => {
                 <Pencil className="h-4 w-4" />
                 {isEditing ? t("closeEdit") : t("edit")}
               </Button>
-              <Button size="sm" variant="outline" onClick={onToggleState}>
-                <Power className="h-4 w-4" />
-                {details.admin.adminAccess === "active" ? t("setInactive") : t("setActive")}
-              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive">
@@ -209,9 +192,6 @@ const CityAdminDetailsPage = () => {
             <div className="rounded-lg border p-3"><span className="font-medium">{t("email")}:</span> {details.admin.email}</div>
             <div className="rounded-lg border p-3"><span className="font-medium">{t("phone")}:</span> {details.admin.phone || "-"}</div>
             <div className="rounded-lg border p-3"><span className="font-medium">{t("district")}:</span> {getDistrictLabel(details.admin.district, t)}</div>
-            <div className="rounded-lg border p-3">
-              <span className="font-medium">{t("status")}:</span> {details.admin.adminAccess === "active" ? t("active") : t("inactive")}
-            </div>
             <div className="rounded-lg border p-3">
               <span className="font-medium">{t("adminId")}:</span> {details.admin.adminId || t("notAvailable")}
             </div>

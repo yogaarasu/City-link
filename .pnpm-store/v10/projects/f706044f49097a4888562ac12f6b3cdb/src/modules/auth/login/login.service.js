@@ -7,7 +7,6 @@ import {
   SUPER_ADMIN_PASSWORD,
 } from "../../../../utils/constants.js";
 import { appendUserActivityLog } from "../../super-admin/shared/activity-log.js";
-import { getNormalizedAdminAccess } from "../../super-admin/super-admin.constants.js";
 import { signAuthToken } from "../../../lib/jwt.js";
 
 const createHttpError = (statusCode, message) => {
@@ -48,7 +47,6 @@ export const loginUser = async (email, password) => {
         password: await hash(SUPER_ADMIN_PASSWORD),
         role: "super_admin",
         isVerified: true,
-        adminAccess: "active",
       });
     } else {
       const emailTakenByAnother = await User.exists({
@@ -77,10 +75,7 @@ export const loginUser = async (email, password) => {
     superAdmin.role = "super_admin";
     superAdmin.isDeleted = false;
     superAdmin.isVerified = true;
-    superAdmin.adminAccess = "active";
     superAdmin.lastLoginAt = new Date();
-    superAdmin.activityStatus = "online";
-    superAdmin.activityStatusUpdatedAt = new Date();
     appendUserActivityLog(superAdmin, "login", "Super admin logged in.");
     await superAdmin.save();
 
@@ -102,7 +97,7 @@ export const loginUser = async (email, password) => {
     throw createHttpError(401, "Invalid email or password.");
   }
   if (user.isDeleted) {
-    throw createHttpError(401, "Account not available.");
+    throw createHttpError(401, "Invalid email or password.");
   }
 
   if (user.role === "super_admin") {
@@ -121,16 +116,7 @@ export const loginUser = async (email, password) => {
     throw createHttpError(403, "Please verify your email before login.");
   }
 
-  if (user.role === "city_admin" && getNormalizedAdminAccess(user.adminAccess) === "inactive") {
-    throw createHttpError(
-      403,
-      "Your administrator account is currently inactive. Contact super admin."
-    );
-  }
-
   user.lastLoginAt = new Date();
-  user.activityStatus = "online";
-  user.activityStatusUpdatedAt = new Date();
   const roleLoginMessage = {
     city_admin: "City administrator logged in.",
     super_admin: "Super admin logged in.",

@@ -10,7 +10,6 @@ import type {
 interface ListCityAdminsParams {
   district?: string;
   search?: string;
-  adminAccess?: "all" | "active" | "inactive";
 }
 
 export const getSystemOverview = async () => {
@@ -73,14 +72,6 @@ export const updateCityAdminName = async (adminId: string, name: string) => {
   const response = await api.patch<{ message: string; admin: CityAdmin }>(
     `/super-admin/city-admins/${adminId}/name`,
     { name }
-  );
-  return response.data;
-};
-
-export const updateCityAdminState = async (adminId: string, adminAccess: "active" | "inactive") => {
-  const response = await api.patch<{ message: string; admin: CityAdmin }>(
-    `/super-admin/city-admins/${adminId}/state`,
-    { adminAccess }
   );
   return response.data;
 };

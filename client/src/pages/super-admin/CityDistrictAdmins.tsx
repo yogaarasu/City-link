@@ -90,9 +90,6 @@ const CityDistrictAdminsPage = () => {
                 <div className="rounded-md border p-2.5"><span className="font-medium">{t("email")}:</span> {admin.email}</div>
                 <div className="rounded-md border p-2.5"><span className="font-medium">{t("phone")}:</span> {admin.phone || "-"}</div>
                 <div className="rounded-md border p-2.5"><span className="font-medium">{t("district")}:</span> {getDistrictLabel(admin.district, t)}</div>
-                <div className="rounded-md border p-2.5">
-                  <span className="font-medium">{t("status")}:</span> {admin.adminAccess === "active" ? t("active") : t("inactive")}
-                </div>
                 <div className="rounded-md border p-2.5 md:col-span-2">
                   <span className="font-medium">{t("lastLogin")}:</span>{" "}
                   {admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString() : t("noLoginYet")}

@@ -28,7 +28,6 @@ const isValidIndianMobile = (value) => {
 export const listCityAdminQuerySchema = z.object({
   district: z.string().optional(),
   search: z.string().optional(),
-  adminAccess: z.enum(["all", "active", "inactive"]).optional(),
 });
 
 export const emailAvailabilityQuerySchema = z.object({
@@ -78,6 +77,3 @@ export const updateCityAdminNameSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters.").max(80),
 });
 
-export const cityAdminStateSchema = z.object({
-  adminAccess: z.enum(["active", "inactive"]),
-});

@@ -16,13 +16,11 @@ export const verifyOTP = async (req, res, next) => {
     }
 
     const user = await User.findOneAndUpdate(
-      { email },
+      { email, isDeleted: false },
       {
         $set: {
           isVerified: true,
           lastLoginAt: new Date(),
-          activityStatus: "online",
-          activityStatusUpdatedAt: new Date(),
         },
       },
       { new: true }

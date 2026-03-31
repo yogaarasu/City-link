@@ -10,15 +10,25 @@ export const userRegistration = async (req, res, next) => {
     let user = await User.findOne({ email });
 
     if (user) {
-      if (user.isVerified) {
+      if (user.isVerified && !user.isDeleted) {
         return res.status(400).json({
           success: false,
           error: "User already exist."
         });
-      } else {
-        await onSuccess();
-        return;
       }
+
+      const hashedPassword = await hash(password);
+      user.name = `${firstName} ${lastName}`;
+      user.district = district;
+      user.address = address;
+      user.password = hashedPassword;
+      user.isDeleted = false;
+      user.deletedAt = null;
+      user.isVerified = false;
+      await user.save();
+
+      await onSuccess();
+      return;
     }
 
     const hashedPassword = await hash(password);

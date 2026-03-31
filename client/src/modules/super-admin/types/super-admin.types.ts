@@ -106,7 +106,6 @@ export interface CityAdmin {
   phone: string;
   district: string;
   role: "city_admin";
-  adminAccess: "active" | "inactive";
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;

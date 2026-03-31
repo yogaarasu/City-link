@@ -94,17 +94,8 @@ export const deleteMyAccount = async (authUser, password) => {
     );
   }
 
-  const deletedAliasEmail = `deleted+${user._id}@citylink.local`;
-  await deleteCloudinaryImageByUrl(user.avatar || "");
-  user.name = "Deleted User";
-  user.email = deletedAliasEmail;
-  user.address = "Deleted";
-  user.district = "Deleted";
-  user.avatar = "";
-  user.password = await hash(`${Date.now()}_${user._id}`);
-  user.isVerified = false;
-  user.role = "citizen";
   user.isDeleted = true;
+  user.isVerified = true;
   user.deletedAt = new Date();
   await user.save();
 };

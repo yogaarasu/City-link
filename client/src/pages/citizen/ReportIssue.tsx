@@ -465,6 +465,7 @@ const ReportIssue = () => {
                     id="title"
                     placeholder={t("reportIssueTitlePlaceholder")}
                     className={errors.title ? "border-red-500" : ""}
+                    maxLength={150}
                     {...register("title")}
                   />
                   {errors.title ? (
@@ -504,6 +505,7 @@ const ReportIssue = () => {
                         id="description"
                         placeholder={t("reportIssueDescriptionPlaceholder")}
                         className={errors.description ? "border-red-500" : ""}
+                        maxLength={1000}
                         value={field.value}
                         onChange={(event) =>
                           field.onChange(cleanProfanity(event.target.value))

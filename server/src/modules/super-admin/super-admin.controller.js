@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   cityAdminIdParamSchema,
-  cityAdminStateSchema,
   cityDetailsParamSchema,
   createCityAdminSchema,
   emailAvailabilityQuerySchema,
@@ -19,7 +18,6 @@ import {
   listCityAdmins,
   updateCityAdminName,
   updateCityAdmin,
-  updateCityAdminState,
 } from "./super-admin.service.js";
 
 const handleError = (error, res, next) => {
@@ -105,20 +103,6 @@ export const updateCityAdminController = async (req, res, next) => {
     const admin = await updateCityAdmin(adminId, payload, req.authUser);
     return res.status(200).json({
       message: "City admin updated and welcome email resent.",
-      admin,
-    });
-  } catch (error) {
-    return handleError(error, res, next);
-  }
-};
-
-export const updateCityAdminStateController = async (req, res, next) => {
-  try {
-    const { adminId } = cityAdminIdParamSchema.parse(req.params);
-    const { adminAccess } = cityAdminStateSchema.parse(req.body);
-    const admin = await updateCityAdminState(adminId, adminAccess, req.authUser);
-    return res.status(200).json({
-      message: `City admin state updated to ${adminAccess}.`,
       admin,
     });
   } catch (error) {

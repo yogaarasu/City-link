@@ -69,21 +69,7 @@ const UserSchema = new mongoose.Schema({
     enum: ["citizen", "city_admin", "super_admin"],
     default: "citizen"
   },
-  adminAccess: {
-    type: String,
-    enum: ["active", "inactive", "start", "stop"],
-    default: "active"
-  },
   lastLoginAt: {
-    type: Date,
-    default: null
-  },
-  activityStatus: {
-    type: String,
-    enum: ["online", "offline"],
-    default: "offline"
-  },
-  activityStatusUpdatedAt: {
     type: Date,
     default: null
   },
