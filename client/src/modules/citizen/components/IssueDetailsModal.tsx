@@ -130,7 +130,9 @@ export const IssueDetailsModal = ({
 
           <div className="rounded-lg border p-3">
             <h3 className="mb-1 font-semibold">{t("description")}</h3>
-            <p className="text-sm leading-relaxed">{issue.description}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+              {issue.description}
+            </p>
           </div>
 
           <div className="rounded-lg border p-3">
