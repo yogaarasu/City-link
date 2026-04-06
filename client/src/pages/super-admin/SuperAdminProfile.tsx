@@ -9,6 +9,7 @@ import { getDistrictLabel } from "@/modules/citizen/constants/issue.constants";
 const SuperAdminProfilePage = () => {
   const user = useUserState((state) => state.user);
   const { t } = useI18n();
+  const settingsPath = user?.role === "city_admin" ? "/city-admin/settings" : "/super-admin/settings";
 
   if (!user) {
     return (
@@ -52,7 +53,7 @@ const SuperAdminProfilePage = () => {
           </div>
 
           <Button asChild>
-            <Link to="/super-admin/settings">{t("editProfileInSettings")}</Link>
+            <Link to={settingsPath}>{t("editProfileInSettings")}</Link>
           </Button>
         </CardContent>
       </Card>
